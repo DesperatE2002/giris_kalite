@@ -4,6 +4,9 @@
   "description": "OTPA bazlı BOM takip ve giriş kalite kontrol sistemi",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
