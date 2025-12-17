@@ -135,8 +135,8 @@ const adminPage = {
                       <span class="text-sm text-gray-600">${otpa.total_items || 0} malzeme</span>
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">
-                      <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
-                        class="text-blue-600 hover:text-blue-900 disabled:opacity-50">
+                      <button onclick="adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
+                        class="text-blue-600 hover:text-blue-900">
                         <i class="fas fa-upload mr-1"></i> BOM Yükle
                       </button>
                       <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; adminPage.editOtpa(${otpa.id})" 
@@ -401,6 +401,9 @@ MAT-003	Nikel Şerit	500	gr"
     modal.querySelector('#bomUploadForm').onsubmit = async (e) => {
       e.preventDefault();
       
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      
       const data = modal.querySelector('#bomData').value.trim();
       const componentType = modal.querySelector('#currentComponent').value;
       
@@ -410,6 +413,9 @@ MAT-003	Nikel Şerit	500	gr"
       }
 
       try {
+        // Show loading on button
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Yükleniyor...';
+        submitBtn.disabled = true;
         showLoading(true);
         
         // Parse data
@@ -443,11 +449,15 @@ MAT-003	Nikel Şerit	500	gr"
         });
         
         if (errors.length > 0) {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
           alert('Hatalar:\n' + errors.join('\n'));
           return;
         }
         
         if (bomItems.length === 0) {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
           alert('Hiç geçerli malzeme bulunamadı');
           return;
         }
@@ -466,8 +476,16 @@ MAT-003	Nikel Şerit	500	gr"
         
         // Clear form
         modal.querySelector('#bomData').value = '';
+        modal.querySelector('#previewContainer').classList.add('hidden');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        
+        // Refresh OTPA tab to restore buttons
+        this.renderOtpaTab();
         
       } catch (error) {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
         alert('Hata: ' + error.message);
       } finally {
         showLoading(false);
