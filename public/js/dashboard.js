@@ -116,8 +116,8 @@ const dashboardPage = {
                           <div class="text-xs text-gray-500 mt-1">${completedItems}/${totalItems} tamamlandı</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onclick="dashboardPage.viewOtpaDetail(${otpa.id})" 
-                            class="text-blue-600 hover:text-blue-900 mr-3">
+                          <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; dashboardPage.viewOtpaDetail(${otpa.id})" 
+                            class="text-blue-600 hover:text-blue-900 mr-3 disabled:opacity-50">
                             <i class="fas fa-eye"></i> Detay
                           </button>
                         </td>
@@ -157,7 +157,17 @@ const dashboardPage = {
     const content = document.getElementById('content');
     
     try {
+      // Show loading immediately
       showLoading(true);
+      content.innerHTML = `
+        <div class="flex items-center justify-center h-64">
+          <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+            <p class="text-gray-600">OTPA detayları yükleniyor...</p>
+          </div>
+        </div>
+      `;
+      
       const data = await api.otpa.get(otpaId);
       const receipts = await api.goodsReceipt.getByOtpa(otpaId);
 

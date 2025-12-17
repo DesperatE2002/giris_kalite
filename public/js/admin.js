@@ -124,12 +124,12 @@ const adminPage = {
                       <span class="text-sm text-gray-600">${otpa.total_items || 0} malzeme</span>
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">
-                      <button onclick="adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
-                        class="text-blue-600 hover:text-blue-900">
+                      <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
+                        class="text-blue-600 hover:text-blue-900 disabled:opacity-50">
                         <i class="fas fa-upload mr-1"></i> BOM Yükle
                       </button>
-                      <button onclick="adminPage.editOtpa(${otpa.id})" 
-                        class="text-green-600 hover:text-green-900">
+                      <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; adminPage.editOtpa(${otpa.id})" 
+                        class="text-green-600 hover:text-green-900 disabled:opacity-50">
                         <i class="fas fa-edit mr-1"></i> Düzenle
                       </button>
                     </td>
