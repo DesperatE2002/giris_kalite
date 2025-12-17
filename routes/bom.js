@@ -8,8 +8,8 @@ import pool from '../db/database.js';
 
 const router = express.Router();
 
-// Uploads klasörünü oluştur
-const uploadsDir = './uploads';
+// Uploads klasörünü oluştur (Vercel için /tmp kullan)
+const uploadsDir = process.env.VERCEL ? '/tmp/uploads' : './uploads';
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
