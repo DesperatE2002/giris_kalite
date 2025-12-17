@@ -2,19 +2,17 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
+// Load environment variables
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Force PostgreSQL in production
+if (process.env.VERCEL) {
+  process.env.USE_SQLITE = 'false';
+  console.log('🐘 Vercel: Using PostgreSQL');
+}
 
-// Force PostgreSQL
-console.log('🐘 Using PostgreSQL database');
-process.env.USE_SQLITE = 'false';
-
-// Routes
+// Import routes
 import authRoutes from '../routes/auth.js';
 import otpaRoutes from '../routes/otpa.js';
 import bomRoutes from '../routes/bom.js';
@@ -25,13 +23,13 @@ import reportsRoutes from '../routes/reports.js';
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
-
-// Static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -43,26 +41,25 @@ app.use('/api/reports', reportsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Favicon handler
-app.get('/favicon.ico', (req, res) => {
-  res.status(204).end();
-});
-
-// SPA fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV 
+  });
 });
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
+  console.error('API Error:', err);
   res.status(500).json({ 
-    error: 'Server error', 
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
+});
+
+// 404 handler for API
+app.use((req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
 export default app;
