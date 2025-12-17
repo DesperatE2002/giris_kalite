@@ -6,11 +6,20 @@ import cors from 'cors';
 // Load environment variables
 dotenv.config();
 
-// Force PostgreSQL in production
-if (process.env.VERCEL) {
-  process.env.USE_SQLITE = 'false';
-  console.log('🐘 Vercel: Using PostgreSQL');
+// Validate environment
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL environment variable is missing!');
+  throw new Error('DATABASE_URL is required');
 }
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ JWT_SECRET environment variable is missing!');
+  throw new Error('JWT_SECRET is required');
+}
+
+// Force PostgreSQL in production
+process.env.USE_SQLITE = 'false';
+console.log('🐘 API: Using PostgreSQL database');
 
 // Import routes
 import authRoutes from '../routes/auth.js';
