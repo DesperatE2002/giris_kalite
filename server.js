@@ -70,8 +70,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`
+// Vercel serverless için app.listen'i sadece local'de çalıştır
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`
   ╔════════════════════════════════════════════════════════════╗
   ║                                                            ║
   ║   🚀 Temsa Kalite Sistemi Başlatıldı                     ║
@@ -82,8 +84,9 @@ app.listen(PORT, () => {
   ║   👤 Admin: admin / admin123                              ║
   ║                                                            ║
   ╚════════════════════════════════════════════════════════════╝
-  `);
-  console.log('✅ Server is LISTENING on port', PORT);
-});
+    `);
+    console.log('✅ Server is LISTENING on port', PORT);
+  });
+}
 
 export default app;
