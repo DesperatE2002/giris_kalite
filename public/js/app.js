@@ -1,0 +1,128 @@
+// Main App Controller
+const app = {
+  currentPage: null,
+
+  async init() {
+    // Check authentication
+    const isAuthenticated = await authManager.checkAuth();
+
+    if (isAuthenticated) {
+      // Show main app
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      
+      // Setup navigation
+      this.setupNavigation();
+      
+      // Update user info
+      this.updateUserInfo();
+      
+      // Navigate to dashboard
+      this.navigate('dashboard');
+    } else {
+      // Show login screen
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+    }
+  },
+
+  setupNavigation() {
+    // Get all navigation buttons
+    const navButtons = document.querySelectorAll('.nav-btn');
+    
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const page = e.currentTarget.dataset.page;
+        this.navigate(page);
+      });
+    });
+
+    // Show/hide menu items based on role
+    this.updateMenuVisibility();
+  },
+
+  updateUserInfo() {
+    const user = authManager.currentUser;
+    if (user) {
+      const roleText = {
+        'tekniker': 'Tekniker',
+        'kalite': 'Kalite',
+        'admin': 'Admin'
+      }[user.role] || user.role;
+
+      document.getElementById('userInfo').textContent = 
+        `${user.full_name} (${roleText})`;
+    }
+  },
+
+  updateMenuVisibility() {
+    const user = authManager.currentUser;
+    if (!user) return;
+
+    // Quality page - only for kalite and admin
+    document.querySelectorAll('[data-page="quality"]').forEach(btn => {
+      if (user.role === 'kalite' || user.role === 'admin') {
+        btn.style.display = '';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+
+    // Admin page - only for admin
+    document.querySelectorAll('[data-page="admin"]').forEach(btn => {
+      if (user.role === 'admin') {
+        btn.style.display = '';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+  },
+
+  navigate(page) {
+    // Update active navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      if (btn.dataset.page === page) {
+        btn.classList.add('text-blue-600', 'border-blue-600');
+        btn.classList.remove('text-gray-600', 'border-transparent');
+      } else {
+        btn.classList.remove('text-blue-600', 'border-blue-600');
+        btn.classList.add('text-gray-600', 'border-transparent');
+      }
+    });
+
+    // Render page
+    this.currentPage = page;
+    
+    switch (page) {
+      case 'dashboard':
+        dashboardPage.render();
+        break;
+      case 'goods-receipt':
+        goodsReceiptPage.render();
+        break;
+      case 'quality':
+        qualityPage.render();
+        break;
+      case 'admin':
+        adminPage.render();
+        break;
+      default:
+        this.navigate('dashboard');
+    }
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+  }
+};
+
+// Initialize app when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => app.init());
+} else {
+  app.init();
+}
+
+// Export app
+window.app = app;
