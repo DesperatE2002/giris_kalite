@@ -51,6 +51,17 @@ const adminPage = {
   switchTab(tab) {
     this.currentTab = tab;
     
+    // Show instant loading feedback
+    const tabContent = document.getElementById('tabContent');
+    tabContent.innerHTML = `
+      <div class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+          <p class="text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    `;
+    
     // Update tab styling
     document.querySelectorAll('.admin-tab').forEach(btn => {
       if (btn.dataset.tab === tab) {

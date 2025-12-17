@@ -81,6 +81,17 @@ const app = {
   },
 
   navigate(page) {
+    // Show instant loading feedback
+    const content = document.getElementById('content');
+    content.innerHTML = `
+      <div class="flex items-center justify-center h-64">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+          <p class="text-gray-600">Sayfa yükleniyor...</p>
+        </div>
+      </div>
+    `;
+    
     // Update active navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
       if (btn.dataset.page === page) {
