@@ -143,6 +143,10 @@ const adminPage = {
                         class="text-green-600 hover:text-green-900 disabled:opacity-50">
                         <i class="fas fa-edit mr-1"></i> Düzenle
                       </button>
+                      <button onclick="adminPage.deleteOtpa(${otpa.id}, '${otpa.otpa_number}')" 
+                        class="text-red-600 hover:text-red-900">
+                        <i class="fas fa-trash mr-1"></i> Sil
+                      </button>
                     </td>
                   </tr>
                 `).join('')}
@@ -967,6 +971,23 @@ MAT-003	Nikel Şerit	500	gr"
     };
     const r = map[role] || map.tekniker;
     return `<span class="px-2 py-1 text-xs rounded-full ${r.class}">${r.text}</span>`;
+  },
+
+  async deleteOtpa(otpaId, otpaNumber) {
+    if (!confirm(`"${otpaNumber}" OTPA'sını silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz ve tüm BOM verileri silinecektir.`)) {
+      return;
+    }
+
+    try {
+      showLoading(true);
+      await api.otpa.delete(otpaId);
+      alert(`${otpaNumber} başarıyla silindi!`);
+      this.renderOtpaTab();
+    } catch (error) {
+      alert('Silme işlemi başarısız: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
   }
 };
 
