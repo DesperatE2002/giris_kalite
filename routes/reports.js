@@ -9,14 +9,27 @@ router.get('/otpa-completion', authenticateToken, async (req, res) => {
   try {
     const { otpa_id } = req.query;
 
+    // TEK QUERY - SÜPER HIZLI!
     let query = `
       SELECT 
         o.id,
         o.otpa_number,
         o.project_name,
         o.customer_info,
-        o.status
+        o.status,
+        COUNT(DISTINCT b.id) as total_items,
+        COUNT(DISTINCT CASE 
+          WHEN (
+            SELECT COALESCE(SUM(qr.accepted_quantity), 0)
+            FROM goods_receipt gr
+            LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+            WHERE gr.otpa_id = b.otpa_id 
+              AND gr.material_code = b.material_code
+          ) >= b.required_quantity 
+          THEN b.id 
+        END) as completed_items
       FROM otpa o
+      LEFT JOIN bom_items b ON o.id = b.otpa_id
     `;
 
     const params = [];
@@ -25,41 +38,19 @@ router.get('/otpa-completion', authenticateToken, async (req, res) => {
       params.push(otpa_id);
     }
 
-    query += ' ORDER BY o.otpa_number';
+    query += ' GROUP BY o.id, o.otpa_number, o.project_name, o.customer_info, o.status ORDER BY o.otpa_number';
 
     const result = await pool.query(query, params);
     
-    // Calculate totals for each OTPA
-    for (let otpa of result.rows) {
-      // Toplam BOM kalemi sayısı
-      const bomCount = await pool.query(
-        'SELECT COUNT(*) as count FROM bom_items WHERE otpa_id = ?',
-        [otpa.id]
-      );
-      otpa.total_items = bomCount.rows[0]?.count || 0;
-      
-      // Tamamlanan malzeme sayısı (kabul edilen miktar >= gereken miktar)
-      const completedCount = await pool.query(`
-        SELECT COUNT(*) as count
-        FROM bom_items b
-        WHERE b.otpa_id = ? 
-        AND (
-          SELECT COALESCE(SUM(qr.accepted_quantity), 0)
-          FROM goods_receipt gr
-          LEFT JOIN quality_results qr ON gr.id = qr.receipt_id AND qr.status = ?
-          WHERE gr.otpa_id = b.otpa_id 
-            AND gr.component_type = b.component_type 
-            AND gr.material_code = b.material_code
-        ) >= b.required_quantity
-      `, [otpa.id, 'kabul']);
-      
-      otpa.completed_items = completedCount.rows[0]?.count || 0;
-      otpa.completion_percentage = otpa.total_items > 0 
+    // Calculate completion percentage
+    const rows = result.rows.map(otpa => ({
+      ...otpa,
+      completion_percentage: otpa.total_items > 0 
         ? Math.round((otpa.completed_items / otpa.total_items) * 100) 
-        : 0;
-    }
+        : 0
+    }));
 
-    res.json(result.rows);
+    res.json(rows);
   } catch (error) {
     console.error('OTPA tamamlama raporu hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
@@ -71,6 +62,7 @@ router.get('/missing-materials', authenticateToken, async (req, res) => {
   try {
     const { otpa_id } = req.query;
 
+    // TEK QUERY - KABUL EDİLEN MİKTARI DA GETİR!
     let query = `
       SELECT 
         o.otpa_number,
@@ -80,9 +72,15 @@ router.get('/missing-materials', authenticateToken, async (req, res) => {
         b.material_name,
         b.required_quantity,
         b.unit,
-        b.otpa_id
+        b.otpa_id,
+        COALESCE(SUM(qr.accepted_quantity), 0) as accepted_quantity
       FROM bom_items b
       JOIN otpa o ON b.otpa_id = o.id
+      LEFT JOIN goods_receipt gr ON gr.otpa_id = b.otpa_id 
+        AND gr.material_code = b.material_code
+      LEFT JOIN quality_results qr ON qr.receipt_id = gr.id
+      GROUP BY b.id, o.otpa_number, o.project_name, b.component_type, 
+               b.material_code, b.material_name, b.required_quantity, b.unit, b.otpa_id
     `;
 
     const params = [];
@@ -95,26 +93,22 @@ router.get('/missing-materials', authenticateToken, async (req, res) => {
 
     const result = await pool.query(query, params);
     
-    // Calculate for each item
-    const missing = [];
-    for (let item of result.rows) {
-      const qualityResult = await pool.query(`
-        SELECT SUM(qr.accepted_quantity) as total_accepted
-        FROM goods_receipt gr
-        LEFT JOIN quality_results qr ON gr.id = qr.receipt_id AND qr.status = ?
-        WHERE gr.otpa_id = ? AND gr.component_type = ? AND gr.material_code = ?
-      `, ['kabul', item.otpa_id, item.component_type, item.material_code]);
-      
-      const accepted = qualityResult.rows[0]?.total_accepted || 0;
-      const missingQty = item.required_quantity - accepted;
-      
-      if (missingQty > 0) {
-        item.accepted_quantity = accepted;
-        item.missing_quantity = missingQty;
-        item.status = accepted > 0 ? 'Kısmi' : 'Hiç Gelmedi';
-        missing.push(item);
-      }
-    }
+    // TEK QUERY İLE EKSİK HESAPLA - SÜPER HIZLI!
+    const missing = result.rows
+      .map(item => {
+        const accepted = item.accepted_quantity || 0;
+        const missingQty = item.required_quantity - accepted;
+        
+        if (missingQty > 0) {
+          return {
+            ...item,
+            missing_quantity: missingQty,
+            status: accepted > 0 ? 'Kısmi' : 'Hiç Gelmedi'
+          };
+        }
+        return null;
+      })
+      .filter(item => item !== null);
 
     res.json(missing);
   } catch (error) {
