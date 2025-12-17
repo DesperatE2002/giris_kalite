@@ -10,6 +10,54 @@ const pool = process.env.USE_SQLITE === 'true' ? dbSqlite : dbPostgres;
 
 const router = express.Router();
 
+// Register (kalite kullanıcısı oluşturma)
+router.post('/register', async (req, res) => {
+  try {
+    const { full_name, username, password } = req.body;
+
+    if (!full_name || !username || !password) {
+      return res.status(400).json({ error: 'Tüm alanları doldurun' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Şifre en az 6 karakter olmalıdır' });
+    }
+
+    // Check if username exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Bu kullanıcı adı zaten kullanılıyor' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user with 'kalite' role
+    const result = await pool.query(
+      `INSERT INTO users (username, password, full_name, role, is_active)
+       VALUES (?, ?, ?, ?, TRUE) RETURNING *`,
+      [username, hashedPassword, full_name, 'kalite']
+    );
+
+    res.status(201).json({
+      message: 'Hesap başarıyla oluşturuldu',
+      user: {
+        id: result.rows[0].id,
+        username: result.rows[0].username,
+        full_name: result.rows[0].full_name,
+        role: result.rows[0].role
+      }
+    });
+  } catch (error) {
+    console.error('Register hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 // Login
 router.post('/login', async (req, res) => {
   try {

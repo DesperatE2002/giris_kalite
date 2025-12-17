@@ -33,6 +33,12 @@ const api = {
 
   // Auth endpoints
   auth: {
+    register: (data) => 
+      api.request('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+
     login: (username, password) => 
       api.request('/auth/login', {
         method: 'POST',
