@@ -20,7 +20,17 @@ router.get('/', authenticateToken, async (req, res) => {
         o.created_at,
         o.updated_at,
         u.full_name as created_by_name,
-        COALESCE(COUNT(DISTINCT b.id), 0) as total_items
+        COALESCE(COUNT(DISTINCT b.id), 0) as total_items,
+        COALESCE(COUNT(DISTINCT CASE 
+          WHEN b.required_quantity <= (
+            SELECT COALESCE(SUM(qr.accepted_quantity), 0)
+            FROM goods_receipt gr
+            LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+            WHERE gr.otpa_id = o.id 
+              AND gr.material_code = b.material_code
+          )
+          THEN b.id 
+        END), 0) as completed_items
       FROM otpa o
       LEFT JOIN users u ON o.created_by = u.id
       LEFT JOIN bom_items b ON o.id = b.otpa_id
