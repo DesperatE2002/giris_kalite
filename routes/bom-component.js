@@ -2,11 +2,7 @@
 import express from 'express';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import fs from 'fs';
-import dbSqlite from '../db/database-sqlite.js';
-import dbPostgres from '../db/database.js';
-
-const useSQLite = fs.existsSync('./database.sqlite');
-const pool = useSQLite ? dbSqlite : dbPostgres;
+import pool from '../db/database.js';
 
 const router = express.Router();
 

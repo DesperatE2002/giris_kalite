@@ -22,8 +22,6 @@ if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET is required');
 }
 
-// Force PostgreSQL in production
-process.env.USE_SQLITE = 'false';
 console.log('🐘 API: Using PostgreSQL database');
 
 // Import routes

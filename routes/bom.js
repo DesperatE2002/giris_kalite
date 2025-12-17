@@ -4,11 +4,7 @@ import xlsx from 'xlsx';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import path from 'path';
 import fs from 'fs';
-import dbSqlite from '../db/database-sqlite.js';
-import dbPostgres from '../db/database.js';
-
-// Choose database based on environment
-const pool = process.env.USE_SQLITE === 'true' ? dbSqlite : dbPostgres;
+import pool from '../db/database.js';
 
 const router = express.Router();
 
