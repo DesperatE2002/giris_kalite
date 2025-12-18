@@ -289,58 +289,7 @@ const adminPage = {
           const templateName = templateSelect.options[templateSelect.selectedIndex].text;
           
           modal.remove();
-          
-          // Component type seçim modal'ı göster
-          const componentModal = document.createElement('div');
-          componentModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-          componentModal.innerHTML = `
-            <div class="glass-card rounded-2xl p-6 max-w-md w-full">
-              <h3 class="text-xl font-bold gradient-text mb-4">
-                <i class="fas fa-cog mr-2"></i> Component Seçin
-              </h3>
-              <p class="text-gray-700 mb-4">
-                BOM şablonu hangi component için yüklensin?
-              </p>
-              <div class="space-y-3">
-                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="batarya"
-                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-                  🔋 Batarya BOM
-                </button>
-                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="vccu"
-                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-                  ⚡ VCCU BOM
-                </button>
-                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="junction_box"
-                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-                  📦 Junction Box BOM
-                </button>
-                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="pdu"
-                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-                  🔌 PDU BOM
-                </button>
-                <button class="cancel-template-btn w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
-                  Manuel Yükle
-                </button>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(componentModal);
-          
-          // Event listeners ekle
-          componentModal.querySelectorAll('.apply-template-btn').forEach(btn => {
-            btn.onclick = () => {
-              const otpaId = btn.dataset.otpaId;
-              const templateId = btn.dataset.templateId;
-              const templateName = btn.dataset.templateName;
-              const component = btn.dataset.component;
-              adminPage.applyTemplateToNewOtpa(otpaId, templateId, templateName, component);
-            };
-          });
-          
-          componentModal.querySelector('.cancel-template-btn').onclick = () => {
-            componentModal.remove();
-            adminPage.renderOtpaTab();
-          };
+          this.showComponentSelectionModal(otpaId, templateId, templateName, true);
         } else {
           alert('✅ OTPA başarıyla oluşturuldu! BOM yüklemek için "BOM Yükle" butonuna tıklayın.');
           modal.remove();
@@ -693,111 +642,84 @@ MAT-003	Nikel Şerit	500	gr"
     }
 
     const templateName = templateSelect.options[templateSelect.selectedIndex].text;
-    
-    // Component type seçimi için modal göster
+    this.showComponentSelectionModal(otpaId, templateId, templateName, false, otpaNumber);
+  },
+
+  showComponentSelectionModal(otpaId, templateId, templateName, isNewOtpa, otpaNumber = '') {
     const componentModal = document.createElement('div');
     componentModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-    componentModal.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 max-w-md w-full">
-        <h3 class="text-xl font-bold gradient-text mb-4">
-          <i class="fas fa-cog mr-2"></i> Component Seçin
-        </h3>
-        <p class="text-gray-700 mb-4">
-          BOM şablonu hangi component için yüklensin?
-        </p>
-        <div class="space-y-3">
-          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="batarya"
-            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-            🔋 Batarya BOM
-          </button>
-          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="vccu"
-            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-            ⚡ VCCU BOM
-          </button>
-          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="junction_box"
-            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-            📦 Junction Box BOM
-          </button>
-          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="pdu"
-            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
-            🔌 PDU BOM
-          </button>
-          <button class="cancel-modal-btn w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
-            İptal
-          </button>
-        </div>
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'glass-card rounded-2xl p-6 max-w-md w-full';
+    modalContent.innerHTML = `
+      <h3 class="text-xl font-bold gradient-text mb-4">
+        <i class="fas fa-cog mr-2"></i> Component Seçin
+      </h3>
+      <p class="text-gray-700 mb-4">
+        BOM şablonu hangi component için yüklensin?
+      </p>
+      <div class="space-y-3">
+        <button data-component="batarya" class="component-btn w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          🔋 Batarya BOM
+        </button>
+        <button data-component="vccu" class="component-btn w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          ⚡ VCCU BOM
+        </button>
+        <button data-component="junction_box" class="component-btn w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          📦 Junction Box BOM
+        </button>
+        <button data-component="pdu" class="component-btn w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          🔌 PDU BOM
+        </button>
+        <button class="cancel-btn w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+          ${isNewOtpa ? 'Manuel Yükle' : 'İptal'}
+        </button>
       </div>
     `;
     
+    componentModal.appendChild(modalContent);
     document.body.appendChild(componentModal);
     
-    // Event listeners ekle
-    componentModal.querySelectorAll('.confirm-apply-btn').forEach(btn => {
-      btn.onclick = () => {
-        const otpaId = btn.dataset.otpaId;
-        const otpaNumber = btn.dataset.otpaNumber;
-        const templateId = btn.dataset.templateId;
-        const templateName = btn.dataset.templateName;
+    // Event delegation kullan
+    modalContent.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.component-btn');
+      if (btn) {
         const component = btn.dataset.component;
-        adminPage.confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, component);
-      };
+        componentModal.remove();
+        
+        try {
+          showLoading(true);
+          await api.bomTemplates.applyToOtpa(templateId, otpaId, component);
+          
+          const componentLabels = {
+            'batarya': '🔋 Batarya',
+            'vccu': '⚡ VCCU',
+            'junction_box': '📦 Junction Box',
+            'pdu': '🔌 PDU'
+          };
+          
+          if (isNewOtpa) {
+            alert(`✅ OTPA oluşturuldu ve "${templateName}" ${componentLabels[component]} için başarıyla uygulandı!`);
+          } else {
+            alert(`✅ "${templateName}" ${componentLabels[component]} için başarıyla uygulandı!`);
+          }
+          
+          adminPage.renderOtpaTab();
+        } catch (error) {
+          alert('Hata: ' + error.message);
+          adminPage.renderOtpaTab();
+        } finally {
+          showLoading(false);
+        }
+      }
+      
+      if (e.target.closest('.cancel-btn')) {
+        componentModal.remove();
+        if (isNewOtpa) {
+          adminPage.renderOtpaTab();
+        }
+      }
     });
-    
-    componentModal.querySelector('.cancel-modal-btn').onclick = () => {
-      componentModal.remove();
-    };
-  },
-
-  async confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, componentType) {
-    // Component modal'ı kapat
-    document.querySelectorAll('.fixed').forEach(modal => modal.remove());
-    
-    const componentLabels = {
-      'batarya': '🔋 Batarya',
-      'vccu': '⚡ VCCU',
-      'junction_box': '📦 Junction Box',
-      'pdu': '🔌 PDU'
-    };
-    
-    if (!confirm(`"${templateName}" şablonu ${componentLabels[componentType]} için ${otpaNumber} OTPA'sına uygulanacak.\n\nMevcut ${componentLabels[componentType]} BOM silinecek ve şablon malzemeleri eklenecek. Onaylıyor musunuz?`)) {
-      return;
-    }
-
-    try {
-      showLoading(true);
-      await api.bomTemplates.applyToOtpa(templateId, otpaId, componentType);
-      
-      alert(`✅ "${templateName}" ${componentLabels[componentType]} için başarıyla uygulandı!`);
-      this.renderOtpaTab();
-    } catch (error) {
-      alert('Hata: ' + error.message);
-    } finally {
-      showLoading(false);
-    }
-  },
-
-  async applyTemplateToNewOtpa(otpaId, templateId, templateName, componentType) {
-    document.querySelectorAll('.fixed').forEach(modal => modal.remove());
-    
-    const componentLabels = {
-      'batarya': '🔋 Batarya',
-      'vccu': '⚡ VCCU',
-      'junction_box': '📦 Junction Box',
-      'pdu': '🔌 PDU'
-    };
-    
-    try {
-      showLoading(true);
-      await api.bomTemplates.applyToOtpa(templateId, otpaId, componentType);
-      
-      alert(`✅ OTPA oluşturuldu ve "${templateName}" ${componentLabels[componentType]} için başarıyla uygulandı!`);
-      this.renderOtpaTab();
-    } catch (error) {
-      alert('Hata: ' + error.message);
-      this.renderOtpaTab();
-    } finally {
-      showLoading(false);
-    }
   },
 
   async renderReportsTab() {
