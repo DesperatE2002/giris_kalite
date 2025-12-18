@@ -166,11 +166,12 @@ const qualityPage = {
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
         <div class="p-6">
           <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">
-              <i class="fas fa-clipboard-check mr-2 text-green-600"></i> Kalite Kararı
+            <h2 class="text-2xl font-bold gradient-text">
+              <i class="fas fa-clipboard-check mr-2"></i> Kalite Kararı
             </h2>
-            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-times text-2xl"></i>
+            <button onclick="this.closest('.fixed').remove()" 
+              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
 
@@ -406,11 +407,17 @@ const qualityPage = {
       const modal = document.createElement('div');
       modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
       modal.innerHTML = `
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="glass-card rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
-            <h2 class="text-2xl font-bold mb-4">
-              <i class="fas fa-undo mr-2 text-red-600"></i> Yeni İade Oluştur
-            </h2>
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-2xl font-bold gradient-text">
+                <i class="fas fa-undo mr-2"></i> Yeni İade Oluştur
+              </h2>
+              <button onclick="this.closest('.fixed').remove()" 
+                class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+                <i class="fas fa-times text-3xl"></i>
+              </button>
+            </div>
             <p class="text-sm text-gray-600 mb-6">Montaj veya diğer sebeplerle kabul edilmiş bir malzemeyi iade edin</p>
             
             <form id="createReturnForm" class="space-y-4">

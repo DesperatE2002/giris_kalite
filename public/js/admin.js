@@ -267,8 +267,9 @@ const adminPage = {
             <h2 class="text-2xl font-bold gradient-text">
               <i class="fas fa-upload mr-2"></i> BOM Yükle - ${otpaNumber}
             </h2>
-            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-times text-2xl"></i>
+            <button onclick="this.closest('.fixed').remove()" 
+              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
 
@@ -1241,8 +1242,9 @@ MAT-003	Nikel Şerit	500	gr"
           <h2 class="text-2xl font-bold gradient-text">
             <i class="fas fa-copy mr-2"></i> Yeni BOM Şablonu
           </h2>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times text-2xl"></i>
+          <button onclick="this.closest('.fixed').remove()" 
+            class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+            <i class="fas fa-times text-3xl"></i>
           </button>
         </div>
 
@@ -1347,8 +1349,9 @@ MAT-003	Nikel Şerit	500	gr"
               </h2>
               ${data.template.description ? `<p class="text-sm text-gray-600 mt-1">${data.template.description}</p>` : ''}
             </div>
-            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-times text-2xl"></i>
+            <button onclick="this.closest('.fixed').remove()" 
+              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
 
