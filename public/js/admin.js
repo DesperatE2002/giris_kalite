@@ -299,33 +299,48 @@ const adminPage = {
                 <i class="fas fa-cog mr-2"></i> Component Seçin
               </h3>
               <p class="text-gray-700 mb-4">
-                "${templateName}" şablonu hangi component için yüklensin?
+                BOM şablonu hangi component için yüklensin?
               </p>
               <div class="space-y-3">
-                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'batarya')" 
-                  class="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="batarya"
+                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
                   🔋 Batarya BOM
                 </button>
-                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'vccu')" 
-                  class="w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="vccu"
+                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
                   ⚡ VCCU BOM
                 </button>
-                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'junction_box')" 
-                  class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="junction_box"
+                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
                   📦 Junction Box BOM
                 </button>
-                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'pdu')" 
-                  class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                <button data-otpa-id="${otpaId}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="pdu"
+                  class="apply-template-btn w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
                   🔌 PDU BOM
                 </button>
-                <button onclick="this.closest('.fixed').remove(); adminPage.renderOtpaTab();" 
-                  class="w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+                <button class="cancel-template-btn w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
                   Manuel Yükle
                 </button>
               </div>
             </div>
           `;
           document.body.appendChild(componentModal);
+          
+          // Event listeners ekle
+          componentModal.querySelectorAll('.apply-template-btn').forEach(btn => {
+            btn.onclick = () => {
+              const otpaId = btn.dataset.otpaId;
+              const templateId = btn.dataset.templateId;
+              const templateName = btn.dataset.templateName;
+              const component = btn.dataset.component;
+              this.applyTemplateToNewOtpa(otpaId, templateId, templateName, component);
+            };
+          });
+          
+          componentModal.querySelector('.cancel-template-btn').onclick = () => {
+            componentModal.remove();
+            this.renderOtpaTab();
+          };
         } else {
           alert('✅ OTPA başarıyla oluşturuldu! BOM yüklemek için "BOM Yükle" butonuna tıklayın.');
           modal.remove();
@@ -688,27 +703,26 @@ MAT-003	Nikel Şerit	500	gr"
           <i class="fas fa-cog mr-2"></i> Component Seçin
         </h3>
         <p class="text-gray-700 mb-4">
-          "${templateName}" şablonu hangi component için yüklensin?
+          BOM şablonu hangi component için yüklensin?
         </p>
         <div class="space-y-3">
-          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'batarya')" 
-            class="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="batarya"
+            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
             🔋 Batarya BOM
           </button>
-          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'vccu')" 
-            class="w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="vccu"
+            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
             ⚡ VCCU BOM
           </button>
-          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'junction_box')" 
-            class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="junction_box"
+            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
             📦 Junction Box BOM
           </button>
-          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'pdu')" 
-            class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+          <button data-otpa-id="${otpaId}" data-otpa-number="${otpaNumber}" data-template-id="${templateId}" data-template-name="${templateName.replace(/"/g, '&quot;')}" data-component="pdu"
+            class="confirm-apply-btn w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
             🔌 PDU BOM
           </button>
-          <button onclick="this.closest('.fixed').remove()" 
-            class="w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+          <button class="cancel-modal-btn w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
             İptal
           </button>
         </div>
@@ -716,6 +730,22 @@ MAT-003	Nikel Şerit	500	gr"
     `;
     
     document.body.appendChild(componentModal);
+    
+    // Event listeners ekle
+    componentModal.querySelectorAll('.confirm-apply-btn').forEach(btn => {
+      btn.onclick = () => {
+        const otpaId = btn.dataset.otpaId;
+        const otpaNumber = btn.dataset.otpaNumber;
+        const templateId = btn.dataset.templateId;
+        const templateName = btn.dataset.templateName;
+        const component = btn.dataset.component;
+        this.confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, component);
+      };
+    });
+    
+    componentModal.querySelector('.cancel-modal-btn').onclick = () => {
+      componentModal.remove();
+    };
   },
 
   async confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, componentType) {
