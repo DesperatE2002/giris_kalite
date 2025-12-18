@@ -14,13 +14,16 @@ router.get('/pending', authenticateToken, authorizeRoles('kalite', 'admin'), asy
         o.project_name,
         b.material_name,
         b.unit,
+        b.component_type,
         u.full_name as created_by_name,
         qr.id as quality_id,
         qr.status as quality_status
       FROM goods_receipt gr
       JOIN quality_results qr ON gr.id = qr.receipt_id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id 
+        AND gr.material_code = b.material_code 
+        AND gr.component_type = b.component_type
       LEFT JOIN users u ON gr.created_by = u.id
       WHERE qr.status = 'bekliyor'
       ORDER BY gr.created_at ASC

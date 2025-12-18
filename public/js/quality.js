@@ -115,26 +115,53 @@ const qualityPage = {
   },
 
   renderPendingItem(item) {
+    const componentIcons = {
+      'batarya': '🔋',
+      'vccu': '⚡',
+      'junction_box': '📦',
+      'pdu': '🔌'
+    };
+    const componentLabels = {
+      'batarya': 'Batarya',
+      'vccu': 'VCCU',
+      'junction_box': 'Junction Box',
+      'pdu': 'PDU'
+    };
+    const componentColors = {
+      'batarya': 'bg-green-100 text-green-800',
+      'vccu': 'bg-yellow-100 text-yellow-800',
+      'junction_box': 'bg-blue-100 text-blue-800',
+      'pdu': 'bg-purple-100 text-purple-800'
+    };
+    
     return `
-      <div class="border rounded-lg p-6 hover:bg-gray-50 transition">
+      <div class="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${
+        item.component_type === 'batarya' ? 'border-green-200 bg-green-50/30' :
+        item.component_type === 'vccu' ? 'border-yellow-200 bg-yellow-50/30' :
+        item.component_type === 'junction_box' ? 'border-blue-200 bg-blue-50/30' :
+        item.component_type === 'pdu' ? 'border-purple-200 bg-purple-50/30' : 'border-gray-200'
+      }">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <!-- Item Info -->
           <div class="flex-1">
-            <div class="flex items-center mb-2">
-              <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mr-3">
+            <div class="flex items-center mb-3 flex-wrap gap-2">
+              <span class="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900 rounded-full text-sm font-bold">
                 ${item.otpa_number}
+              </span>
+              <span class="px-3 py-1 ${componentColors[item.component_type] || 'bg-gray-100 text-gray-800'} rounded-full text-sm font-bold">
+                ${componentIcons[item.component_type] || '❓'} ${componentLabels[item.component_type] || item.component_type}
               </span>
               <span class="text-gray-600 text-sm">${item.project_name}</span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
               <div>
                 <div class="text-sm text-gray-500">Malzeme</div>
-                <div class="font-medium text-gray-900">${item.material_code}</div>
+                <div class="font-bold text-gray-900">${item.material_code}</div>
                 <div class="text-xs text-gray-600">${item.material_name}</div>
               </div>
               <div>
                 <div class="text-sm text-gray-500">Gelen Miktar</div>
-                <div class="font-bold text-lg text-gray-900">${item.received_quantity} ${item.unit}</div>
+                <div class="font-bold text-2xl gradient-text">${item.received_quantity} ${item.unit}</div>
               </div>
               <div>
                 <div class="text-sm text-gray-500">Giriş Tarihi</div>
