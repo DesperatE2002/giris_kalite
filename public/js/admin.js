@@ -173,53 +173,88 @@ const adminPage = {
     }
   },
 
-  showCreateOtpaModal() {
+  async showCreateOtpaModal() {
+    let templates = [];
+    try {
+      templates = await api.bomTemplates.list();
+    } catch (error) {
+      console.warn('Templates not available:', error);
+    }
+
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+      <div class="glass-card rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
-          <h2 class="text-2xl font-bold mb-4">Yeni OTPA Oluştur</h2>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold gradient-text">
+              <i class="fas fa-plus-circle mr-2"></i> Yeni OTPA Oluştur
+            </h2>
+            <button onclick="this.closest('.fixed').remove()" 
+              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              <i class="fas fa-times text-3xl"></i>
+            </button>
+          </div>
           <form id="createOtpaForm" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">OTPA Numarası *</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">OTPA Numarası *</label>
               <input type="text" id="otpaNumber" required 
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Örn: OTPA-2025-001">
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium"
+                placeholder="Örn: OA20489">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Proje Adı *</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Proje Adı *</label>
               <input type="text" id="projectName" required 
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Örn: Batarya Paketi A">
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                placeholder="Örn: FRANSA-LİTVANYA">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Müşteri Bilgisi</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Müşteri Bilgisi</label>
               <input type="text" id="customerInfo" 
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Örn: ABC Şirketi">
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                placeholder="Örn: LİTVANYA MD9">
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Batarya Paket Sayısı *</label>
-              <input type="number" id="batteryPackCount" required min="1" value="1"
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="BOM'daki miktarlar bu sayı ile çarpılacak">
-              <p class="text-xs text-gray-500 mt-1">ℹ️ BOM'daki tüm malzeme miktarları bu sayı ile çarpılır</p>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Batarya Paket Sayısı *</label>
+              <input type="number" id="batteryPackCount" required min="1" value="8"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium text-lg">
+              <p class="text-xs text-gray-600 mt-1">
+                <i class="fas fa-info-circle text-blue-500 mr-1"></i> Batarya BOM'daki miktarlar bu sayı ile çarpılır
+              </p>
             </div>
+            ${templates.length > 0 ? `
+              <div class="glass-card rounded-xl p-4 border-2 border-purple-300">
+                <label class="block text-sm font-bold text-gray-900 mb-2">
+                  <i class="fas fa-rocket text-purple-600 mr-2"></i> BOM Şablonu Seç (Opsiyonel)
+                </label>
+                <select id="templateSelect" 
+                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
+                  <option value="">Şablon seçme (sonra manuel yükle)</option>
+                  ${templates.map(t => `
+                    <option value="${t.id}">${t.template_name} (${t.item_count} malzeme)</option>
+                  `).join('')}
+                </select>
+                <p class="text-xs text-gray-600 mt-2">
+                  <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
+                  Şablon seçerseniz OTPA oluşturulurken otomatik BOM yüklenecek
+                </p>
+              </div>
+            ` : ''}
             <div>
-              <label class="block text-sm font-medium mb-2">Durum</label>
-              <select id="status" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Durum</label>
+              <select id="status" 
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
                 <option value="acik">Açık</option>
                 <option value="uretimde">Üretimde</option>
                 <option value="kapali">Kapalı</option>
               </select>
             </div>
             <div class="flex gap-3 pt-4">
-              <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                <i class="fas fa-save mr-2"></i> Oluştur
+              <button type="submit" class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg">
+                <i class="fas fa-save mr-2"></i> OTPA Oluştur
               </button>
               <button type="button" onclick="this.closest('.fixed').remove()" 
-                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
                 İptal
               </button>
             </div>
@@ -236,16 +271,28 @@ const adminPage = {
       try {
         showLoading(true);
         
-        await api.otpa.create({
+        const otpaData = {
           otpa_number: modal.querySelector('#otpaNumber').value,
           project_name: modal.querySelector('#projectName').value,
           customer_info: modal.querySelector('#customerInfo').value,
           battery_pack_count: parseInt(modal.querySelector('#batteryPackCount').value) || 1,
           status: modal.querySelector('#status').value
-        });
+        };
+
+        const result = await api.otpa.create(otpaData);
+        const otpaId = result.otpa?.id || result.id;
+
+        // If template selected, apply it
+        const templateSelect = modal.querySelector('#templateSelect');
+        if (templateSelect && templateSelect.value) {
+          const templateId = templateSelect.value;
+          await api.bomTemplates.applyToOtpa(templateId, otpaId);
+          alert(`✅ OTPA başarıyla oluşturuldu ve BOM şablonu uygulandı!`);
+        } else {
+          alert('✅ OTPA başarıyla oluşturuldu! BOM yüklemek için "BOM Yükle" butonuna tıklayın.');
+        }
 
         modal.remove();
-        alert('✅ OTPA başarıyla oluşturuldu!');
         this.renderOtpaTab();
       } catch (error) {
         alert('Hata: ' + error.message);
@@ -1240,15 +1287,13 @@ MAT-003	Nikel Şerit	500	gr"
   },
 
   async showCreateTemplateModal() {
-    const otpaList = await api.otpa.list();
-    
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
     modal.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="glass-card rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold gradient-text">
-            <i class="fas fa-copy mr-2"></i> Yeni BOM Şablonu
+            <i class="fas fa-copy mr-2"></i> Yeni BOM Şablonu Oluştur
           </h2>
           <button onclick="this.closest('.fixed').remove()" 
             class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
@@ -1261,23 +1306,164 @@ MAT-003	Nikel Şerit	500	gr"
             <label class="block text-sm font-semibold text-gray-700 mb-2">Şablon Adı *</label>
             <input type="text" id="templateName" required
               placeholder="Örn: MD9 Amphenol Batarya BOM"
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
           </div>
 
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">Açıklama</label>
             <textarea id="templateDescription" rows="2"
-              placeholder="Bu şablonun ne için kullanılacağını açıklayın..."
+              placeholder="Şablon hakkında not (opsiyonel)"
               class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"></textarea>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">BOM Kaynağı Seçin *</label>
-            <select id="sourceOtpa" required
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
-              <option value="">OTPA seçin...</option>
-              ${otpaList.map(otpa => `
-                <option value="${otpa.id}">${otpa.otpa_number} - ${otpa.project_name} (${otpa.total_items || 0} malzeme)</option>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">BOM Verileri (Excel'den Ctrl+V ile yapıştırın) *</label>
+            <textarea id="templateBomData" rows="12" required 
+              placeholder="Excel'den kopyalanan verileri buraya yapıştırın...
+Örnek (TAB ile ayrılmış):
+MAT-001	Lityum Hücre 18650	100	adet
+MAT-002	BMS Kartı	10	adet
+MAT-003	Nikel Şerit	500	gr"
+              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm transition-all duration-200"></textarea>
+            <p class="text-xs text-gray-600 mt-2">
+              <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
+              4 sütun: Malzeme Kodu | Malzeme Adı | Miktar | Birim
+            </p>
+          </div>
+
+          <div id="templatePreviewContainer" class="hidden">
+            <h4 class="font-semibold mb-2 text-gray-900">Önizleme:</h4>
+            <div class="glass-card rounded-xl overflow-hidden">
+              <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Kodu</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Adı</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Miktar</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Birim</th>
+                  </tr>
+                </thead>
+                <tbody id="templatePreviewBody" class="bg-white divide-y divide-gray-200">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="button" id="templatePreviewBtn" 
+              class="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 shadow-lg transition">
+              <i class="fas fa-eye mr-2"></i> Önizle
+            </button>
+            <button type="submit" 
+              class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg">
+              <i class="fas fa-save mr-2"></i> Şablonu Kaydet
+            </button>
+            <button type="button" onclick="this.closest('.fixed').remove()" 
+              class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+              İptal
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Preview button
+    document.getElementById('templatePreviewBtn').onclick = () => {
+      const bomData = document.getElementById('templateBomData').value.trim();
+      
+      if (!bomData) {
+        alert('Lütfen BOM verilerini yapıştırın');
+        return;
+      }
+
+      const lines = bomData.split('\n').filter(line => line.trim());
+      const items = [];
+      
+      for (const line of lines) {
+        const parts = line.split('\t');
+        if (parts.length >= 4) {
+          items.push({
+            material_code: parts[0].trim(),
+            material_name: parts[1].trim(),
+            quantity: parseFloat(parts[2].trim()),
+            unit: parts[3].trim()
+          });
+        }
+      }
+
+      if (items.length === 0) {
+        alert('Geçerli BOM verisi bulunamadı. Format: Malzeme Kodu [TAB] Malzeme Adı [TAB] Miktar [TAB] Birim');
+        return;
+      }
+
+      const previewBody = document.getElementById('templatePreviewBody');
+      previewBody.innerHTML = items.map(item => `
+        <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200">
+          <td class="px-4 py-3 font-semibold text-gray-900">${item.material_code}</td>
+          <td class="px-4 py-3 text-gray-700">${item.material_name}</td>
+          <td class="px-4 py-3 font-semibold text-gray-900">${item.quantity}</td>
+          <td class="px-4 py-3 text-gray-600">${item.unit}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('templatePreviewContainer').classList.remove('hidden');
+    };
+
+    // Form submit
+    document.getElementById('createTemplateForm').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const templateName = document.getElementById('templateName').value.trim();
+      const description = document.getElementById('templateDescription').value.trim();
+      const bomData = document.getElementById('templateBomData').value.trim();
+
+      if (!bomData) {
+        alert('Lütfen BOM verilerini yapıştırın');
+        return;
+      }
+
+      const lines = bomData.split('\n').filter(line => line.trim());
+      const items = [];
+      
+      for (const line of lines) {
+        const parts = line.split('\t');
+        if (parts.length >= 4) {
+          items.push({
+            material_code: parts[0].trim(),
+            material_name: parts[1].trim(),
+            quantity: parseFloat(parts[2].trim()),
+            unit: parts[3].trim()
+          });
+        }
+      }
+
+      if (items.length === 0) {
+        alert('Geçerli BOM verisi bulunamadı');
+        return;
+      }
+
+      try {
+        showLoading(true);
+        
+        await api.bomTemplates.create({
+          template_name: templateName,
+          description: description || null,
+          items: items
+        });
+
+        modal.remove();
+        alert(`✅ "${templateName}" şablonu başarıyla oluşturuldu! (${items.length} malzeme)`);
+        this.renderBomTemplatesTab();
+        
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    };
+  },
               `).join('')}
             </select>
             <p class="text-xs text-gray-500 mt-1">Şablon olarak kaydetmek istediğiniz BOM'a sahip OTPA'yı seçin</p>
