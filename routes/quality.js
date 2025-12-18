@@ -210,7 +210,7 @@ router.get('/returns', authenticateToken, async (req, res) => {
       LEFT JOIN otpa o ON gr.otpa_id = o.id
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
       LEFT JOIN users u ON qr.decision_by = u.id
-      WHERE qr.status = 'iade'
+      WHERE qr.status IN ('red', 'iade')
       ORDER BY qr.decision_date DESC
     `);
 
@@ -282,7 +282,7 @@ router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin
     // Quality result'ı güncelle
     await pool.query(`
       UPDATE quality_results
-      SET status = 'iade',
+      SET status = 'red',
           accepted_quantity = accepted_quantity - ?,
           rejected_quantity = rejected_quantity + ?,
           reason = ?,
