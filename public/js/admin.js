@@ -256,7 +256,15 @@ const adminPage = {
   },
 
   async showBomUploadModal(otpaId, otpaNumber) {
-    const templates = await api.bomTemplates.list();
+    let templates = [];
+    
+    // Try to get templates, but continue if it fails
+    try {
+      templates = await api.bomTemplates.list();
+    } catch (error) {
+      console.warn('BOM templates not available:', error);
+      // Continue without templates
+    }
     
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
