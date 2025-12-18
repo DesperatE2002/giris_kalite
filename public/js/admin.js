@@ -1464,68 +1464,6 @@ MAT-003	Nikel Şerit	500	gr"
       }
     };
   },
-              `).join('')}
-            </select>
-            <p class="text-xs text-gray-500 mt-1">Şablon olarak kaydetmek istediğiniz BOM'a sahip OTPA'yı seçin</p>
-          </div>
-
-          <div class="flex gap-3 pt-4">
-            <button type="submit" 
-              class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg">
-              <i class="fas fa-save mr-2"></i> Şablonu Kaydet
-            </button>
-            <button type="button" onclick="this.closest('.fixed').remove()" 
-              class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
-              İptal
-            </button>
-          </div>
-        </form>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    document.getElementById('createTemplateForm').onsubmit = async (e) => {
-      e.preventDefault();
-      
-      const templateName = document.getElementById('templateName').value;
-      const description = document.getElementById('templateDescription').value;
-      const sourceOtpaId = document.getElementById('sourceOtpa').value;
-
-      try {
-        showLoading(true);
-        
-        // Get BOM items from source OTPA
-        const bomData = await api.bom.get(sourceOtpaId);
-        
-        if (!bomData.items || bomData.items.length === 0) {
-          alert('Seçilen OTPA\'da BOM bulunmuyor!');
-          return;
-        }
-
-        // Create template
-        await api.bomTemplates.create({
-          template_name: templateName,
-          description: description || null,
-          items: bomData.items.map(item => ({
-            material_code: item.material_code,
-            material_name: item.material_name,
-            quantity: item.quantity,
-            unit: item.unit
-          }))
-        });
-
-        modal.remove();
-        alert(`✅ "${templateName}" şablonu başarıyla oluşturuldu!`);
-        this.renderBomTemplatesTab();
-        
-      } catch (error) {
-        alert('Hata: ' + error.message);
-      } finally {
-        showLoading(false);
-      }
-    };
-  },
 
   async viewTemplateDetail(templateId, templateName) {
     try {
