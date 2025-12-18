@@ -1,5 +1,7 @@
 // Quality Control Page
 const qualityPage = {
+  currentTab: 'pending',
+
   async render() {
     if (!authManager.isKalite()) {
       document.getElementById('content').innerHTML = `
@@ -11,48 +13,98 @@ const qualityPage = {
     }
 
     const content = document.getElementById('content');
+    content.innerHTML = `
+      <div class="space-y-6">
+        <!-- Page Header -->
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-check-circle text-green-600 mr-2"></i> Kalite Kontrol
+          </h1>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200">
+          <nav class="flex space-x-8">
+            <button onclick="qualityPage.switchTab('pending')" data-tab="pending"
+              class="quality-tab py-4 px-1 border-b-2 font-medium text-sm">
+              <i class="fas fa-clock mr-2"></i> Bekleyen Kontroller
+            </button>
+            <button onclick="qualityPage.switchTab('returns')" data-tab="returns"
+              class="quality-tab py-4 px-1 border-b-2 font-medium text-sm">
+              <i class="fas fa-undo mr-2"></i> İade Yönetimi
+            </button>
+          </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="qualityTabContent"></div>
+      </div>
+    `;
+
+    this.switchTab('pending');
+  },
+
+  switchTab(tab) {
+    this.currentTab = tab;
+    
+    // Update tab styling
+    document.querySelectorAll('.quality-tab').forEach(btn => {
+      if (btn.dataset.tab === tab) {
+        btn.classList.add('border-blue-500', 'text-blue-600');
+        btn.classList.remove('border-transparent', 'text-gray-500');
+      } else {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+      }
+    });
+
+    // Render tab content
+    switch (tab) {
+      case 'pending':
+        this.renderPendingTab();
+        break;
+      case 'returns':
+        this.renderReturnsTab();
+        break;
+    }
+  },
+
+  async renderPendingTab() {
+    const container = document.getElementById('qualityTabContent');
     
     try {
       showLoading(true);
       const pending = await api.quality.pending();
 
-      content.innerHTML = `
-        <div class="space-y-6">
-          <!-- Page Header -->
-          <div class="flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-900">
-              <i class="fas fa-check-circle text-green-600 mr-2"></i> Kalite Kontrol
-            </h1>
-            <div class="text-sm text-gray-600">
-              <i class="fas fa-clock mr-1"></i> ${pending.length} kayıt bekliyor
-            </div>
-          </div>
-
-          <!-- Pending Quality Checks -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
+      container.innerHTML = `
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
               <h2 class="text-xl font-semibold text-gray-900">
                 <i class="fas fa-list-check mr-2"></i> Kalite Bekleyen Kayıtlar
               </h2>
+              <div class="text-sm text-gray-600">
+                <i class="fas fa-clock mr-1"></i> ${pending.length} kayıt bekliyor
+              </div>
             </div>
-            <div class="p-6">
-              ${pending.length === 0 ? `
-                <div class="text-center py-12">
-                  <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
-                  <h3 class="text-xl font-semibold text-gray-900 mb-2">Tüm kayıtlar işlendi!</h3>
-                  <p class="text-gray-600">Şu anda kalite bekleyen giriş kaydı bulunmuyor.</p>
-                </div>
-              ` : `
-                <div class="space-y-4">
-                  ${pending.map(item => this.renderPendingItem(item)).join('')}
-                </div>
-              `}
-            </div>
+          </div>
+          <div class="p-6">
+            ${pending.length === 0 ? `
+              <div class="text-center py-12">
+                <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Tüm kayıtlar işlendi!</h3>
+                <p class="text-gray-600">Şu anda kalite bekleyen giriş kaydı bulunmuyor.</p>
+              </div>
+            ` : `
+              <div class="space-y-4">
+                ${pending.map(item => this.renderPendingItem(item)).join('')}
+              </div>
+            `}
           </div>
         </div>
       `;
     } catch (error) {
-      content.innerHTML = `
+      container.innerHTML = `
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
         </div>
@@ -253,6 +305,263 @@ const qualityPage = {
         showLoading(false);
       }
     };
+  },
+
+  async renderReturnsTab() {
+    const container = document.getElementById('qualityTabContent');
+    
+    try {
+      showLoading(true);
+      
+      // Get all returns
+      const returns = await api.request('/quality/returns');
+      
+      container.innerHTML = `
+        <div class="space-y-6">
+          <!-- Create Return Button -->
+          <div>
+            <button onclick="qualityPage.showCreateReturnModal()" 
+              class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition">
+              <i class="fas fa-plus mr-2"></i> Yeni İade Oluştur
+            </button>
+          </div>
+
+          <!-- Returns List -->
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b bg-red-50">
+              <h3 class="text-lg font-semibold text-red-800">
+                <i class="fas fa-undo mr-2"></i> İade Edilmiş Malzemeler
+              </h3>
+              <p class="text-sm text-red-600 mt-1">Montaj veya başka sebeplerle iade edilen malzemeler</p>
+            </div>
+            <div class="overflow-x-auto">
+              ${returns.length === 0 ? `
+                <div class="px-6 py-12 text-center text-gray-500">
+                  <i class="fas fa-box-open text-4xl mb-4"></i>
+                  <p>Henüz iade kaydı bulunmuyor</p>
+                </div>
+              ` : `
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Miktarı</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sebep</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İade Eden</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    ${returns.map(item => `
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">${new Date(item.decision_date || item.created_at).toLocaleString('tr-TR')}</td>
+                        <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
+                        <td class="px-6 py-4 text-sm">${item.project_name || ''}</td>
+                        <td class="px-6 py-4">
+                          <div class="font-medium">${item.material_code}</div>
+                          <div class="text-xs text-gray-500">${item.material_name || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                          <span class="font-bold text-red-600">${item.rejected_quantity} ${item.unit || ''}</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate" title="${item.reason || ''}">${item.reason || '-'}</td>
+                        <td class="px-6 py-4 text-sm">${item.decision_by_name || 'Sistem'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      container.innerHTML = `
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
+        </div>
+      `;
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async showCreateReturnModal() {
+    try {
+      showLoading(true);
+      
+      // Get all OTPAs and their accepted materials
+      const otpas = await api.otpa.list();
+      
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+      modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4">
+              <i class="fas fa-undo mr-2 text-red-600"></i> Yeni İade Oluştur
+            </h2>
+            <p class="text-sm text-gray-600 mb-6">Montaj veya diğer sebeplerle kabul edilmiş bir malzemeyi iade edin</p>
+            
+            <form id="createReturnForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">OTPA Seç *</label>
+                <select id="returnOtpaId" required 
+                  class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500">
+                  <option value="">-- OTPA Seçin --</option>
+                  ${otpas.map(otpa => `
+                    <option value="${otpa.id}">${otpa.otpa_number} - ${otpa.project_name}</option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div id="materialsSection" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Malzeme Seç *</label>
+                <select id="returnReceiptId" required 
+                  class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500">
+                  <option value="">-- Önce OTPA seçin --</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Sadece kabul edilmiş malzemeler listelenir</p>
+              </div>
+
+              <div id="quantitySection" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">İade Miktarı *</label>
+                <input type="number" id="returnQuantity" step="0.01" min="0.01" required
+                  class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500">
+                <p id="maxQuantityHint" class="text-xs text-gray-500 mt-1"></p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">İade Sebebi *</label>
+                <textarea id="returnReason" rows="3" required
+                  class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                  placeholder="Örn: Montajda uyumsuzluk tespit edildi"></textarea>
+              </div>
+
+              <div class="flex gap-3 pt-4">
+                <button type="submit" 
+                  class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                  <i class="fas fa-undo mr-2"></i> İade Oluştur
+                </button>
+                <button type="button" onclick="this.closest('.fixed').remove()" 
+                  class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                  İptal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      showLoading(false);
+
+      // Setup form logic
+      const otpaSelect = modal.querySelector('#returnOtpaId');
+      const materialsSection = modal.querySelector('#materialsSection');
+      const receiptSelect = modal.querySelector('#returnReceiptId');
+      const quantitySection = modal.querySelector('#quantitySection');
+      const quantityInput = modal.querySelector('#returnQuantity');
+      const maxQuantityHint = modal.querySelector('#maxQuantityHint');
+
+      otpaSelect.addEventListener('change', async (e) => {
+        const otpaId = e.target.value;
+        
+        if (!otpaId) {
+          materialsSection.classList.add('hidden');
+          quantitySection.classList.add('hidden');
+          return;
+        }
+
+        try {
+          showLoading(true);
+          
+          // Get accepted materials for this OTPA
+          const accepted = await api.request(`/quality/accepted-materials/${otpaId}`);
+          
+          receiptSelect.innerHTML = `
+            <option value="">-- Malzeme Seçin --</option>
+            ${accepted.map(item => `
+              <option value="${item.receipt_id}" 
+                data-accepted="${item.accepted_quantity}" 
+                data-unit="${item.unit || ''}">
+                ${item.material_code} - ${item.material_name} (Kabul: ${item.accepted_quantity} ${item.unit || ''})
+              </option>
+            `).join('')}
+          `;
+          
+          materialsSection.classList.remove('hidden');
+          
+          if (accepted.length === 0) {
+            receiptSelect.innerHTML = '<option value="">Bu OTPA için kabul edilmiş malzeme yok</option>';
+          }
+          
+        } catch (error) {
+          alert('Hata: ' + error.message);
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      receiptSelect.addEventListener('change', (e) => {
+        const selected = e.target.selectedOptions[0];
+        if (!selected || !selected.value) {
+          quantitySection.classList.add('hidden');
+          return;
+        }
+
+        const maxQty = parseFloat(selected.dataset.accepted);
+        const unit = selected.dataset.unit;
+        
+        quantityInput.max = maxQty;
+        quantityInput.value = maxQty;
+        maxQuantityHint.textContent = `Maksimum: ${maxQty} ${unit}`;
+        
+        quantitySection.classList.remove('hidden');
+      });
+
+      // Form submit
+      modal.querySelector('#createReturnForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const receiptId = receiptSelect.value;
+        const quantity = parseFloat(quantityInput.value);
+        const reason = modal.querySelector('#returnReason').value;
+        
+        if (!receiptId || !quantity || !reason) {
+          alert('Lütfen tüm alanları doldurun');
+          return;
+        }
+
+        try {
+          showLoading(true);
+          
+          await api.request('/quality/manual-return', {
+            method: 'POST',
+            body: JSON.stringify({
+              receipt_id: receiptId,
+              return_quantity: quantity,
+              reason: reason
+            })
+          });
+
+          modal.remove();
+          alert('✅ İade başarıyla oluşturuldu!');
+          this.renderReturnsTab();
+          
+        } catch (error) {
+          alert('Hata: ' + error.message);
+        } finally {
+          showLoading(false);
+        }
+      };
+      
+    } catch (error) {
+      alert('Hata: ' + error.message);
+      showLoading(false);
+    }
   }
 };
 

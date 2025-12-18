@@ -187,4 +187,120 @@ router.get('/', authenticateToken, authorizeRoles('kalite', 'admin'), async (req
   }
 });
 
+// İade edilmiş malzemeleri listele
+router.get('/returns', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        gr.id,
+        gr.material_code,
+        gr.received_quantity,
+        gr.receipt_date,
+        gr.created_at,
+        o.otpa_number,
+        o.project_name,
+        b.material_name,
+        b.unit,
+        qr.rejected_quantity,
+        qr.reason,
+        qr.decision_date,
+        u.full_name as decision_by_name
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      LEFT JOIN otpa o ON gr.otpa_id = o.id
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN users u ON qr.decision_by = u.id
+      WHERE qr.status = 'iade'
+      ORDER BY qr.decision_date DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('İade listesi hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// Kabul edilmiş malzemeleri getir (iade için)
+router.get('/accepted-materials/:otpaId', authenticateToken, async (req, res) => {
+  try {
+    const { otpaId } = req.params;
+
+    const result = await pool.query(`
+      SELECT 
+        gr.id as receipt_id,
+        gr.material_code,
+        b.material_name,
+        b.unit,
+        qr.accepted_quantity
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      WHERE gr.otpa_id = ? 
+        AND qr.status = 'kabul'
+        AND qr.accepted_quantity > 0
+      ORDER BY gr.receipt_date DESC
+    `, [otpaId]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Kabul edilmiş malzemeler hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// Manuel iade oluştur
+router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+  try {
+    const { receipt_id, return_quantity, reason } = req.body;
+
+    if (!receipt_id || !return_quantity || !reason) {
+      return res.status(400).json({ error: 'Eksik bilgi' });
+    }
+
+    // Mevcut quality result'ı kontrol et
+    const existing = await pool.query(`
+      SELECT qr.*, gr.received_quantity
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE qr.receipt_id = ?
+    `, [receipt_id]);
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Kalite kaydı bulunamadı' });
+    }
+
+    const currentRecord = existing.rows[0];
+
+    // Kabul edilmiş miktardan fazla iade edilemez
+    if (return_quantity > currentRecord.accepted_quantity) {
+      return res.status(400).json({ 
+        error: `İade miktarı kabul edilmiş miktardan fazla olamaz (Maks: ${currentRecord.accepted_quantity})` 
+      });
+    }
+
+    // Quality result'ı güncelle
+    await pool.query(`
+      UPDATE quality_results
+      SET status = 'iade',
+          accepted_quantity = accepted_quantity - ?,
+          rejected_quantity = rejected_quantity + ?,
+          reason = ?,
+          decision_by = ?,
+          decision_date = NOW(),
+          updated_at = NOW()
+      WHERE receipt_id = ?
+    `, [return_quantity, return_quantity, reason, req.user.id, receipt_id]);
+
+    res.json({ 
+      message: 'İade başarıyla oluşturuldu',
+      returned_quantity: return_quantity 
+    });
+
+  } catch (error) {
+    console.error('Manuel iade hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 export default router;
