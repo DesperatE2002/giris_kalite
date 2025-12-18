@@ -204,20 +204,22 @@ router.get('/returns', authenticateToken, async (req, res) => {
         qr.rejected_quantity,
         qr.reason,
         qr.decision_date,
+        qr.status as quality_status,
         u.full_name as decision_by_name
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
       LEFT JOIN users u ON qr.decision_by = u.id
-      WHERE qr.status IN ('red', 'iade')
-      ORDER BY qr.decision_date DESC
+      WHERE qr.status = 'red' AND qr.rejected_quantity > 0
+      ORDER BY qr.decision_date DESC NULLS LAST
     `);
 
     res.json(result.rows);
   } catch (error) {
     console.error('İade listesi hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
   }
 });
 

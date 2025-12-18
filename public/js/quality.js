@@ -317,22 +317,22 @@ const qualityPage = {
       const returns = await api.request('/quality/returns');
       
       container.innerHTML = `
-        <div class="space-y-6">
+        <div class="space-y-6 fade-in">
           <!-- Create Return Button -->
           <div>
             <button onclick="qualityPage.showCreateReturnModal()" 
-              class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition">
+              class="gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 hover-lift">
               <i class="fas fa-plus mr-2"></i> Yeni İade Oluştur
             </button>
           </div>
 
           <!-- Returns List -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b bg-red-50">
-              <h3 class="text-lg font-semibold text-red-800">
+          <div class="glass-card rounded-2xl shadow-xl">
+            <div class="px-6 py-4 border-b border-red-200 bg-gradient-to-r from-red-50 to-pink-50">
+              <h3 class="text-xl font-bold text-red-800">
                 <i class="fas fa-undo mr-2"></i> İade Edilmiş Malzemeler
               </h3>
-              <p class="text-sm text-red-600 mt-1">Montaj veya başka sebeplerle iade edilen malzemeler</p>
+              <p class="text-sm text-red-600 mt-1 font-medium">Montaj veya başka sebeplerle iade edilen malzemeler</p>
             </div>
             <div class="overflow-x-auto">
               ${returns.length === 0 ? `
@@ -342,32 +342,32 @@ const qualityPage = {
                 </div>
               ` : `
                 <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
+                  <thead class="bg-gradient-to-r from-red-50 to-pink-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Miktarı</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sebep</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İade Eden</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tarih</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">OTPA</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Proje</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Malzeme</th>
+                      <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">İade Miktarı</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Sebep</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">İade Eden</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-200">
                     ${returns.map(item => `
-                      <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">${new Date(item.decision_date || item.created_at).toLocaleString('tr-TR')}</td>
-                        <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
-                        <td class="px-6 py-4 text-sm">${item.project_name || ''}</td>
+                      <tr class="hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${new Date(item.decision_date || item.created_at).toLocaleString('tr-TR')}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-900">${item.otpa_number}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-700">${item.project_name || ''}</td>
                         <td class="px-6 py-4">
-                          <div class="font-medium">${item.material_code}</div>
-                          <div class="text-xs text-gray-500">${item.material_name || ''}</div>
+                          <div class="font-semibold text-gray-900">${item.material_code}</div>
+                          <div class="text-xs text-gray-600">${item.material_name || ''}</div>
                         </td>
                         <td class="px-6 py-4 text-right">
-                          <span class="font-bold text-red-600">${item.rejected_quantity} ${item.unit || ''}</span>
+                          <span class="font-bold text-red-600 text-lg">${item.rejected_quantity} ${item.unit || ''}</span>
                         </td>
-                        <td class="px-6 py-4 text-sm max-w-xs truncate" title="${item.reason || ''}">${item.reason || '-'}</td>
-                        <td class="px-6 py-4 text-sm">${item.decision_by_name || 'Sistem'}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate font-medium text-gray-700" title="${item.reason || ''}">${item.reason || '-'}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-700">${item.decision_by_name || 'Sistem'}</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -378,9 +378,17 @@ const qualityPage = {
         </div>
       `;
     } catch (error) {
+      console.error('Returns tab error:', error);
       container.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
+        <div class="glass-card rounded-2xl border-2 border-red-400 text-red-700 px-6 py-5">
+          <div class="flex items-start">
+            <i class="fas fa-exclamation-circle text-3xl mr-4 mt-1"></i>
+            <div>
+              <h3 class="font-bold text-lg mb-2">Hata Oluştu</h3>
+              <p class="text-red-600 font-medium">${error.message}</p>
+              <p class="text-sm mt-2 text-red-500">Lütfen sayfayı yenileyin veya detay için tarayıcı konsolunu kontrol edin.</p>
+            </div>
+          </div>
         </div>
       `;
     } finally {
