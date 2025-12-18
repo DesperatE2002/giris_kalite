@@ -95,11 +95,11 @@ const app = {
     // Update active navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
       if (btn.dataset.page === page) {
-        btn.classList.add('text-blue-600', 'border-blue-600');
-        btn.classList.remove('text-gray-600', 'border-transparent');
+        btn.classList.add('gradient-btn', 'shadow-lg', 'text-white');
+        btn.classList.remove('text-gray-600', 'border-transparent', 'hover:bg-gray-100');
       } else {
-        btn.classList.remove('text-blue-600', 'border-blue-600');
-        btn.classList.add('text-gray-600', 'border-transparent');
+        btn.classList.remove('gradient-btn', 'shadow-lg', 'text-white');
+        btn.classList.add('text-gray-600', 'hover:bg-gray-100');
       }
     });
 
