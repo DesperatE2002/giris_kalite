@@ -548,6 +548,28 @@ MAT-003	Nikel Şerit	500	gr"
               </h3>
               <p class="text-sm text-red-600 mt-1">Acil tedarik gerektiren malzemeler</p>
             </div>
+            
+            <!-- Filtreleme -->
+            <div class="px-6 py-4 bg-gray-50 border-b">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">OTPA Filtrele</label>
+                  <input type="text" id="filterMissingOtpa" placeholder="OTPA ara..." 
+                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Proje Filtrele</label>
+                  <input type="text" id="filterMissingProject" placeholder="Proje ara..." 
+                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Malzeme Filtrele</label>
+                  <input type="text" id="filterMissingMaterial" placeholder="Malzeme kodu/adı ara..." 
+                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+            </div>
+            
             <div class="overflow-x-auto">
               ${missing.length === 0 ? `
                 <div class="px-6 py-8 text-center text-gray-500">
@@ -567,9 +589,9 @@ MAT-003	Nikel Şerit	500	gr"
                       <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Durum</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-200">
+                  <tbody id="missingMaterialsTable" class="divide-y divide-gray-200">
                     ${missing.map(item => `
-                      <tr class="hover:bg-gray-50">
+                      <tr class="hover:bg-gray-50" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-material="${item.material_code} ${item.material_name}">
                         <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                         <td class="px-6 py-4 text-sm">${item.project_name || ''}</td>
                         <td class="px-6 py-4">
@@ -755,6 +777,46 @@ MAT-003	Nikel Şerit	500	gr"
     } finally {
       showLoading(false);
     }
+    
+    // Filtreleme event listener'larını ekle
+    setTimeout(() => {
+      const filterOtpa = document.getElementById('filterMissingOtpa');
+      const filterProject = document.getElementById('filterMissingProject');
+      const filterMaterial = document.getElementById('filterMissingMaterial');
+      const table = document.getElementById('missingMaterialsTable');
+      
+      if (filterOtpa && filterProject && filterMaterial && table) {
+        const filterTable = () => {
+          const otpaValue = filterOtpa.value.toLowerCase().trim();
+          const projectValue = filterProject.value.toLowerCase().trim();
+          const materialValue = filterMaterial.value.toLowerCase().trim();
+          
+          const rows = table.querySelectorAll('tr');
+          let visibleCount = 0;
+          
+          rows.forEach(row => {
+            const otpa = (row.dataset.otpa || '').toLowerCase();
+            const project = (row.dataset.project || '').toLowerCase();
+            const material = (row.dataset.material || '').toLowerCase();
+            
+            const otpaMatch = !otpaValue || otpa.includes(otpaValue);
+            const projectMatch = !projectValue || project.includes(projectValue);
+            const materialMatch = !materialValue || material.includes(materialValue);
+            
+            if (otpaMatch && projectMatch && materialMatch) {
+              row.style.display = '';
+              visibleCount++;
+            } else {
+              row.style.display = 'none';
+            }
+          });
+        };
+        
+        filterOtpa.addEventListener('input', filterTable);
+        filterProject.addEventListener('input', filterTable);
+        filterMaterial.addEventListener('input', filterTable);
+      }
+    }, 100);
   },
 
   async renderUsersTab() {
