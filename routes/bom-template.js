@@ -9,20 +9,26 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        bt.*,
+        bt.id,
+        bt.template_name,
+        bt.description,
+        bt.created_by,
+        bt.created_at,
+        bt.updated_at,
         u.full_name as created_by_name,
-        COUNT(bti.id) as item_count
+        COUNT(bti.id)::integer as item_count
       FROM bom_templates bt
       LEFT JOIN users u ON bt.created_by = u.id
       LEFT JOIN bom_template_items bti ON bt.id = bti.template_id
-      GROUP BY bt.id, u.full_name
+      GROUP BY bt.id, bt.template_name, bt.description, bt.created_by, bt.created_at, bt.updated_at, u.full_name
       ORDER BY bt.template_name ASC
     `);
 
     res.json(result.rows);
   } catch (error) {
     console.error('BOM şablonları listeleme hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
   }
 });
 
