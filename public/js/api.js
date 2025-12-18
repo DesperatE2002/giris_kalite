@@ -142,9 +142,10 @@ const api = {
     delete: (templateId) => 
       api.request(`/bom-templates/${templateId}`, { method: 'DELETE' }),
     
-    applyToOtpa: (templateId, otpaId) => 
+    applyToOtpa: (templateId, otpaId, componentType) => 
       api.request(`/bom-templates/${templateId}/apply/${otpaId}`, {
-        method: 'POST'
+        method: 'POST',
+        body: JSON.stringify({ component_type: componentType })
       })
   },
 

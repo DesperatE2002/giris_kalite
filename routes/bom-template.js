@@ -197,7 +197,7 @@ router.delete('/:templateId', authenticateToken, authorizeRoles('admin'), async 
   }
 });
 
-// Şablonu OTPA'ya uygula
+// Şablonu OTPA'ya uygula (component_type ile)
 router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   const client = await pool.connect();
   
@@ -205,6 +205,11 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
     await client.query('BEGIN');
 
     const { templateId, otpaId } = req.params;
+    const { component_type } = req.body; // batarya, vccu, junction_box, pdu
+
+    if (!component_type) {
+      return res.status(400).json({ error: 'Component type gereklidir (batarya, vccu, junction_box, pdu)' });
+    }
 
     // OTPA'nın var olduğunu kontrol et
     const otpaCheck = await client.query(`
@@ -224,18 +229,21 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
       return res.status(400).json({ error: 'Şablonda malzeme bulunamadı' });
     }
 
-    // Mevcut BOM'u sil
+    // Mevcut component_type BOM'unu sil
     await client.query(`
-      DELETE FROM bom_items WHERE otpa_id = $1
-    `, [otpaId]);
+      DELETE FROM bom_items WHERE otpa_id = $1 AND component_type = $2
+    `, [otpaId, component_type]);
 
     // Şablon malzemelerini OTPA'ya kopyala
     for (const item of itemsResult.rows) {
       await client.query(`
-        INSERT INTO bom_items (otpa_id, material_code, material_name, quantity, unit)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO bom_items (otpa_id, component_type, material_code, material_name, required_quantity, unit)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (otpa_id, component_type, material_code) 
+        DO UPDATE SET required_quantity = EXCLUDED.required_quantity, material_name = EXCLUDED.material_name, unit = EXCLUDED.unit
       `, [
         otpaId,
+        component_type,
         item.material_code,
         item.material_name,
         item.quantity,
@@ -246,8 +254,9 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
     await client.query('COMMIT');
 
     res.json({
-      message: 'BOM şablonu başarıyla uygulandı',
-      item_count: itemsResult.rows.length
+      message: `BOM şablonu ${component_type} için başarıyla uygulandı`,
+      item_count: itemsResult.rows.length,
+      component_type: component_type
     });
   } catch (error) {
     await client.query('ROLLBACK');

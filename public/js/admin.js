@@ -282,18 +282,55 @@ const adminPage = {
         const result = await api.otpa.create(otpaData);
         const otpaId = result.otpa?.id || result.id;
 
-        // If template selected, apply it
+        // If template selected, apply it with component type selection
         const templateSelect = modal.querySelector('#templateSelect');
         if (templateSelect && templateSelect.value) {
           const templateId = templateSelect.value;
-          await api.bomTemplates.applyToOtpa(templateId, otpaId);
-          alert(`✅ OTPA başarıyla oluşturuldu ve BOM şablonu uygulandı!`);
+          const templateName = templateSelect.options[templateSelect.selectedIndex].text;
+          
+          modal.remove();
+          
+          // Component type seçim modal'ı göster
+          const componentModal = document.createElement('div');
+          componentModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+          componentModal.innerHTML = `
+            <div class="glass-card rounded-2xl p-6 max-w-md w-full">
+              <h3 class="text-xl font-bold gradient-text mb-4">
+                <i class="fas fa-cog mr-2"></i> Component Seçin
+              </h3>
+              <p class="text-gray-700 mb-4">
+                "${templateName}" şablonu hangi component için yüklensin?
+              </p>
+              <div class="space-y-3">
+                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'batarya')" 
+                  class="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                  🔋 Batarya BOM
+                </button>
+                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'vccu')" 
+                  class="w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                  ⚡ VCCU BOM
+                </button>
+                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'junction_box')" 
+                  class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                  📦 Junction Box BOM
+                </button>
+                <button onclick="adminPage.applyTemplateToNewOtpa(${otpaId}, ${templateId}, '${templateName}', 'pdu')" 
+                  class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+                  🔌 PDU BOM
+                </button>
+                <button onclick="this.closest('.fixed').remove(); adminPage.renderOtpaTab();" 
+                  class="w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+                  Manuel Yükle
+                </button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(componentModal);
         } else {
           alert('✅ OTPA başarıyla oluşturuldu! BOM yüklemek için "BOM Yükle" butonuna tıklayın.');
+          modal.remove();
+          this.renderOtpaTab();
         }
-
-        modal.remove();
-        this.renderOtpaTab();
       } catch (error) {
         alert('Hata: ' + error.message);
       } finally {
@@ -642,19 +679,92 @@ MAT-003	Nikel Şerit	500	gr"
 
     const templateName = templateSelect.options[templateSelect.selectedIndex].text;
     
-    if (!confirm(`"${templateName}" şablonu ${otpaNumber} OTPA'sına uygulanacak.\n\nMevcut BOM silinecek ve şablon malzemeleri eklenecek. Onaylıyor musunuz?`)) {
+    // Component type seçimi için modal göster
+    const componentModal = document.createElement('div');
+    componentModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    componentModal.innerHTML = `
+      <div class="glass-card rounded-2xl p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold gradient-text mb-4">
+          <i class="fas fa-cog mr-2"></i> Component Seçin
+        </h3>
+        <p class="text-gray-700 mb-4">
+          "${templateName}" şablonu hangi component için yüklensin?
+        </p>
+        <div class="space-y-3">
+          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'batarya')" 
+            class="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-green-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+            🔋 Batarya BOM
+          </button>
+          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'vccu')" 
+            class="w-full px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+            ⚡ VCCU BOM
+          </button>
+          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'junction_box')" 
+            class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+            📦 Junction Box BOM
+          </button>
+          <button onclick="adminPage.confirmApplyTemplate(${otpaId}, '${otpaNumber}', ${templateId}, '${templateName}', 'pdu')" 
+            class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
+            🔌 PDU BOM
+          </button>
+          <button onclick="this.closest('.fixed').remove()" 
+            class="w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+            İptal
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(componentModal);
+  },
+
+  async confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, componentType) {
+    // Component modal'ı kapat
+    document.querySelectorAll('.fixed').forEach(modal => modal.remove());
+    
+    const componentLabels = {
+      'batarya': '🔋 Batarya',
+      'vccu': '⚡ VCCU',
+      'junction_box': '📦 Junction Box',
+      'pdu': '🔌 PDU'
+    };
+    
+    if (!confirm(`"${templateName}" şablonu ${componentLabels[componentType]} için ${otpaNumber} OTPA'sına uygulanacak.\n\nMevcut ${componentLabels[componentType]} BOM silinecek ve şablon malzemeleri eklenecek. Onaylıyor musunuz?`)) {
       return;
     }
 
     try {
       showLoading(true);
-      await api.bomTemplates.applyToOtpa(templateId, otpaId);
+      await api.bomTemplates.applyToOtpa(templateId, otpaId, componentType);
       
-      document.querySelector('.fixed').remove();
-      alert(`✅ "${templateName}" başarıyla uygulandı!`);
+      alert(`✅ "${templateName}" ${componentLabels[componentType]} için başarıyla uygulandı!`);
       this.renderOtpaTab();
     } catch (error) {
       alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async applyTemplateToNewOtpa(otpaId, templateId, templateName, componentType) {
+    document.querySelectorAll('.fixed').forEach(modal => modal.remove());
+    
+    const componentLabels = {
+      'batarya': '🔋 Batarya',
+      'vccu': '⚡ VCCU',
+      'junction_box': '📦 Junction Box',
+      'pdu': '🔌 PDU'
+    };
+    
+    try {
+      showLoading(true);
+      await api.bomTemplates.applyToOtpa(templateId, otpaId, componentType);
+      
+      alert(`✅ OTPA oluşturuldu ve "${templateName}" ${componentLabels[componentType]} için başarıyla uygulandı!`);
+      this.renderOtpaTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+      this.renderOtpaTab();
     } finally {
       showLoading(false);
     }
