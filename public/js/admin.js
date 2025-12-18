@@ -14,27 +14,27 @@ const adminPage = {
 
     const content = document.getElementById('content');
     content.innerHTML = `
-      <div class="space-y-6">
+      <div class="space-y-6 fade-in">
         <!-- Page Header -->
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">
-            <i class="fas fa-cog text-blue-600 mr-2"></i> Yönetim Paneli
+          <h1 class="text-4xl font-bold gradient-text">
+            <i class="fas fa-cog mr-3"></i> Yönetim Paneli
           </h1>
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-gray-200">
-          <nav class="flex space-x-8">
+        <div class="glass-card rounded-2xl p-2">
+          <nav class="flex space-x-2">
             <button onclick="adminPage.switchTab('otpa')" data-tab="otpa"
-              class="admin-tab py-4 px-1 border-b-2 font-medium text-sm">
+              class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-folder mr-2"></i> OTPA Yönetimi
             </button>
             <button onclick="adminPage.switchTab('reports')" data-tab="reports"
-              class="admin-tab py-4 px-1 border-b-2 font-medium text-sm">
+              class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-chart-bar mr-2"></i> Raporlar
             </button>
             <button onclick="adminPage.switchTab('users')" data-tab="users"
-              class="admin-tab py-4 px-1 border-b-2 font-medium text-sm">
+              class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-users mr-2"></i> Kullanıcılar
             </button>
           </nav>
@@ -55,9 +55,9 @@ const adminPage = {
     const tabContent = document.getElementById('tabContent');
     tabContent.innerHTML = `
       <div class="flex items-center justify-center h-64">
-        <div class="text-center">
-          <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
-          <p class="text-gray-600">Yükleniyor...</p>
+        <div class="text-center glass-card rounded-2xl p-8">
+          <i class="fas fa-spinner fa-spin text-5xl gradient-text mb-4"></i>
+          <p class="text-gray-700 font-medium">Yükleniyor...</p>
         </div>
       </div>
     `;
@@ -65,11 +65,11 @@ const adminPage = {
     // Update tab styling
     document.querySelectorAll('.admin-tab').forEach(btn => {
       if (btn.dataset.tab === tab) {
-        btn.classList.add('border-blue-500', 'text-blue-600');
-        btn.classList.remove('border-transparent', 'text-gray-500');
+        btn.classList.add('gradient-btn', 'shadow-lg');
+        btn.classList.remove('text-gray-600', 'hover:text-gray-900');
       } else {
-        btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.remove('gradient-btn', 'shadow-lg');
+        btn.classList.add('text-gray-600', 'hover:text-gray-900');
       }
     });
 
@@ -95,26 +95,26 @@ const adminPage = {
       const otpaList = await api.otpa.list();
 
       container.innerHTML = `
-        <div class="space-y-6">
+        <div class="space-y-6 fade-in">
           <!-- Create OTPA Button -->
           <div>
             <button onclick="adminPage.showCreateOtpaModal()" 
-              class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+              class="gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 hover-lift">
               <i class="fas fa-plus mr-2"></i> Yeni OTPA Oluştur
             </button>
           </div>
 
           <!-- OTPA List -->
-          <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="glass-card rounded-2xl shadow-xl overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+              <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
-                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Paket</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">BOM</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlemler</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">OTPA</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Proje</th>
+                  <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Paket</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Durum</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">BOM</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">İşlemler</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">

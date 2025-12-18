@@ -11,26 +11,26 @@ const goodsReceiptPage = {
       const otpaList = await api.otpa.list();
 
       content.innerHTML = `
-        <div class="space-y-6">
+        <div class="space-y-6 fade-in">
           <!-- Page Header -->
           <div class="flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-900">
-              <i class="fas fa-box text-blue-600 mr-2"></i> Malzeme Girişi
+            <h1 class="text-4xl font-bold gradient-text">
+              <i class="fas fa-box mr-3"></i> Malzeme Girişi
             </h1>
           </div>
 
           <!-- OTPA Selection -->
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">
+          <div class="glass-card rounded-2xl shadow-xl p-6">
+            <h2 class="text-2xl font-bold gradient-text mb-4">
               <i class="fas fa-folder-open mr-2"></i> OTPA Seç
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               ${otpaList.filter(o => o.status !== 'kapali').map(otpa => `
                 <button onclick="goodsReceiptPage.selectOtpa(${otpa.id})" 
-                  class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left ${this.selectedOtpaId === otpa.id ? 'border-blue-500 bg-blue-50' : ''}">
-                  <div class="font-bold text-lg text-gray-900">${otpa.otpa_number}</div>
-                  <div class="text-sm text-gray-600 mt-1">${otpa.project_name}</div>
-                  <div class="mt-2 text-xs text-gray-500">
+                  class="p-5 border-2 rounded-2xl hover:shadow-xl transition-all duration-200 text-left hover-lift ${this.selectedOtpaId === otpa.id ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-blue-50 shadow-lg' : 'border-gray-200 bg-white hover:border-purple-400'}">
+                  <div class="font-bold text-xl gradient-text">${otpa.otpa_number}</div>
+                  <div class="text-sm text-gray-700 mt-2 font-medium">${otpa.project_name}</div>
+                  <div class="mt-3 text-xs text-gray-600">
                     <i class="fas fa-clipboard-list mr-1"></i> ${otpa.total_items || 0} malzeme
                   </div>
                 </button>
@@ -41,9 +41,9 @@ const goodsReceiptPage = {
           <!-- BOM Display & Entry Form -->
           <div id="entrySection" class="hidden space-y-6">
             <!-- BOM Summary -->
-            <div class="bg-white rounded-lg shadow">
+            <div class="glass-card rounded-2xl shadow-xl">
               <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900">
+                <h2 class="text-2xl font-bold gradient-text">
                   <i class="fas fa-clipboard-list mr-2"></i> Malzeme Listesi
                 </h2>
               </div>
@@ -51,15 +51,15 @@ const goodsReceiptPage = {
             </div>
 
             <!-- Entry Form -->
-            <div class="bg-white rounded-lg shadow p-6">
-              <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <div class="glass-card rounded-2xl shadow-xl p-6">
+              <h2 class="text-2xl font-bold gradient-text mb-4">
                 <i class="fas fa-plus-circle mr-2"></i> Giriş Kaydı Oluştur
               </h2>
               <form id="receiptForm" class="space-y-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Komponent *</label>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Komponent *</label>
                   <select id="componentType" required 
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg bg-blue-50">
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-lg bg-gradient-to-r from-blue-50 to-purple-50 font-medium">
                     <option value="">Komponent seçin...</option>
                     <option value="batarya">🔋 Batarya</option>
                     <option value="vccu">⚡ VCCU</option>
@@ -69,15 +69,15 @@ const goodsReceiptPage = {
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Malzeme Kodu</label>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">Malzeme Kodu</label>
                   <select id="materialCode" required 
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg">
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-lg font-medium">
                     <option value="">Önce komponent seçin...</option>
                   </select>
                 </div>
 
-                <div id="materialInfo" class="hidden bg-blue-50 p-4 rounded-lg">
-                  <h3 class="font-semibold text-gray-900 mb-2">Malzeme Bilgisi</h3>
+                <div id="materialInfo" class="hidden glass-card rounded-xl p-4 border-2 border-blue-300">
+                  <h3 class="font-bold text-gray-900 mb-2 text-lg">Malzeme Bilgisi</h3>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <span class="text-gray-600">Malzeme Adı:</span>

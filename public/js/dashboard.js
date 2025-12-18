@@ -11,69 +11,69 @@ const dashboardPage = {
       const otpaList = await api.otpa.list();
 
       content.innerHTML = `
-        <div class="space-y-6">
+        <div class="space-y-6 fade-in">
           <!-- Page Header -->
           <div class="flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-900">
-              <i class="fas fa-home text-blue-600 mr-2"></i> Ana Sayfa
+            <h1 class="text-4xl font-bold gradient-text">
+              <i class="fas fa-home mr-3"></i> Ana Sayfa
             </h1>
           </div>
 
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="glass-card rounded-2xl p-6 hover-lift">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                  <i class="fas fa-folder-open text-white text-2xl"></i>
+                <div class="flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg">
+                  <i class="fas fa-folder-open text-white text-3xl"></i>
                 </div>
                 <div class="ml-5">
-                  <p class="text-gray-500 text-sm">Açık OTPA</p>
-                  <p class="text-2xl font-semibold text-gray-900">${summary.open_otpa || 0}</p>
+                  <p class="text-gray-600 text-sm font-medium">Açık OTPA</p>
+                  <p class="text-3xl font-bold text-gray-900">${summary.open_otpa || 0}</p>
                 </div>
               </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="glass-card rounded-2xl p-6 hover-lift">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-                  <i class="fas fa-industry text-white text-2xl"></i>
+                <div class="flex-shrink-0 bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 shadow-lg">
+                  <i class="fas fa-industry text-white text-3xl"></i>
                 </div>
                 <div class="ml-5">
-                  <p class="text-gray-500 text-sm">Üretimde</p>
-                  <p class="text-2xl font-semibold text-gray-900">${summary.in_production_otpa || 0}</p>
+                  <p class="text-gray-600 text-sm font-medium">Üretimde</p>
+                  <p class="text-3xl font-bold text-gray-900">${summary.in_production_otpa || 0}</p>
                 </div>
               </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="glass-card rounded-2xl p-6 hover-lift">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                  <i class="fas fa-clock text-white text-2xl"></i>
+                <div class="flex-shrink-0 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 shadow-lg">
+                  <i class="fas fa-clock text-white text-3xl"></i>
                 </div>
                 <div class="ml-5">
-                  <p class="text-gray-500 text-sm">Kalite Bekleyen</p>
-                  <p class="text-2xl font-semibold text-gray-900">${summary.pending_quality || 0}</p>
+                  <p class="text-gray-600 text-sm font-medium">Kalite Bekleyen</p>
+                  <p class="text-3xl font-bold text-gray-900">${summary.pending_quality || 0}</p>
                 </div>
               </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow p-6">
+            <div class="glass-card rounded-2xl p-6 hover-lift">
               <div class="flex items-center">
-                <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
-                  <i class="fas fa-times-circle text-white text-2xl"></i>
+                <div class="flex-shrink-0 bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 shadow-lg">
+                  <i class="fas fa-times-circle text-white text-3xl"></i>
                 </div>
                 <div class="ml-5">
-                  <p class="text-gray-500 text-sm">Red (30 gün)</p>
-                  <p class="text-2xl font-semibold text-gray-900">${summary.rejections_last_month || 0}</p>
+                  <p class="text-gray-600 text-sm font-medium">Red (30 gün)</p>
+                  <p class="text-3xl font-bold text-gray-900">${summary.rejections_last_month || 0}</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- OTPA List -->
-          <div class="bg-white rounded-lg shadow">
+          <div class="glass-card rounded-2xl shadow-xl">
             <div class="px-6 py-4 border-b border-gray-200">
-              <h2 class="text-xl font-semibold text-gray-900">
+              <h2 class="text-2xl font-bold gradient-text">
                 <i class="fas fa-list mr-2"></i> OTPA Listesi
               </h2>
             </div>
@@ -95,29 +95,29 @@ const dashboardPage = {
                     const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
                     
                     return `
-                      <tr class="hover:bg-gray-50">
+                      <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200">
                         <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="font-medium text-gray-900">${otpa.otpa_number}</div>
+                          <div class="font-semibold text-gray-900">${otpa.otpa_number}</div>
                         </td>
                         <td class="px-6 py-4">
-                          <div class="text-sm text-gray-900">${otpa.project_name}</div>
-                          ${otpa.customer_info ? `<div class="text-xs text-gray-500">${otpa.customer_info}</div>` : ''}
+                          <div class="text-sm font-medium text-gray-900">${otpa.project_name}</div>
+                          ${otpa.customer_info ? `<div class="text-xs text-gray-600">${otpa.customer_info}</div>` : ''}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                           ${this.getStatusBadge(otpa.status)}
                         </td>
                         <td class="px-6 py-4">
                           <div class="flex items-center">
-                            <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
-                              <div class="bg-blue-600 h-2 rounded-full" style="width: ${percentage}%"></div>
+                            <div class="w-full bg-gradient-to-r from-gray-200 to-gray-300 rounded-full h-2.5 mr-2 shadow-inner">
+                              <div class="bg-gradient-to-r from-purple-500 to-blue-600 h-2.5 rounded-full shadow-lg transition-all duration-300" style="width: ${percentage}%"></div>
                             </div>
-                            <span class="text-sm text-gray-600">${percentage}%</span>
+                            <span class="text-sm font-semibold text-gray-700">${percentage}%</span>
                           </div>
-                          <div class="text-xs text-gray-500 mt-1">${completedItems}/${totalItems} tamamlandı</div>
+                          <div class="text-xs text-gray-600 mt-1 font-medium">${completedItems}/${totalItems} tamamlandı</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                           <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; dashboardPage.viewOtpaDetail(${otpa.id})" 
-                            class="text-blue-600 hover:text-blue-900 mr-3 disabled:opacity-50">
+                            class="gradient-btn px-4 py-2 rounded-lg disabled:opacity-50">
                             <i class="fas fa-eye"></i> Detay
                           </button>
                         </td>

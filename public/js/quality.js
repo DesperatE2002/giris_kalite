@@ -14,23 +14,23 @@ const qualityPage = {
 
     const content = document.getElementById('content');
     content.innerHTML = `
-      <div class="space-y-6">
+      <div class="space-y-6 fade-in">
         <!-- Page Header -->
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">
-            <i class="fas fa-check-circle text-green-600 mr-2"></i> Kalite Kontrol
+          <h1 class="text-4xl font-bold gradient-text">
+            <i class="fas fa-check-circle mr-3"></i> Kalite Kontrol
           </h1>
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-gray-200">
-          <nav class="flex space-x-8">
+        <div class="glass-card rounded-2xl p-2">
+          <nav class="flex space-x-2">
             <button onclick="qualityPage.switchTab('pending')" data-tab="pending"
-              class="quality-tab py-4 px-1 border-b-2 font-medium text-sm">
+              class="quality-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-clock mr-2"></i> Bekleyen Kontroller
             </button>
             <button onclick="qualityPage.switchTab('returns')" data-tab="returns"
-              class="quality-tab py-4 px-1 border-b-2 font-medium text-sm">
+              class="quality-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-undo mr-2"></i> İade Yönetimi
             </button>
           </nav>
@@ -50,11 +50,11 @@ const qualityPage = {
     // Update tab styling
     document.querySelectorAll('.quality-tab').forEach(btn => {
       if (btn.dataset.tab === tab) {
-        btn.classList.add('border-blue-500', 'text-blue-600');
-        btn.classList.remove('border-transparent', 'text-gray-500');
+        btn.classList.add('gradient-btn', 'shadow-lg');
+        btn.classList.remove('text-gray-600', 'hover:text-gray-900');
       } else {
-        btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.remove('gradient-btn', 'shadow-lg');
+        btn.classList.add('text-gray-600', 'hover:text-gray-900');
       }
     });
 
