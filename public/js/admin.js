@@ -749,7 +749,7 @@ MAT-003	Nikel Şerit	500	gr"
             
             <!-- Filtreleme -->
             <div class="px-6 py-4 bg-gray-50 border-b">
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">OTPA Filtrele</label>
                   <input type="text" id="filterMissingOtpa" placeholder="OTPA ara..." 
@@ -759,6 +759,17 @@ MAT-003	Nikel Şerit	500	gr"
                   <label class="block text-xs font-medium text-gray-700 mb-1">Proje Filtrele</label>
                   <input type="text" id="filterMissingProject" placeholder="Proje ara..." 
                     class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1">Component Filtrele</label>
+                  <select id="filterMissingComponent" 
+                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-medium">
+                    <option value="">Tümü</option>
+                    <option value="batarya">🔋 Batarya</option>
+                    <option value="vccu">⚡ VCCU</option>
+                    <option value="junction_box">📦 Junction Box</option>
+                    <option value="pdu">🔌 PDU</option>
+                  </select>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">Malzeme Filtrele</label>
@@ -780,6 +791,7 @@ MAT-003	Nikel Şerit	500	gr"
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Component</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
                       <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gereken</th>
                       <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gelen</th>
@@ -788,10 +800,33 @@ MAT-003	Nikel Şerit	500	gr"
                     </tr>
                   </thead>
                   <tbody id="missingMaterialsTable" class="divide-y divide-gray-200">
-                    ${missing.map(item => `
-                      <tr class="hover:bg-gray-50" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-material="${item.material_code} ${item.material_name}">
+                    ${missing.map(item => {
+                      const componentIcons = {
+                        'batarya': '🔋',
+                        'vccu': '⚡',
+                        'junction_box': '📦',
+                        'pdu': '🔌'
+                      };
+                      const componentLabels = {
+                        'batarya': 'Batarya',
+                        'vccu': 'VCCU',
+                        'junction_box': 'Junction Box',
+                        'pdu': 'PDU'
+                      };
+                      return `
+                      <tr class="hover:bg-gray-50" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-component="${item.component_type || ''}" data-material="${item.material_code} ${item.material_name}">
                         <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                         <td class="px-6 py-4 text-sm">${item.project_name || ''}</td>
+                        <td class="px-6 py-4">
+                          <span class="px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.component_type === 'batarya' ? 'bg-green-100 text-green-800' :
+                            item.component_type === 'vccu' ? 'bg-yellow-100 text-yellow-800' :
+                            item.component_type === 'junction_box' ? 'bg-blue-100 text-blue-800' :
+                            item.component_type === 'pdu' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                          }">
+                            ${componentIcons[item.component_type] || '❓'} ${componentLabels[item.component_type] || item.component_type}
+                          </span>
+                        </td>
                         <td class="px-6 py-4">
                           <div class="font-medium">${item.material_code}</div>
                           <div class="text-xs text-gray-500">${item.material_name}</div>
@@ -805,7 +840,7 @@ MAT-003	Nikel Şerit	500	gr"
                           </span>
                         </td>
                       </tr>
-                    `).join('')}
+                    `}).join('')}
                   </tbody>
                 </table>
               `}
@@ -980,13 +1015,15 @@ MAT-003	Nikel Şerit	500	gr"
     setTimeout(() => {
       const filterOtpa = document.getElementById('filterMissingOtpa');
       const filterProject = document.getElementById('filterMissingProject');
+      const filterComponent = document.getElementById('filterMissingComponent');
       const filterMaterial = document.getElementById('filterMissingMaterial');
       const table = document.getElementById('missingMaterialsTable');
       
-      if (filterOtpa && filterProject && filterMaterial && table) {
+      if (filterOtpa && filterProject && filterComponent && filterMaterial && table) {
         const filterTable = () => {
           const otpaValue = filterOtpa.value.toLowerCase().trim();
           const projectValue = filterProject.value.toLowerCase().trim();
+          const componentValue = filterComponent.value.toLowerCase().trim();
           const materialValue = filterMaterial.value.toLowerCase().trim();
           
           const rows = table.querySelectorAll('tr');
@@ -995,13 +1032,15 @@ MAT-003	Nikel Şerit	500	gr"
           rows.forEach(row => {
             const otpa = (row.dataset.otpa || '').toLowerCase();
             const project = (row.dataset.project || '').toLowerCase();
+            const component = (row.dataset.component || '').toLowerCase();
             const material = (row.dataset.material || '').toLowerCase();
             
             const otpaMatch = !otpaValue || otpa.includes(otpaValue);
             const projectMatch = !projectValue || project.includes(projectValue);
+            const componentMatch = !componentValue || component === componentValue;
             const materialMatch = !materialValue || material.includes(materialValue);
             
-            if (otpaMatch && projectMatch && materialMatch) {
+            if (otpaMatch && projectMatch && componentMatch && materialMatch) {
               row.style.display = '';
               visibleCount++;
             } else {
@@ -1012,6 +1051,7 @@ MAT-003	Nikel Şerit	500	gr"
         
         filterOtpa.addEventListener('input', filterTable);
         filterProject.addEventListener('input', filterTable);
+        filterComponent.addEventListener('change', filterTable);
         filterMaterial.addEventListener('input', filterTable);
       }
     }, 100);
