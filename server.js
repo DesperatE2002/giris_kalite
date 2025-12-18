@@ -22,6 +22,7 @@ if (useSQLite) {
 import authRoutes from './routes/auth.js';
 import otpaRoutes from './routes/otpa.js';
 import bomRoutes from './routes/bom.js';
+import bomTemplateRoutes from './routes/bom-template.js';
 import goodsReceiptRoutes from './routes/goods-receipt.js';
 import qualityRoutes from './routes/quality.js';
 import reportsRoutes from './routes/reports.js';
@@ -47,6 +48,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/otpa', otpaRoutes);
 app.use('/api/bom', bomRoutes);
+app.use('/api/bom-templates', bomTemplateRoutes);
 app.use('/api/goods-receipt', goodsReceiptRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/reports', reportsRoutes);

@@ -29,6 +29,10 @@ const adminPage = {
               class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-folder mr-2"></i> OTPA Yönetimi
             </button>
+            <button onclick="adminPage.switchTab('bom-templates')" data-tab="bom-templates"
+              class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
+              <i class="fas fa-copy mr-2"></i> BOM Şablonları
+            </button>
             <button onclick="adminPage.switchTab('reports')" data-tab="reports"
               class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-chart-bar mr-2"></i> Raporlar
@@ -77,6 +81,9 @@ const adminPage = {
     switch (tab) {
       case 'otpa':
         this.renderOtpaTab();
+        break;
+      case 'bom-templates':
+        this.renderBomTemplatesTab();
         break;
       case 'reports':
         this.renderReportsTab();
@@ -248,37 +255,81 @@ const adminPage = {
     };
   },
 
-  showBomUploadModal(otpaId, otpaNumber) {
+  async showBomUploadModal(otpaId, otpaNumber) {
+    const templates = await api.bomTemplates.list();
+    
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="glass-card rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
-          <h2 class="text-2xl font-bold mb-4">BOM Yükle - ${otpaNumber}</h2>
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold gradient-text">
+              <i class="fas fa-upload mr-2"></i> BOM Yükle - ${otpaNumber}
+            </h2>
+            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+
+          <!-- Template Selection -->
+          ${templates.length > 0 ? `
+            <div class="glass-card rounded-xl p-4 mb-6 border-2 border-purple-300">
+              <h3 class="font-bold text-gray-900 mb-3">
+                <i class="fas fa-rocket text-purple-600 mr-2"></i> Hızlı Yükleme: Şablondan Seç
+              </h3>
+              <div class="flex gap-3 items-end">
+                <div class="flex-1">
+                  <select id="templateSelect" 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
+                    <option value="">Şablon seçin...</option>
+                    ${templates.map(t => `
+                      <option value="${t.id}">${t.template_name} (${t.item_count} malzeme)</option>
+                    `).join('')}
+                  </select>
+                </div>
+                <button type="button" onclick="adminPage.applyTemplate(${otpaId}, '${otpaNumber}')" 
+                  class="gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg whitespace-nowrap">
+                  <i class="fas fa-bolt mr-2"></i> Şablonu Uygula
+                </button>
+              </div>
+              <p class="text-xs text-gray-600 mt-2">
+                <i class="fas fa-info-circle mr-1"></i> Şablon uygulandığında mevcut BOM silinip yerine şablon malzemeleri eklenecektir
+              </p>
+            </div>
+            <div class="relative my-6">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-300"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span class="px-4 bg-white text-gray-500 font-medium">veya Excel'den yapıştır</span>
+              </div>
+            </div>
+          ` : ''}
           
-          <div class="mb-6 p-4 bg-blue-50 rounded-lg">
-            <h3 class="font-semibold mb-2"><i class="fas fa-info-circle mr-2"></i>4 Komponent İçin Ayrı Ayrı BOM Yükleyin</h3>
+          <div class="glass-card rounded-xl p-4 mb-6">
+            <h3 class="font-semibold mb-2"><i class="fas fa-info-circle text-blue-600 mr-2"></i>4 Komponent İçin Ayrı Ayrı BOM Yükleyin</h3>
             <p class="text-sm text-gray-700"><strong>Batarya:</strong> Paket sayısıyla çarpılır (örn: 8x veya 10x)</p>
             <p class="text-sm text-gray-700"><strong>VCCU, Junction Box, PDU:</strong> Her zaman 1x (araçta 1'er adet)</p>
           </div>
 
           <!-- Komponent Sekmeleri -->
-          <div class="border-b border-gray-200 mb-4">
-            <nav class="flex space-x-4">
+          <div class="glass-card rounded-xl p-2 mb-4">
+            <nav class="flex space-x-2">
               <button onclick="adminPage.switchBomTab('batarya')" data-tab="batarya"
-                class="bom-tab py-3 px-4 border-b-2 font-medium text-sm">
+                class="bom-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
                 🔋 Batarya BOM
               </button>
               <button onclick="adminPage.switchBomTab('vccu')" data-tab="vccu"
-                class="bom-tab py-3 px-4 border-b-2 font-medium text-sm">
+                class="bom-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
                 ⚡ VCCU BOM
               </button>
               <button onclick="adminPage.switchBomTab('junction_box')" data-tab="junction_box"
-                class="bom-tab py-3 px-4 border-b-2 font-medium text-sm">
+                class="bom-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
                 📦 Junction Box BOM
               </button>
               <button onclick="adminPage.switchBomTab('pdu')" data-tab="pdu"
-                class="bom-tab py-3 px-4 border-b-2 font-medium text-sm">
+                class="bom-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
                 🔌 PDU BOM
               </button>
             </nav>
@@ -289,29 +340,29 @@ const adminPage = {
             <input type="hidden" id="currentComponent" value="batarya">
             
             <div>
-              <label class="block text-sm font-medium mb-2">BOM Verileri (Ctrl+V ile yapıştırın) *</label>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">BOM Verileri (Ctrl+V ile yapıştırın) *</label>
               <textarea id="bomData" rows="10" required placeholder="Excel'den kopyalanan verileri buraya yapıştırın...
 Örnek (TAB ile ayrılmış):
 MAT-001	Lityum Hücre 18650	100	adet
 MAT-002	BMS Kartı	10	adet
 MAT-003	Nikel Şerit	500	gr"
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"></textarea>
-              <p class="text-xs text-gray-500 mt-1">
-                <i class="fas fa-lightbulb mr-1"></i> 
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm transition-all duration-200"></textarea>
+              <p class="text-xs text-gray-600 mt-2">
+                <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
                 4 sütun: Malzeme Kodu | Malzeme Adı | Miktar | Birim
               </p>
             </div>
             
             <div id="previewContainer" class="hidden">
-              <h4 class="font-semibold mb-2">Önizleme:</h4>
-              <div class="border rounded-lg overflow-hidden">
+              <h4 class="font-semibold mb-2 text-gray-900">Önizleme:</h4>
+              <div class="glass-card rounded-xl overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead class="bg-gray-50">
+                  <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
                     <tr>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Kodu</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Adı</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Miktar</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Birim</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Kodu</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Adı</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Miktar</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Birim</th>
                     </tr>
                   </thead>
                   <tbody id="previewBody" class="bg-white divide-y divide-gray-200">
@@ -321,14 +372,14 @@ MAT-003	Nikel Şerit	500	gr"
             </div>
 
             <div class="flex gap-3 pt-4">
-              <button type="button" id="previewBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <button type="button" id="previewBtn" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 shadow-lg transition">
                 <i class="fas fa-eye mr-2"></i> Önizle
               </button>
-              <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button type="submit" class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg">
                 <i class="fas fa-upload mr-2"></i> <span id="uploadBtnText">Batarya BOM'u</span> Yükle
               </button>
               <button type="button" onclick="this.closest('.fixed').remove()" 
-                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
                 İptal
               </button>
             </div>
@@ -497,11 +548,11 @@ MAT-003	Nikel Şerit	500	gr"
     // Update tab styling
     document.querySelectorAll('.bom-tab').forEach(btn => {
       if (btn.dataset.tab === componentType) {
-        btn.classList.add('border-blue-500', 'text-blue-600');
-        btn.classList.remove('border-transparent', 'text-gray-500');
+        btn.classList.add('gradient-btn', 'shadow-lg');
+        btn.classList.remove('text-gray-600', 'hover:text-gray-900');
       } else {
-        btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.remove('gradient-btn', 'shadow-lg');
+        btn.classList.add('text-gray-600', 'hover:text-gray-900');
       }
     });
 
@@ -521,6 +572,35 @@ MAT-003	Nikel Şerit	500	gr"
         'pdu': 'PDU BOM'
       };
       btnText.textContent = labels[componentType] + "'u";
+    }
+  },
+
+  async applyTemplate(otpaId, otpaNumber) {
+    const templateSelect = document.getElementById('templateSelect');
+    const templateId = templateSelect.value;
+    
+    if (!templateId) {
+      alert('Lütfen bir şablon seçin');
+      return;
+    }
+
+    const templateName = templateSelect.options[templateSelect.selectedIndex].text;
+    
+    if (!confirm(`"${templateName}" şablonu ${otpaNumber} OTPA'sına uygulanacak.\n\nMevcut BOM silinecek ve şablon malzemeleri eklenecek. Onaylıyor musunuz?`)) {
+      return;
+    }
+
+    try {
+      showLoading(true);
+      await api.bomTemplates.applyToOtpa(templateId, otpaId);
+      
+      document.querySelector('.fixed').remove();
+      alert(`✅ "${templateName}" başarıyla uygulandı!`);
+      this.renderOtpaTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
     }
   },
 
@@ -1065,6 +1145,263 @@ MAT-003	Nikel Şerit	500	gr"
       this.renderOtpaTab();
     } catch (error) {
       alert('Silme işlemi başarısız: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  // BOM Templates Tab
+  async renderBomTemplatesTab() {
+    const container = document.getElementById('tabContent');
+    
+    try {
+      showLoading(true);
+      const templates = await api.bomTemplates.list();
+
+      container.innerHTML = `
+        <div class="space-y-6 fade-in">
+          <!-- Create Template Button -->
+          <div>
+            <button onclick="adminPage.showCreateTemplateModal()" 
+              class="gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 hover-lift">
+              <i class="fas fa-plus mr-2"></i> Yeni BOM Şablonu Oluştur
+            </button>
+          </div>
+
+          <!-- Templates List -->
+          <div class="glass-card rounded-2xl shadow-xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-2xl font-bold gradient-text">
+                <i class="fas fa-copy mr-2"></i> Kayıtlı BOM Şablonları
+              </h3>
+              <p class="text-sm text-gray-600 mt-1">Tekrar kullanılabilir malzeme listeleri</p>
+            </div>
+            <div class="p-6">
+              ${templates.length === 0 ? `
+                <div class="text-center py-12">
+                  <i class="fas fa-copy text-gray-300 text-6xl mb-4"></i>
+                  <h3 class="text-xl font-semibold text-gray-900 mb-2">Henüz şablon yok</h3>
+                  <p class="text-gray-600">BOM yükledikten sonra şablon olarak kaydedebilirsiniz</p>
+                </div>
+              ` : `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  ${templates.map(template => `
+                    <div class="glass-card rounded-xl p-5 hover-lift border-2 border-gray-200 hover:border-purple-400 transition-all duration-200">
+                      <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                          <h4 class="text-lg font-bold text-gray-900 mb-1">${template.template_name}</h4>
+                          ${template.description ? `<p class="text-sm text-gray-600">${template.description}</p>` : ''}
+                        </div>
+                        <span class="ml-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 rounded-full text-xs font-semibold">
+                          ${template.item_count} malzeme
+                        </span>
+                      </div>
+                      <div class="text-xs text-gray-500 mb-4">
+                        <i class="fas fa-user mr-1"></i> ${template.created_by_name || 'Sistem'}
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-clock mr-1"></i> ${new Date(template.created_at).toLocaleDateString('tr-TR')}
+                      </div>
+                      <div class="flex gap-2">
+                        <button onclick="adminPage.viewTemplateDetail(${template.id}, '${template.template_name}')" 
+                          class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                          <i class="fas fa-eye mr-1"></i> Görüntüle
+                        </button>
+                        <button onclick="adminPage.deleteTemplate(${template.id}, '${template.template_name}')" 
+                          class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      container.innerHTML = `
+        <div class="glass-card rounded-2xl border-2 border-red-400 text-red-700 px-6 py-5">
+          <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
+        </div>
+      `;
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async showCreateTemplateModal() {
+    const otpaList = await api.otpa.list();
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+    modal.innerHTML = `
+      <div class="glass-card rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold gradient-text">
+            <i class="fas fa-copy mr-2"></i> Yeni BOM Şablonu
+          </h2>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <form id="createTemplateForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Şablon Adı *</label>
+            <input type="text" id="templateName" required
+              placeholder="Örn: MD9 Amphenol Batarya BOM"
+              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Açıklama</label>
+            <textarea id="templateDescription" rows="2"
+              placeholder="Bu şablonun ne için kullanılacağını açıklayın..."
+              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">BOM Kaynağı Seçin *</label>
+            <select id="sourceOtpa" required
+              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+              <option value="">OTPA seçin...</option>
+              ${otpaList.map(otpa => `
+                <option value="${otpa.id}">${otpa.otpa_number} - ${otpa.project_name} (${otpa.total_items || 0} malzeme)</option>
+              `).join('')}
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Şablon olarak kaydetmek istediğiniz BOM'a sahip OTPA'yı seçin</p>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="submit" 
+              class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg">
+              <i class="fas fa-save mr-2"></i> Şablonu Kaydet
+            </button>
+            <button type="button" onclick="this.closest('.fixed').remove()" 
+              class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+              İptal
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('createTemplateForm').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const templateName = document.getElementById('templateName').value;
+      const description = document.getElementById('templateDescription').value;
+      const sourceOtpaId = document.getElementById('sourceOtpa').value;
+
+      try {
+        showLoading(true);
+        
+        // Get BOM items from source OTPA
+        const bomData = await api.bom.get(sourceOtpaId);
+        
+        if (!bomData.items || bomData.items.length === 0) {
+          alert('Seçilen OTPA\'da BOM bulunmuyor!');
+          return;
+        }
+
+        // Create template
+        await api.bomTemplates.create({
+          template_name: templateName,
+          description: description || null,
+          items: bomData.items.map(item => ({
+            material_code: item.material_code,
+            material_name: item.material_name,
+            quantity: item.quantity,
+            unit: item.unit
+          }))
+        });
+
+        modal.remove();
+        alert(`✅ "${templateName}" şablonu başarıyla oluşturuldu!`);
+        this.renderBomTemplatesTab();
+        
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    };
+  },
+
+  async viewTemplateDetail(templateId, templateName) {
+    try {
+      showLoading(true);
+      const data = await api.bomTemplates.get(templateId);
+      
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+      modal.innerHTML = `
+        <div class="glass-card rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h2 class="text-2xl font-bold gradient-text">
+                <i class="fas fa-copy mr-2"></i> ${data.template.template_name}
+              </h2>
+              ${data.template.description ? `<p class="text-sm text-gray-600 mt-1">${data.template.description}</p>` : ''}
+            </div>
+            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+
+          <div class="glass-card rounded-xl p-4 mb-6">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Kodu</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Adı</th>
+                  <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase">Miktar</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Birim</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                ${data.items.map(item => `
+                  <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200">
+                    <td class="px-4 py-3 font-semibold text-gray-900">${item.material_code}</td>
+                    <td class="px-4 py-3 text-gray-700">${item.material_name}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-gray-900">${item.quantity}</td>
+                    <td class="px-4 py-3 text-gray-600">${item.unit}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <button onclick="this.closest('.fixed').remove()" 
+            class="w-full gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg">
+            <i class="fas fa-check mr-2"></i> Kapat
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async deleteTemplate(templateId, templateName) {
+    if (!confirm(`"${templateName}" şablonunu silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    try {
+      showLoading(true);
+      await api.bomTemplates.delete(templateId);
+      alert('✅ Şablon başarıyla silindi!');
+      this.renderBomTemplatesTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
     } finally {
       showLoading(false);
     }

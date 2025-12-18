@@ -119,6 +119,35 @@ const api = {
       api.request(`/bom/${id}`, { method: 'DELETE' })
   },
 
+  // BOM Templates endpoints
+  bomTemplates: {
+    list: () => 
+      api.request('/bom-templates'),
+    
+    get: (templateId) => 
+      api.request(`/bom-templates/${templateId}`),
+    
+    create: (data) => 
+      api.request('/bom-templates', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    
+    update: (templateId, data) => 
+      api.request(`/bom-templates/${templateId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+    
+    delete: (templateId) => 
+      api.request(`/bom-templates/${templateId}`, { method: 'DELETE' }),
+    
+    applyToOtpa: (templateId, otpaId) => 
+      api.request(`/bom-templates/${templateId}/apply/${otpaId}`, {
+        method: 'POST'
+      })
+  },
+
   // Goods Receipt endpoints
   goodsReceipt: {
     list: (params = {}) => {
