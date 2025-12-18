@@ -43,7 +43,7 @@ router.get('/:templateId', authenticateToken, async (req, res) => {
         u.full_name as created_by_name
       FROM bom_templates bt
       LEFT JOIN users u ON bt.created_by = u.id
-      WHERE bt.id = ?
+      WHERE bt.id = $1
     `, [templateId]);
 
     if (templateResult.rows.length === 0) {
@@ -53,7 +53,7 @@ router.get('/:templateId', authenticateToken, async (req, res) => {
     const itemsResult = await pool.query(`
       SELECT *
       FROM bom_template_items
-      WHERE template_id = ?
+      WHERE template_id = $1
       ORDER BY material_code ASC
     `, [templateId]);
 
@@ -82,7 +82,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 
     // Şablon adı kontrolü
     const existingTemplate = await client.query(`
-      SELECT id FROM bom_templates WHERE template_name = ?
+      SELECT id FROM bom_templates WHERE template_name = $1
     `, [template_name]);
 
     if (existingTemplate.rows.length > 0) {
@@ -92,7 +92,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
     // Şablonu oluştur
     const templateResult = await client.query(`
       INSERT INTO bom_templates (template_name, description, created_by)
-      VALUES (?, ?, ?)
+      VALUES ($1, $2, $3)
       RETURNING *
     `, [template_name, description || null, req.user.userId]);
 
@@ -102,7 +102,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
     for (const item of items) {
       await client.query(`
         INSERT INTO bom_template_items (template_id, material_code, material_name, quantity, unit)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
       `, [
         templateId,
         item.material_code,
@@ -140,13 +140,13 @@ router.put('/:templateId', authenticateToken, authorizeRoles('admin'), async (re
     // Şablonu güncelle
     await client.query(`
       UPDATE bom_templates 
-      SET template_name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
+      SET template_name = $1, description = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
     `, [template_name, description || null, templateId]);
 
     // Eski malzemeleri sil
     await client.query(`
-      DELETE FROM bom_template_items WHERE template_id = ?
+      DELETE FROM bom_template_items WHERE template_id = $1
     `, [templateId]);
 
     // Yeni malzemeleri ekle
@@ -154,7 +154,7 @@ router.put('/:templateId', authenticateToken, authorizeRoles('admin'), async (re
       for (const item of items) {
         await client.query(`
           INSERT INTO bom_template_items (template_id, material_code, material_name, quantity, unit)
-          VALUES (?, ?, ?, ?, ?)
+          VALUES ($1, $2, $3, $4, $5)
         `, [
           templateId,
           item.material_code,
@@ -183,7 +183,7 @@ router.delete('/:templateId', authenticateToken, authorizeRoles('admin'), async 
     const { templateId } = req.params;
 
     const result = await pool.query(`
-      DELETE FROM bom_templates WHERE id = ?
+      DELETE FROM bom_templates WHERE id = $1
     `, [templateId]);
 
     if (result.rowCount === 0) {
@@ -208,7 +208,7 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
 
     // OTPA'nın var olduğunu kontrol et
     const otpaCheck = await client.query(`
-      SELECT id FROM otpa WHERE id = ?
+      SELECT id FROM otpa WHERE id = $1
     `, [otpaId]);
 
     if (otpaCheck.rows.length === 0) {
@@ -217,7 +217,7 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
 
     // Şablon malzemelerini getir
     const itemsResult = await client.query(`
-      SELECT * FROM bom_template_items WHERE template_id = ?
+      SELECT * FROM bom_template_items WHERE template_id = $1
     `, [templateId]);
 
     if (itemsResult.rows.length === 0) {
@@ -226,14 +226,14 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
 
     // Mevcut BOM'u sil
     await client.query(`
-      DELETE FROM bom_items WHERE otpa_id = ?
+      DELETE FROM bom_items WHERE otpa_id = $1
     `, [otpaId]);
 
     // Şablon malzemelerini OTPA'ya kopyala
     for (const item of itemsResult.rows) {
       await client.query(`
         INSERT INTO bom_items (otpa_id, material_code, material_name, quantity, unit)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
       `, [
         otpaId,
         item.material_code,
