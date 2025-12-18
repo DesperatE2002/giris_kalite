@@ -333,13 +333,13 @@ const adminPage = {
               const templateId = btn.dataset.templateId;
               const templateName = btn.dataset.templateName;
               const component = btn.dataset.component;
-              this.applyTemplateToNewOtpa(otpaId, templateId, templateName, component);
+              adminPage.applyTemplateToNewOtpa(otpaId, templateId, templateName, component);
             };
           });
           
           componentModal.querySelector('.cancel-template-btn').onclick = () => {
             componentModal.remove();
-            this.renderOtpaTab();
+            adminPage.renderOtpaTab();
           };
         } else {
           alert('✅ OTPA başarıyla oluşturuldu! BOM yüklemek için "BOM Yükle" butonuna tıklayın.');
@@ -739,7 +739,7 @@ MAT-003	Nikel Şerit	500	gr"
         const templateId = btn.dataset.templateId;
         const templateName = btn.dataset.templateName;
         const component = btn.dataset.component;
-        this.confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, component);
+        adminPage.confirmApplyTemplate(otpaId, otpaNumber, templateId, templateName, component);
       };
     });
     
