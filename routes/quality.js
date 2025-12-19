@@ -250,38 +250,89 @@ router.get('/', authenticateToken, authorizeRoles('kalite', 'admin'), async (req
 // İade edilmiş malzemeleri listele
 router.get('/returns', authenticateToken, async (req, res) => {
   try {
+    // Önce basit bir query ile test edelim
     const result = await pool.query(`
       SELECT 
-        gr.id,
+        qr.id,
+        qr.rejected_quantity,
+        qr.reason,
+        qr.decision_date,
+        qr.status,
+        gr.id as receipt_id,
         gr.material_code,
         gr.component_type,
         gr.received_quantity,
         gr.created_at,
-        o.otpa_number,
-        o.project_name,
-        b.material_name,
-        b.unit,
-        qr.rejected_quantity,
-        qr.reason,
-        qr.decision_date,
-        qr.status as quality_status,
-        u.full_name as decision_by_name
+        gr.otpa_id
       FROM quality_results qr
-      JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      LEFT JOIN otpa o ON gr.otpa_id = o.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id 
-        AND gr.material_code = b.material_code
-        AND gr.component_type = b.component_type
-      LEFT JOIN users u ON qr.decision_by = u.id
-      WHERE qr.status = 'iade' AND qr.rejected_quantity > 0
-      ORDER BY qr.decision_date DESC
+      INNER JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE qr.rejected_quantity > 0
+      ORDER BY qr.decision_date DESC NULLS LAST
+      LIMIT 100
     `);
 
-    res.json(result.rows);
+    // Eğer sonuç varsa, ek bilgileri ekleyelim
+    const enrichedResults = await Promise.all(result.rows.map(async (item) => {
+      // OTPA bilgisi
+      let otpaInfo = { otpa_number: null, project_name: null };
+      if (item.otpa_id) {
+        const otpaResult = await pool.query(
+          'SELECT otpa_number, project_name FROM otpa WHERE id = $1',
+          [item.otpa_id]
+        );
+        if (otpaResult.rows.length > 0) {
+          otpaInfo = otpaResult.rows[0];
+        }
+      }
+
+      // Malzeme bilgisi
+      let materialInfo = { material_name: null, unit: null };
+      if (item.otpa_id && item.material_code && item.component_type) {
+        const materialResult = await pool.query(
+          'SELECT material_name, unit FROM bom_items WHERE otpa_id = $1 AND material_code = $2 AND component_type = $3 LIMIT 1',
+          [item.otpa_id, item.material_code, item.component_type]
+        );
+        if (materialResult.rows.length > 0) {
+          materialInfo = materialResult.rows[0];
+        }
+      }
+
+      // Karar veren kişi
+      let decisionBy = null;
+      if (item.decision_by) {
+        const userResult = await pool.query(
+          'SELECT full_name FROM users WHERE id = $1',
+          [item.decision_by]
+        );
+        if (userResult.rows.length > 0) {
+          decisionBy = userResult.rows[0].full_name;
+        }
+      }
+
+      return {
+        ...item,
+        otpa_number: otpaInfo.otpa_number,
+        project_name: otpaInfo.project_name,
+        material_name: materialInfo.material_name,
+        unit: materialInfo.unit,
+        decision_by_name: decisionBy,
+        quality_status: item.status
+      };
+    }));
+
+    res.json(enrichedResults);
   } catch (error) {
     console.error('İade listesi hatası:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    res.status(500).json({ 
+      error: 'Sunucu hatası', 
+      details: error.message,
+      code: error.code 
+    });
   }
 });
 
