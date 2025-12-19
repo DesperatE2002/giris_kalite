@@ -254,6 +254,7 @@ router.get('/returns', authenticateToken, async (req, res) => {
       SELECT 
         gr.id,
         gr.material_code,
+        gr.component_type,
         gr.received_quantity,
         gr.receipt_date,
         gr.created_at,
@@ -269,10 +270,12 @@ router.get('/returns', authenticateToken, async (req, res) => {
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id 
+        AND gr.material_code = b.material_code
+        AND gr.component_type = b.component_type
       LEFT JOIN users u ON qr.decision_by = u.id
       WHERE qr.status = 'red' AND qr.rejected_quantity > 0
-      ORDER BY qr.decision_date DESC NULLS LAST
+      ORDER BY qr.decision_date DESC
     `);
 
     res.json(result.rows);
@@ -297,7 +300,9 @@ router.get('/accepted-materials/:otpaId', authenticateToken, async (req, res) =>
         qr.accepted_quantity
       FROM goods_receipt gr
       JOIN quality_results qr ON gr.id = qr.receipt_id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id 
+        AND gr.material_code = b.material_code
+        AND gr.component_type = b.component_type
       WHERE gr.otpa_id = $1 
         AND qr.status = 'kabul'
         AND qr.accepted_quantity > 0
