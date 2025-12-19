@@ -113,6 +113,8 @@ router.get('/otpa/:otpaId', authenticateToken, async (req, res) => {
 
 // Yeni malzeme giriş kaydı oluştur
 router.post('/', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  
   try {
     const { otpa_id, component_type, material_code, received_quantity, return_of_rejected, notes } = req.body;
 
@@ -120,36 +122,96 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'OTPA, komponent, malzeme kodu ve miktar gereklidir' });
     }
 
+    await client.query('BEGIN');
+
     // BOM'da bu malzeme var mı kontrol et
-    const bomCheck = await pool.query(
+    const bomCheck = await client.query(
       'SELECT * FROM bom_items WHERE otpa_id = $1 AND component_type = $2 AND material_code = $3',
       [otpa_id, component_type, material_code]
     );
 
     if (bomCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Bu malzeme kodu bu OTPA\'nın bu komponent BOM\'unda yok' });
     }
 
+    // İade dönüşü ise, iade havuzunu kontrol et
+    if (return_of_rejected) {
+      const rejectedCheck = await client.query(`
+        SELECT SUM(qr.rejected_quantity) as total_rejected
+        FROM goods_receipt gr
+        JOIN quality_results qr ON gr.id = qr.receipt_id
+        WHERE gr.otpa_id = $1 
+          AND gr.component_type = $2
+          AND gr.material_code = $3
+          AND qr.rejected_quantity > 0
+      `, [otpa_id, component_type, material_code]);
+
+      const totalRejected = parseFloat(rejectedCheck.rows[0]?.total_rejected || 0);
+
+      if (totalRejected < received_quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ 
+          error: `İade havuzunda yeterli miktar yok. Mevcut: ${totalRejected}, Talep: ${received_quantity}` 
+        });
+      }
+
+      // İade havuzundan düş - FIFO mantığı ile en eski kayıtlardan başla
+      let remainingToDeduct = received_quantity;
+      
+      const rejectionsResult = await client.query(`
+        SELECT qr.id, qr.rejected_quantity, gr.id as receipt_id
+        FROM goods_receipt gr
+        JOIN quality_results qr ON gr.id = qr.receipt_id
+        WHERE gr.otpa_id = $1 
+          AND gr.component_type = $2
+          AND gr.material_code = $3
+          AND qr.rejected_quantity > 0
+        ORDER BY qr.decision_date ASC, qr.created_at ASC
+      `, [otpa_id, component_type, material_code]);
+
+      for (const rejection of rejectionsResult.rows) {
+        if (remainingToDeduct <= 0) break;
+
+        const deductAmount = Math.min(remainingToDeduct, rejection.rejected_quantity);
+        
+        await client.query(`
+          UPDATE quality_results
+          SET rejected_quantity = rejected_quantity - $1,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = $2
+        `, [deductAmount, rejection.id]);
+
+        remainingToDeduct -= deductAmount;
+      }
+    }
+
     // Giriş kaydı oluştur
-    const receiptResult = await pool.query(
+    const receiptResult = await client.query(
       `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [otpa_id, component_type, material_code, received_quantity, notes, req.user.userId]
+      [otpa_id, component_type, material_code, received_quantity, 
+       return_of_rejected ? `İade dönüşü - ${notes || ''}` : notes, req.user.userId]
     );
 
     const receipt = receiptResult.rows[0];
 
     // Otomatik olarak kalite kaydı oluştur (başlangıç durumu: bekliyor)
-    await pool.query(
+    await client.query(
       `INSERT INTO quality_results (receipt_id, status, accepted_quantity, rejected_quantity)
        VALUES ($1, $2, $3, $4)`,
       [receipt.id, 'bekliyor', 0, 0]
     );
 
+    await client.query('COMMIT');
+
     res.status(201).json(receipt);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Giriş kaydı oluşturma hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
   }
 });
 

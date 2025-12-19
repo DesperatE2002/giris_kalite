@@ -182,8 +182,8 @@ const api = {
     returns: () => 
       api.request('/quality/returns'),
     
-    acceptedMaterials: (otpaId) => 
-      api.request(`/quality/accepted-materials/${otpaId}`),
+    acceptedMaterials: (otpaId, componentType) => 
+      api.request(`/quality/accepted-materials/${otpaId}/${componentType}`),
     
     get: (receiptId) => 
       api.request(`/quality/${receiptId}`),
