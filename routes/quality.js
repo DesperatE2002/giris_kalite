@@ -173,7 +173,7 @@ router.get('/:receiptId', authenticateToken, async (req, res) => {
       LEFT JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
-      WHERE qr.receipt_id = ?
+      WHERE qr.receipt_id = $1
     `, [receiptId]);
 
     if (result.rows.length === 0) {
@@ -298,7 +298,7 @@ router.get('/accepted-materials/:otpaId', authenticateToken, async (req, res) =>
       FROM goods_receipt gr
       JOIN quality_results qr ON gr.id = qr.receipt_id
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
-      WHERE gr.otpa_id = ? 
+      WHERE gr.otpa_id = $1 
         AND qr.status = 'kabul'
         AND qr.accepted_quantity > 0
       ORDER BY gr.receipt_date DESC
@@ -325,7 +325,7 @@ router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin
       SELECT qr.*, gr.received_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      WHERE qr.receipt_id = ?
+      WHERE qr.receipt_id = $1
     `, [receipt_id]);
 
     if (existing.rows.length === 0) {
@@ -345,14 +345,14 @@ router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin
     await pool.query(`
       UPDATE quality_results
       SET status = 'red',
-          accepted_quantity = accepted_quantity - ?,
-          rejected_quantity = rejected_quantity + ?,
-          reason = ?,
-          decision_by = ?,
+          accepted_quantity = accepted_quantity - $1,
+          rejected_quantity = rejected_quantity + $2,
+          reason = $3,
+          decision_by = $4,
           decision_date = NOW(),
           updated_at = NOW()
-      WHERE receipt_id = ?
-    `, [return_quantity, return_quantity, reason, req.user.id, receipt_id]);
+      WHERE receipt_id = $5
+    `, [return_quantity, return_quantity, reason, req.user.userId, receipt_id]);
 
     res.json({ 
       message: 'İade başarıyla oluşturuldu',
