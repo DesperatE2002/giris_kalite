@@ -310,6 +310,8 @@ const goodsReceiptPage = {
         const item = JSON.parse(selected.dataset.item);
         this.showMaterialInfo(item);
       } else {
+        document.getElementById('materialInfo').classList.add('hidden');
+      }
     });
   },
 

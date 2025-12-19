@@ -1762,12 +1762,12 @@ MAT-003	Nikel Şerit	500	gr"
           <!-- OTPA Seçimi -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              <i class="fas fa-folder mr-2"></i> OTPA Seçin
+              <i class="fas fa-folder mr-2"></i> OTPA Seçin (Yazarak arayın)
             </label>
-            <select id="returnOtpaId" required 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg">
-              <option value="">OTPA seçin...</option>
-            </select>
+            <input type="text" id="returnOtpaId" list="otpaList" required 
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
+              placeholder="OTPA numarası veya proje adı yazın...">
+            <datalist id="otpaList"></datalist>
           </div>
 
           <!-- Component Seçimi -->
@@ -1788,12 +1788,12 @@ MAT-003	Nikel Şerit	500	gr"
           <!-- Malzeme Seçimi -->
           <div id="materialSection" style="display: none;">
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              <i class="fas fa-box mr-2"></i> İade Edilecek Malzeme
+              <i class="fas fa-box mr-2"></i> İade Edilecek Malzeme (Yazarak arayın)
             </label>
-            <select id="returnMaterialCode" required 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg">
-              <option value="">Malzeme seçin...</option>
-            </select>
+            <input type="text" id="returnMaterialCode" list="materialReturnList" required 
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
+              placeholder="Malzeme kodu veya adı yazın...">
+            <datalist id="materialReturnList"></datalist>
             <div id="materialInfo" class="mt-2 p-3 bg-blue-50 rounded-lg text-sm" style="display: none;">
               <div class="font-medium text-blue-900 mb-1">Mevcut Stok</div>
               <div id="stockQuantity" class="text-blue-700"></div>
@@ -1834,23 +1834,38 @@ MAT-003	Nikel Şerit	500	gr"
     // OTPA listesini yükle
     try {
       const otpas = await api.otpa.list();
-      const otpaSelect = document.getElementById('returnOtpaId');
+      const otpaInput = document.getElementById('returnOtpaId');
+      const otpaList = document.getElementById('otpaList');
       
       otpas.forEach(otpa => {
         const option = document.createElement('option');
         option.value = otpa.id;
         option.textContent = `${otpa.otpa_number} - ${otpa.project_name}`;
-        otpaSelect.appendChild(option);
+        otpaList.appendChild(option);
       });
 
       // Event listeners
-      otpaSelect.addEventListener('change', (e) => this.onReturnOtpaChange(e.target.value));
+      otpaInput.addEventListener('input', (e) => {
+        // Find OTPA by ID from the datalist
+        const selectedOption = Array.from(otpaList.options).find(opt => opt.value == e.target.value);
+        if (selectedOption) {
+          this.onReturnOtpaChange(e.target.value);
+        }
+      });
+      
       document.getElementById('returnComponentType').addEventListener('change', (e) => 
         this.onReturnComponentChange(e.target.value)
       );
-      document.getElementById('returnMaterialCode').addEventListener('change', (e) => 
-        this.onReturnMaterialChange(e.target.value)
-      );
+      
+      document.getElementById('returnMaterialCode').addEventListener('input', (e) => {
+        // Find material by code
+        const materialList = document.getElementById('materialReturnList');
+        const selectedOption = Array.from(materialList.options).find(opt => opt.value === e.target.value);
+        if (selectedOption) {
+          this.onReturnMaterialChange(e.target.value);
+        }
+      });
+      
       document.getElementById('returnForm').addEventListener('submit', (e) => 
         this.handleReturnSubmit(e)
       );
@@ -1898,22 +1913,32 @@ MAT-003	Nikel Şerit	500	gr"
       showLoading(true);
       const materials = await api.quality.acceptedMaterials(otpaId, componentType);
       
-      const materialSelect = document.getElementById('returnMaterialCode');
-      materialSelect.innerHTML = '<option value="">Malzeme seçin...</option>';
+      const materialInput = document.getElementById('returnMaterialCode');
+      const materialList = document.getElementById('materialReturnList');
+      materialList.innerHTML = '';
+      materialInput.value = '';
       
       if (materials.length === 0) {
-        materialSelect.innerHTML = '<option value="">Bu komponentte iade edilebilir malzeme yok</option>';
+        materialInput.placeholder = 'Bu komponentte iade edilebilir malzeme yok';
         document.getElementById('materialSection').style.display = 'block';
         return;
       }
 
+      // Store materials data for later use
+      this.returnMaterialsData = {};
+      
       materials.forEach(material => {
         const option = document.createElement('option');
         option.value = material.material_code;
-        option.dataset.acceptedQty = material.accepted_quantity;
-        option.dataset.unit = material.unit;
         option.textContent = `${material.material_code} - ${material.material_name} (Stok: ${material.accepted_quantity} ${material.unit})`;
-        materialSelect.appendChild(option);
+        materialList.appendChild(option);
+        
+        // Store material data
+        this.returnMaterialsData[material.material_code] = {
+          acceptedQty: material.accepted_quantity,
+          unit: material.unit,
+          name: material.material_name
+        };
       });
 
       document.getElementById('materialSection').style.display = 'block';
@@ -1925,7 +1950,7 @@ MAT-003	Nikel Şerit	500	gr"
   },
 
   onReturnMaterialChange(materialCode) {
-    if (!materialCode) {
+    if (!materialCode || !this.returnMaterialsData || !this.returnMaterialsData[materialCode]) {
       document.getElementById('materialInfo').style.display = 'none';
       document.getElementById('quantitySection').style.display = 'none';
       document.getElementById('reasonSection').style.display = 'none';
@@ -1933,10 +1958,9 @@ MAT-003	Nikel Şerit	500	gr"
       return;
     }
 
-    const materialSelect = document.getElementById('returnMaterialCode');
-    const selectedOption = materialSelect.options[materialSelect.selectedIndex];
-    const acceptedQty = selectedOption.dataset.acceptedQty;
-    const unit = selectedOption.dataset.unit;
+    const materialData = this.returnMaterialsData[materialCode];
+    const acceptedQty = materialData.acceptedQty;
+    const unit = materialData.unit;
 
     document.getElementById('stockQuantity').textContent = `${acceptedQty} ${unit}`;
     document.getElementById('materialInfo').style.display = 'block';
