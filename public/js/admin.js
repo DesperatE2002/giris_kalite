@@ -738,14 +738,6 @@ MAT-003	Nikel Şerit	500	gr"
       container.innerHTML = `
         <div class="space-y-6">
           
-          <!-- İade Oluştur Butonu -->
-          <div class="flex justify-end">
-            <button onclick="adminPage.showCreateReturnModal()" 
-              class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors shadow-lg">
-              <i class="fas fa-undo mr-2"></i> İade Oluştur
-            </button>
-          </div>
-          
           <!-- Eksik Malzemeler (Öncelikli) -->
           <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b bg-red-50">
@@ -951,23 +943,6 @@ MAT-003	Nikel Şerit	500	gr"
                 <i class="fas fa-chart-pie mr-2"></i>OTPA Tamamlama Raporu
               </h3>
             </div>
-            
-            <!-- Filtreleme -->
-            <div class="px-6 py-3 bg-gray-50 border-b">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">OTPA Filtrele</label>
-                  <input type="text" id="filterCompletionOtpa" placeholder="OTPA ara..." 
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Proje Filtrele</label>
-                  <input type="text" id="filterCompletionProject" placeholder="Proje ara..." 
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                </div>
-              </div>
-            </div>
-            
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -976,20 +951,16 @@ MAT-003	Nikel Şerit	500	gr"
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Tamamlanan</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade</th>
                     <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">%</th>
                   </tr>
                 </thead>
-                <tbody id="completionTableBody" class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200">
                   ${completion.map(item => `
-                    <tr data-otpa="${item.otpa_number.toLowerCase()}" data-project="${(item.project_name || '').toLowerCase()}">
+                    <tr>
                       <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                       <td class="px-6 py-4">${item.project_name}</td>
                       <td class="px-6 py-4 text-right">${item.total_items || 0}</td>
                       <td class="px-6 py-4 text-right">${item.completed_items || 0}</td>
-                      <td class="px-6 py-4 text-right">
-                        <span class="text-red-600 font-medium">${item.rejected_items || 0}</span>
-                      </td>
                       <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
                           <span class="font-bold ${(item.completion_percentage || 0) >= 100 ? 'text-green-600' : 'text-blue-600'}">
@@ -1077,70 +1048,6 @@ MAT-003	Nikel Şerit	500	gr"
         const filterTable = () => {
           const otpaValue = filterOtpa.value.toLowerCase().trim();
           const projectValue = filterProject.value.toLowerCase().trim();
-          const componentValue = filterComponent.value.toLowerCase().trim();
-          const materialValue = filterMaterial.value.toLowerCase().trim();
-          
-          const rows = table.querySelectorAll('tr');
-          let visibleCount = 0;
-          
-          rows.forEach(row => {
-            const otpa = (row.dataset.otpa || '').toLowerCase();
-            const project = (row.dataset.project || '').toLowerCase();
-            const component = (row.dataset.component || '').toLowerCase();
-            const material = (row.dataset.material || '').toLowerCase();
-            
-            const otpaMatch = !otpaValue || otpa.includes(otpaValue);
-            const projectMatch = !projectValue || project.includes(projectValue);
-            const componentMatch = !componentValue || component === componentValue;
-            const materialMatch = !materialValue || material.includes(materialValue);
-            
-            if (otpaMatch && projectMatch && componentMatch && materialMatch) {
-              row.style.display = '';
-              visibleCount++;
-            } else {
-              row.style.display = 'none';
-            }
-          });
-        };
-        
-        filterOtpa.addEventListener('input', filterTable);
-        filterProject.addEventListener('input', filterTable);
-        filterComponent.addEventListener('change', filterTable);
-        filterMaterial.addEventListener('input', filterTable);
-      }
-      
-      // OTPA Tamamlama Raporu filtreleme
-      const filterCompletionOtpa = document.getElementById('filterCompletionOtpa');
-      const filterCompletionProject = document.getElementById('filterCompletionProject');
-      const completionTableBody = document.getElementById('completionTableBody');
-      
-      if (filterCompletionOtpa && filterCompletionProject && completionTableBody) {
-        const filterCompletionTable = () => {
-          const otpaValue = filterCompletionOtpa.value.toLowerCase().trim();
-          const projectValue = filterCompletionProject.value.toLowerCase().trim();
-          
-          const rows = completionTableBody.querySelectorAll('tr');
-          
-          rows.forEach(row => {
-            const otpa = row.dataset.otpa || '';
-            const project = row.dataset.project || '';
-            
-            const otpaMatch = !otpaValue || otpa.includes(otpaValue);
-            const projectMatch = !projectValue || project.includes(projectValue);
-            
-            if (otpaMatch && projectMatch) {
-              row.style.display = '';
-            } else {
-              row.style.display = 'none';
-            }
-          });
-        };
-        
-        filterCompletionOtpa.addEventListener('input', filterCompletionTable);
-        filterCompletionProject.addEventListener('input', filterCompletionTable);
-      }
-    }, 100);
-  },
           const componentValue = filterComponent.value.toLowerCase().trim();
           const materialValue = filterMaterial.value.toLowerCase().trim();
           
@@ -1828,225 +1735,6 @@ MAT-003	Nikel Şerit	500	gr"
     } catch (error) {
       alert('Hata: ' + error.message);
     } finally {
-      showLoading(false);
-    }
-  },
-
-  async showCreateReturnModal() {
-    try {
-      showLoading(true);
-      
-      // OTPA listesini ve kabul edilmiş malzemeleri getir
-      const otpas = await api.otpa.list();
-      
-      const modal = document.createElement('div');
-      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-      modal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-              <h2 class="text-2xl font-bold text-gray-900">
-                <i class="fas fa-undo mr-2 text-red-600"></i> İade Oluştur
-              </h2>
-              <button onclick="this.closest('.fixed').remove()" 
-                class="text-gray-500 hover:text-red-600 transition-colors">
-                <i class="fas fa-times text-2xl"></i>
-              </button>
-            </div>
-            
-            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-              <p class="text-sm text-yellow-800">
-                <i class="fas fa-info-circle mr-2"></i>
-                <strong>Not:</strong> Sadece kaliteden geçmiş (kabul edilmiş) malzemeler iade edilebilir.
-              </p>
-            </div>
-            
-            <form id="createReturnForm" class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">OTPA Seç *</label>
-                <select id="returnOtpaId" required 
-                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                  <option value="">-- OTPA Seçin --</option>
-                  ${otpas.map(otpa => `
-                    <option value="${otpa.id}">${otpa.otpa_number} - ${otpa.project_name}</option>
-                  `).join('')}
-                </select>
-              </div>
-
-              <div id="materialsSection" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Malzeme Seç *</label>
-                <select id="returnMaterialSelect" required 
-                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                  <option value="">-- Önce OTPA seçin --</option>
-                </select>
-                <p class="text-xs text-gray-500 mt-1">
-                  <i class="fas fa-check-circle text-green-600 mr-1"></i>
-                  Sadece kaliteden geçmiş malzemeler listelenir
-                </p>
-              </div>
-
-              <div id="quantitySection" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-2">İade Miktarı *</label>
-                <input type="number" id="returnQuantity" step="0.01" min="0.01" required
-                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                <p id="maxReturnHint" class="text-xs text-gray-500 mt-1"></p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">İade Sebebi *</label>
-                <textarea id="returnReason" rows="3" required
-                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  placeholder="Örn: Montajda uyumsuzluk tespit edildi, hasarlı parça..."></textarea>
-              </div>
-
-              <div class="flex gap-3 pt-4">
-                <button type="submit" 
-                  class="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold transition-colors">
-                  <i class="fas fa-undo mr-2"></i> İade Oluştur
-                </button>
-                <button type="button" onclick="this.closest('.fixed').remove()" 
-                  class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold transition-colors">
-                  İptal
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-      showLoading(false);
-
-      // Setup form logic
-      const otpaSelect = modal.querySelector('#returnOtpaId');
-      const materialsSection = modal.querySelector('#materialsSection');
-      const materialSelect = modal.querySelector('#returnMaterialSelect');
-      const quantitySection = modal.querySelector('#quantitySection');
-      const quantityInput = modal.querySelector('#returnQuantity');
-      const maxReturnHint = modal.querySelector('#maxReturnHint');
-
-      otpaSelect.addEventListener('change', async (e) => {
-        const otpaId = e.target.value;
-        
-        if (!otpaId) {
-          materialsSection.classList.add('hidden');
-          quantitySection.classList.add('hidden');
-          return;
-        }
-
-        try {
-          showLoading(true);
-          
-          // Kabul edilmiş malzemeleri getir
-          const receipts = await api.request(`/goods-receipt/otpa/${otpaId}`);
-          
-          // Sadece kaliteden geçmiş olanları filtrele
-          const acceptedReceipts = receipts.filter(r => 
-            r.quality_status === 'kabul' && r.accepted_quantity > 0
-          );
-          
-          if (acceptedReceipts.length === 0) {
-            materialSelect.innerHTML = '<option value="">Bu OTPA için kabul edilmiş malzeme yok</option>';
-            materialsSection.classList.remove('hidden');
-            return;
-          }
-
-          // Malzemeleri grupla (aynı malzemeden birden fazla giriş olabilir)
-          const materialsMap = {};
-          acceptedReceipts.forEach(r => {
-            const key = `${r.material_code}-${r.component_type}`;
-            if (!materialsMap[key]) {
-              materialsMap[key] = {
-                material_code: r.material_code,
-                material_name: r.material_name,
-                component_type: r.component_type,
-                unit: r.unit,
-                total_accepted: 0,
-                receipts: []
-              };
-            }
-            materialsMap[key].total_accepted += parseFloat(r.accepted_quantity || 0);
-            materialsMap[key].receipts.push(r);
-          });
-
-          materialSelect.innerHTML = `
-            <option value="">-- Malzeme Seçin --</option>
-            ${Object.values(materialsMap).map(m => `
-              <option value="${JSON.stringify({material_code: m.material_code, component_type: m.component_type}).replace(/"/g, '&quot;')}" 
-                data-max="${m.total_accepted}" 
-                data-unit="${m.unit || ''}">
-                ${m.material_code} - ${m.material_name} (Stok: ${m.total_accepted} ${m.unit || ''})
-              </option>
-            `).join('')}
-          `;
-          
-          materialsSection.classList.remove('hidden');
-          
-        } catch (error) {
-          alert('Hata: ' + error.message);
-        } finally {
-          showLoading(false);
-        }
-      });
-
-      materialSelect.addEventListener('change', (e) => {
-        const selected = e.target.selectedOptions[0];
-        if (!selected || !selected.value) {
-          quantitySection.classList.add('hidden');
-          return;
-        }
-
-        const maxQty = parseFloat(selected.dataset.max);
-        const unit = selected.dataset.unit;
-        
-        quantityInput.max = maxQty;
-        quantityInput.value = maxQty;
-        maxReturnHint.textContent = `Maksimum: ${maxQty} ${unit}`;
-        
-        quantitySection.classList.remove('hidden');
-      });
-
-      // Form submit
-      modal.querySelector('#createReturnForm').onsubmit = async (e) => {
-        e.preventDefault();
-        
-        const otpaId = parseInt(otpaSelect.value);
-        const materialData = JSON.parse(materialSelect.value.replace(/&quot;/g, '"'));
-        const quantity = parseFloat(quantityInput.value);
-        const reason = modal.querySelector('#returnReason').value;
-        
-        if (!otpaId || !materialData || !quantity || !reason) {
-          alert('Lütfen tüm alanları doldurun');
-          return;
-        }
-
-        try {
-          showLoading(true);
-          
-          await api.request('/quality/create-return', {
-            method: 'POST',
-            body: JSON.stringify({
-              otpa_id: otpaId,
-              material_code: materialData.material_code,
-              component_type: materialData.component_type,
-              return_quantity: quantity,
-              reason: reason
-            })
-          });
-
-          modal.remove();
-          alert('✅ İade başarıyla oluşturuldu!');
-          this.renderReportsTab();
-          
-        } catch (error) {
-          alert('Hata: ' + error.message);
-        } finally {
-          showLoading(false);
-        }
-      };
-      
-    } catch (error) {
-      alert('Hata: ' + error.message);
       showLoading(false);
     }
   }

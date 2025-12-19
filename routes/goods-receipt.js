@@ -113,8 +113,6 @@ router.get('/otpa/:otpaId', authenticateToken, async (req, res) => {
 
 // Yeni malzeme giriş kaydı oluştur
 router.post('/', authenticateToken, async (req, res) => {
-  const client = await pool.connect();
-  
   try {
     const { otpa_id, component_type, material_code, received_quantity, return_of_rejected, notes } = req.body;
 
@@ -123,7 +121,7 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // BOM'da bu malzeme var mı kontrol et
-    const bomCheck = await client.query(
+    const bomCheck = await pool.query(
       'SELECT * FROM bom_items WHERE otpa_id = $1 AND component_type = $2 AND material_code = $3',
       [otpa_id, component_type, material_code]
     );
@@ -132,10 +130,8 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Bu malzeme kodu bu OTPA\'nın bu komponent BOM\'unda yok' });
     }
 
-    await client.query('BEGIN');
-
     // Giriş kaydı oluştur
-    const receiptResult = await client.query(
+    const receiptResult = await pool.query(
       `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [otpa_id, component_type, material_code, received_quantity, notes, req.user.userId]
@@ -143,51 +139,17 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const receipt = receiptResult.rows[0];
 
-    // İade dönüşü mü kontrol et
-    if (return_of_rejected && return_of_rejected === true) {
-      // İade edilmiş miktarı azalt
-      // Bu OTPA + malzeme için iade edilmiş kayıtları bul
-      const rejectionsResult = await client.query(`
-        SELECT qr.id, qr.rejected_quantity, qr.receipt_id
-        FROM quality_results qr
-        JOIN goods_receipt gr ON qr.receipt_id = gr.id
-        WHERE gr.otpa_id = $1 
-          AND gr.material_code = $2
-          AND gr.component_type = $3
-          AND qr.rejected_quantity > 0
-        ORDER BY qr.decision_date DESC
-        LIMIT 1
-      `, [otpa_id, material_code, component_type]);
-
-      if (rejectionsResult.rows.length > 0) {
-        const rejection = rejectionsResult.rows[0];
-        const returnQty = Math.min(received_quantity, rejection.rejected_quantity);
-        
-        // İade miktarını azalt
-        await client.query(`
-          UPDATE quality_results
-          SET rejected_quantity = rejected_quantity - $1,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE id = $2
-        `, [returnQty, rejection.id]);
-      }
-    }
-
     // Otomatik olarak kalite kaydı oluştur (başlangıç durumu: bekliyor)
-    await client.query(
+    await pool.query(
       `INSERT INTO quality_results (receipt_id, status, accepted_quantity, rejected_quantity)
        VALUES ($1, $2, $3, $4)`,
       [receipt.id, 'bekliyor', 0, 0]
     );
 
-    await client.query('COMMIT');
     res.status(201).json(receipt);
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Giriş kaydı oluşturma hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
-  } finally {
-    client.release();
   }
 });
 
