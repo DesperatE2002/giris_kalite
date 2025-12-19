@@ -272,9 +272,21 @@ const goodsReceiptPage = {
     const componentSelect = document.getElementById('componentType');
     const materialSelect = document.getElementById('materialCode');
     
+    // Initialize Select2 on component select
+    $(componentSelect).select2({
+      placeholder: 'Komponent seçin...',
+      allowClear: true,
+      width: '100%'
+    });
+    
     // Komponent değiştiğinde malzemeleri filtrele
-    componentSelect.addEventListener('change', (e) => {
+    $(componentSelect).on('change', (e) => {
       const componentType = e.target.value;
+      
+      // Destroy existing Select2 if exists
+      if ($(materialSelect).hasClass('select2-hidden-accessible')) {
+        $(materialSelect).select2('destroy');
+      }
       
       // Clear existing options
       materialSelect.innerHTML = '<option value="">Malzeme seçin...</option>';
@@ -301,12 +313,35 @@ const goodsReceiptPage = {
         option.dataset.componentType = componentType;
         materialSelect.appendChild(option);
       });
+      
+      // Initialize Select2 on material select with search
+      $(materialSelect).select2({
+        placeholder: 'Malzeme kodu veya adı ile arayın...',
+        allowClear: true,
+        width: '100%',
+        matcher: function(params, data) {
+          // If there are no search terms, return all data
+          if ($.trim(params.term) === '') {
+            return data;
+          }
+
+          // Search in both material code and name
+          const searchTerm = params.term.toLowerCase();
+          const text = data.text.toLowerCase();
+          
+          if (text.indexOf(searchTerm) > -1) {
+            return data;
+          }
+
+          return null;
+        }
+      });
     });
 
     // Malzeme değiştiğinde bilgileri göster
-    materialSelect.addEventListener('change', (e) => {
+    $(materialSelect).on('change', (e) => {
       const selected = e.target.selectedOptions[0];
-      if (selected.dataset.item) {
+      if (selected && selected.dataset.item) {
         const item = JSON.parse(selected.dataset.item);
         this.showMaterialInfo(item);
       } else {

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Admin.js</title>
+</head>
+<body>
+  <h1>Admin.js Test</h1>
+  <div id="result"></div>
+  
+  <script>
+    fetch('/js/admin.js')
+      .then(response => response.text())
+      .then(text => {
+        const hasReturnsTab = text.includes('İade Yönetimi');
+        const hasRenderReturns = text.includes('renderReturnsTab');
+        const hasSwitchCase = text.includes("case 'returns':");
+        
+        document.getElementById('result').innerHTML = `
+          <h2>Kontrol Sonuçları:</h2>
+          <p>İade Yönetimi butonu var mı? ${hasReturnsTab ? '✅' : '❌'}</p>
+          <p>renderReturnsTab fonksiyonu var mı? ${hasRenderReturns ? '✅' : '❌'}</p>
+          <p>Switch case returns var mı? ${hasSwitchCase ? '✅' : '❌'}</p>
+          <h3>Dosya boyutu: ${text.length} karakter</h3>
+        `;
+      });
+  </script>
+</body>
+</html>

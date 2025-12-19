@@ -1843,12 +1843,26 @@ MAT-003	Nikel Şerit	500	gr"
         otpaSelect.appendChild(option);
       });
 
+      // Initialize Select2 on OTPA select
+      $('#returnOtpaId').select2({
+        placeholder: 'OTPA numarası veya proje adı ile arayın...',
+        allowClear: true,
+        width: '100%'
+      });
+
+      // Initialize Select2 on Component select  
+      $('#returnComponentType').select2({
+        placeholder: 'Komponent seçin...',
+        allowClear: true,
+        width: '100%'
+      });
+
       // Event listeners
-      otpaSelect.addEventListener('change', (e) => this.onReturnOtpaChange(e.target.value));
-      document.getElementById('returnComponentType').addEventListener('change', (e) => 
+      $('#returnOtpaId').on('change', (e) => this.onReturnOtpaChange(e.target.value));
+      $('#returnComponentType').on('change', (e) => 
         this.onReturnComponentChange(e.target.value)
       );
-      document.getElementById('returnMaterialCode').addEventListener('change', (e) => 
+      $('#returnMaterialCode').on('change', (e) => 
         this.onReturnMaterialChange(e.target.value)
       );
       document.getElementById('returnForm').addEventListener('submit', (e) => 
@@ -1899,6 +1913,12 @@ MAT-003	Nikel Şerit	500	gr"
       const materials = await api.quality.acceptedMaterials(otpaId, componentType);
       
       const materialSelect = document.getElementById('returnMaterialCode');
+      
+      // Destroy existing Select2 if exists
+      if ($('#returnMaterialCode').hasClass('select2-hidden-accessible')) {
+        $('#returnMaterialCode').select2('destroy');
+      }
+      
       materialSelect.innerHTML = '<option value="">Malzeme seçin...</option>';
       
       if (materials.length === 0) {
@@ -1914,6 +1934,13 @@ MAT-003	Nikel Şerit	500	gr"
         option.dataset.unit = material.unit;
         option.textContent = `${material.material_code} - ${material.material_name} (Stok: ${material.accepted_quantity} ${material.unit})`;
         materialSelect.appendChild(option);
+      });
+
+      // Initialize Select2 on material select with search
+      $('#returnMaterialCode').select2({
+        placeholder: 'Malzeme kodu veya adı ile arayın...',
+        allowClear: true,
+        width: '100%'
       });
 
       document.getElementById('materialSection').style.display = 'block';
