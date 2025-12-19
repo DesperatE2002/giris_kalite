@@ -1837,19 +1837,31 @@ MAT-003	Nikel Şerit	500	gr"
       const otpaInput = document.getElementById('returnOtpaId');
       const otpaList = document.getElementById('otpaList');
       
+      // Store OTPA data for later reference
+      this.otpaData = {};
+      
       otpas.forEach(otpa => {
         const option = document.createElement('option');
         option.value = otpa.id;
         option.textContent = `${otpa.otpa_number} - ${otpa.project_name}`;
+        option.dataset.otpaNumber = otpa.otpa_number;
         otpaList.appendChild(option);
+        
+        // Store both by ID and by number for easy lookup
+        this.otpaData[otpa.id] = otpa;
+        this.otpaData[otpa.otpa_number] = otpa;
       });
 
       // Event listeners
       otpaInput.addEventListener('input', (e) => {
-        // Find OTPA by ID from the datalist
-        const selectedOption = Array.from(otpaList.options).find(opt => opt.value == e.target.value);
+        const inputValue = e.target.value;
+        // Find OTPA by ID or by number
+        const selectedOption = Array.from(otpaList.options).find(opt => 
+          opt.value == inputValue || opt.dataset.otpaNumber === inputValue
+        );
         if (selectedOption) {
-          this.onReturnOtpaChange(e.target.value);
+          this.selectedOtpaId = selectedOption.value;
+          this.onReturnOtpaChange(selectedOption.value);
         }
       });
       
@@ -1975,7 +1987,8 @@ MAT-003	Nikel Şerit	500	gr"
   async handleReturnSubmit(e) {
     e.preventDefault();
 
-    const otpaId = document.getElementById('returnOtpaId').value;
+    // Use stored OTPA ID
+    const otpaId = this.selectedOtpaId;
     const componentType = document.getElementById('returnComponentType').value;
     const materialCode = document.getElementById('returnMaterialCode').value;
     const returnQuantity = parseFloat(document.getElementById('returnQuantity').value);
