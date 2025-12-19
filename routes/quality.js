@@ -52,7 +52,7 @@ router.post('/:receiptId', authenticateToken, authorizeRoles('kalite', 'admin'),
 
     // Giriş kaydını kontrol et
     const receiptResult = await pool.query(
-      'SELECT * FROM goods_receipt WHERE id = ?',
+      'SELECT * FROM goods_receipt WHERE id = $1',
       [receiptId]
     );
 
@@ -76,16 +76,16 @@ router.post('/:receiptId', authenticateToken, authorizeRoles('kalite', 'admin'),
     const result = await pool.query(`
       UPDATE quality_results
       SET 
-        status = ?,
-        accepted_quantity = ?,
-        rejected_quantity = ?,
-        reason = ?,
-        decision_by = ?,
+        status = $1,
+        accepted_quantity = $2,
+        rejected_quantity = $3,
+        reason = $4,
+        decision_by = $5,
         decision_date = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
-      WHERE receipt_id = ?
+      WHERE receipt_id = $6
       RETURNING *
-    `, [status, acceptedQty, rejectedQty, reason, req.user.id, receiptId]);
+    `, [status, acceptedQty, rejectedQty, reason, req.user.userId, receiptId]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Kalite kaydı bulunamadı' });
@@ -95,6 +95,63 @@ router.post('/:receiptId', authenticateToken, authorizeRoles('kalite', 'admin'),
   } catch (error) {
     console.error('Kalite kararı hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// Toplu kalite onayı
+router.post('/bulk/approve-all', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+
+    // Bekleyen tüm kayıtları getir
+    const pendingResult = await client.query(`
+      SELECT 
+        gr.id as receipt_id,
+        gr.received_quantity,
+        qr.id as quality_id
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE qr.status = 'bekliyor'
+    `);
+
+    if (pendingResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.json({ 
+        message: 'Onaylanacak kayıt bulunamadı',
+        approved_count: 0 
+      });
+    }
+
+    // Tüm kayıtları onayla
+    for (const item of pendingResult.rows) {
+      await client.query(`
+        UPDATE quality_results
+        SET 
+          status = 'kabul',
+          accepted_quantity = $1,
+          rejected_quantity = 0,
+          reason = 'Toplu onay',
+          decision_by = $2,
+          decision_date = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $3
+      `, [item.received_quantity, req.user.userId, item.quality_id]);
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      message: `${pendingResult.rows.length} kayıt başarıyla onaylandı`,
+      approved_count: pendingResult.rows.length
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Toplu onaylama hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
   }
 });
 

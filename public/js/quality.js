@@ -83,8 +83,15 @@ const qualityPage = {
               <h2 class="text-xl font-semibold text-gray-900">
                 <i class="fas fa-list-check mr-2"></i> Kalite Bekleyen Kayıtlar
               </h2>
-              <div class="text-sm text-gray-600">
-                <i class="fas fa-clock mr-1"></i> ${pending.length} kayıt bekliyor
+              <div class="flex items-center gap-3">
+                <div class="text-sm text-gray-600">
+                  <i class="fas fa-clock mr-1"></i> ${pending.length} kayıt bekliyor
+                </div>
+                ${pending.length > 0 ? `
+                  <button onclick="qualityPage.bulkApproveAll()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors duration-200">
+                    <i class="fas fa-check-double mr-2"></i> Tümünü Onayla
+                  </button>
+                ` : ''}
               </div>
             </div>
           </div>
@@ -602,6 +609,25 @@ const qualityPage = {
       
     } catch (error) {
       alert('Hata: ' + error.message);
+      showLoading(false);
+    }
+  },
+
+  async bulkApproveAll() {
+    const confirmed = confirm('Bekleyen tüm kayıtları onaylamak istediğinizden emin misiniz?');
+    if (!confirmed) return;
+
+    try {
+      showLoading(true);
+      const response = await api.request('/quality/bulk/approve-all', {
+        method: 'POST'
+      });
+
+      alert(`✅ ${response.approved_count} kayıt başarıyla onaylandı!`);
+      this.renderPendingTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
       showLoading(false);
     }
   }
