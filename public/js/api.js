@@ -179,11 +179,23 @@ const api = {
     pending: () => 
       api.request('/quality/pending'),
     
+    returns: () => 
+      api.request('/quality/returns'),
+    
+    acceptedMaterials: (otpaId) => 
+      api.request(`/quality/accepted-materials/${otpaId}`),
+    
     get: (receiptId) => 
       api.request(`/quality/${receiptId}`),
     
     decision: (receiptId, data) => 
       api.request(`/quality/${receiptId}`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    
+    createReturn: (data) => 
+      api.request('/quality/manual-return', {
         method: 'POST',
         body: JSON.stringify(data)
       })

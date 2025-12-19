@@ -349,7 +349,7 @@ const qualityPage = {
       showLoading(true);
       
       // Get all returns
-      const returns = await api.request('/quality/returns');
+      const returns = await api.quality.returns();
       
       container.innerHTML = `
         <div class="space-y-6 fade-in">
@@ -528,7 +528,7 @@ const qualityPage = {
           showLoading(true);
           
           // Get accepted materials for this OTPA
-          const accepted = await api.request(`/quality/accepted-materials/${otpaId}`);
+          const accepted = await api.quality.acceptedMaterials(otpaId);
           
           receiptSelect.innerHTML = `
             <option value="">-- Malzeme Seçin --</option>
@@ -587,13 +587,10 @@ const qualityPage = {
         try {
           showLoading(true);
           
-          await api.request('/quality/manual-return', {
-            method: 'POST',
-            body: JSON.stringify({
-              receipt_id: receiptId,
-              return_quantity: quantity,
-              reason: reason
-            })
+          await api.quality.createReturn({
+            receipt_id: receiptId,
+            return_quantity: quantity,
+            reason: reason
           });
 
           modal.remove();
