@@ -36,6 +36,83 @@ router.get('/pending', authenticateToken, authorizeRoles('kalite', 'admin'), asy
   }
 });
 
+// Manuel iade oluştur - Stoğu azalt (ÖNEMLİ: /:receiptId'den ÖNCE olmalı!)
+router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { otpa_id, component_type, material_code, return_quantity, reason } = req.body;
+
+    if (!otpa_id || !component_type || !material_code || !return_quantity || !reason) {
+      return res.status(400).json({ error: 'OTPA, komponent, malzeme, miktar ve sebep gereklidir' });
+    }
+
+    await client.query('BEGIN');
+
+    // Son kabul edilmiş goods_receipt'i bul
+    const receiptResult = await client.query(`
+      SELECT 
+        gr.id as receipt_id,
+        qr.id as quality_id,
+        qr.accepted_quantity,
+        qr.rejected_quantity,
+        qr.status
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.otpa_id = $1 
+        AND gr.component_type = $2
+        AND gr.material_code = $3
+        AND qr.status = 'kabul'
+        AND qr.accepted_quantity > 0
+      ORDER BY gr.receipt_date DESC
+      LIMIT 1
+    `, [otpa_id, component_type, material_code]);
+
+    if (receiptResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Kabul edilmiş malzeme kaydı bulunamadı' });
+    }
+
+    const record = receiptResult.rows[0];
+
+    // Kabul edilmiş miktardan fazla iade edilemez
+    if (return_quantity > record.accepted_quantity) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: `İade miktarı kabul edilmiş miktardan fazla olamaz (Maks: ${record.accepted_quantity})` 
+      });
+    }
+
+    // Quality result'ı güncelle - Stoktan düş, iade havuzuna ekle
+    await client.query(`
+      UPDATE quality_results
+      SET status = 'iade',
+          accepted_quantity = accepted_quantity - $1,
+          rejected_quantity = rejected_quantity + $2,
+          reason = $3,
+          decision_by = $4,
+          decision_date = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+    `, [return_quantity, return_quantity, reason, req.user.userId, record.quality_id]);
+
+    await client.query('COMMIT');
+
+    res.json({ 
+      message: 'İade başarıyla oluşturuldu',
+      returned_quantity: return_quantity,
+      remaining_accepted: record.accepted_quantity - return_quantity
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Manuel iade hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // Kalite kararı ver
 router.post('/:receiptId', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
   try {
@@ -392,83 +469,6 @@ router.get('/accepted-materials/:otpaId/:componentType', authenticateToken, asyn
   } catch (error) {
     console.error('Kabul edilmiş malzemeler hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
-  }
-});
-
-// Manuel iade oluştur - Stoğu azalt
-router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
-  const client = await pool.connect();
-  
-  try {
-    const { otpa_id, component_type, material_code, return_quantity, reason } = req.body;
-
-    if (!otpa_id || !component_type || !material_code || !return_quantity || !reason) {
-      return res.status(400).json({ error: 'OTPA, komponent, malzeme, miktar ve sebep gereklidir' });
-    }
-
-    await client.query('BEGIN');
-
-    // Son kabul edilmiş goods_receipt'i bul
-    const receiptResult = await client.query(`
-      SELECT 
-        gr.id as receipt_id,
-        qr.id as quality_id,
-        qr.accepted_quantity,
-        qr.rejected_quantity,
-        qr.status
-      FROM goods_receipt gr
-      JOIN quality_results qr ON gr.id = qr.receipt_id
-      WHERE gr.otpa_id = $1 
-        AND gr.component_type = $2
-        AND gr.material_code = $3
-        AND qr.status = 'kabul'
-        AND qr.accepted_quantity > 0
-      ORDER BY gr.receipt_date DESC
-      LIMIT 1
-    `, [otpa_id, component_type, material_code]);
-
-    if (receiptResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Kabul edilmiş malzeme kaydı bulunamadı' });
-    }
-
-    const record = receiptResult.rows[0];
-
-    // Kabul edilmiş miktardan fazla iade edilemez
-    if (return_quantity > record.accepted_quantity) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        error: `İade miktarı kabul edilmiş miktardan fazla olamaz (Maks: ${record.accepted_quantity})` 
-      });
-    }
-
-    // Quality result'ı güncelle - Stoktan düş, iade havuzuna ekle
-    await client.query(`
-      UPDATE quality_results
-      SET status = 'iade',
-          accepted_quantity = accepted_quantity - $1,
-          rejected_quantity = rejected_quantity + $2,
-          reason = $3,
-          decision_by = $4,
-          decision_date = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
-    `, [return_quantity, return_quantity, reason, req.user.userId, record.quality_id]);
-
-    await client.query('COMMIT');
-
-    res.json({ 
-      message: 'İade başarıyla oluşturuldu',
-      returned_quantity: return_quantity,
-      remaining_accepted: record.accepted_quantity - return_quantity
-    });
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Manuel iade hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
-  } finally {
-    client.release();
   }
 });
 
