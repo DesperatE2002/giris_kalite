@@ -100,7 +100,7 @@ router.get('/otpa/:otpaId', authenticateToken, async (req, res) => {
       LEFT JOIN users u ON gr.created_by = u.id
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
-      WHERE gr.otpa_id = ?
+      WHERE gr.otpa_id = $1
       ORDER BY gr.created_at DESC
     `, [otpaId]);
 
@@ -122,7 +122,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // BOM'da bu malzeme var mı kontrol et
     const bomCheck = await pool.query(
-      'SELECT * FROM bom_items WHERE otpa_id = ? AND component_type = ? AND material_code = ?',
+      'SELECT * FROM bom_items WHERE otpa_id = $1 AND component_type = $2 AND material_code = $3',
       [otpa_id, component_type, material_code]
     );
 
@@ -133,8 +133,8 @@ router.post('/', authenticateToken, async (req, res) => {
     // Giriş kaydı oluştur
     const receiptResult = await pool.query(
       `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
-      [otpa_id, component_type, material_code, received_quantity, notes, req.user.id]
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [otpa_id, component_type, material_code, received_quantity, notes, req.user.userId]
     );
 
     const receipt = receiptResult.rows[0];
@@ -142,7 +142,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // Otomatik olarak kalite kaydı oluştur (başlangıç durumu: bekliyor)
     await pool.query(
       `INSERT INTO quality_results (receipt_id, status, accepted_quantity, rejected_quantity)
-       VALUES (?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4)`,
       [receipt.id, 'bekliyor', 0, 0]
     );
 
@@ -150,6 +150,76 @@ router.post('/', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Giriş kaydı oluşturma hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// Toplu malzeme girişi - seçilen malzemelerin tamamını tam miktarda giriş yap
+router.post('/bulk', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { items } = req.body; // [{ otpa_id, component_type, material_code, required_quantity }]
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Malzeme listesi gereklidir' });
+    }
+
+    await client.query('BEGIN');
+
+    const createdReceipts = [];
+
+    for (const item of items) {
+      const { otpa_id, component_type, material_code, required_quantity } = item;
+
+      if (!otpa_id || !component_type || !material_code || !required_quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Her malzeme için OTPA, komponent, malzeme kodu ve miktar gereklidir' });
+      }
+
+      // BOM'da bu malzeme var mı kontrol et
+      const bomCheck = await client.query(
+        'SELECT * FROM bom_items WHERE otpa_id = $1 AND component_type = $2 AND material_code = $3',
+        [otpa_id, component_type, material_code]
+      );
+
+      if (bomCheck.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ 
+          error: `Malzeme ${material_code} bu OTPA'nın ${component_type} BOM'unda bulunamadı` 
+        });
+      }
+
+      // Giriş kaydı oluştur
+      const receiptResult = await client.query(
+        `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [otpa_id, component_type, material_code, required_quantity, 'Toplu giriş', req.user.userId]
+      );
+
+      const receipt = receiptResult.rows[0];
+
+      // Otomatik kalite kaydı oluştur
+      await client.query(
+        `INSERT INTO quality_results (receipt_id, status, accepted_quantity, rejected_quantity)
+         VALUES ($1, $2, $3, $4)`,
+        [receipt.id, 'bekliyor', 0, 0]
+      );
+
+      createdReceipts.push(receipt);
+    }
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      message: `${createdReceipts.length} malzeme başarıyla giriş yapıldı`,
+      receipts: createdReceipts
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Toplu giriş hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -180,7 +250,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
       LEFT JOIN users qu ON qr.decision_by = qu.id
-      WHERE gr.id = ?
+      WHERE gr.id = $1
     `, [id]);
 
     if (result.rows.length === 0) {

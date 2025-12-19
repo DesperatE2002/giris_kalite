@@ -747,9 +747,9 @@ MAT-003	Nikel Şerit	500	gr"
               <p class="text-sm text-red-600 mt-1">Acil tedarik gerektiren malzemeler</p>
             </div>
             
-            <!-- Filtreleme -->
+            <!-- Filtreleme ve Toplu İşlemler -->
             <div class="px-6 py-4 bg-gray-50 border-b">
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                   <label class="block text-xs font-medium text-gray-700 mb-1">OTPA Filtrele</label>
                   <input type="text" id="filterMissingOtpa" placeholder="OTPA ara..." 
@@ -777,6 +777,22 @@ MAT-003	Nikel Şerit	500	gr"
                     class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 </div>
               </div>
+              
+              <!-- Toplu İşlem Butonları -->
+              <div class="flex items-center gap-3 pt-3 border-t">
+                <button onclick="adminPage.toggleSelectAll()" 
+                  class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors">
+                  <i class="fas fa-check-square mr-2"></i> Tümünü Seç
+                </button>
+                <button onclick="adminPage.bulkReceiveSelected()" id="bulkReceiveBtn"
+                  class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled>
+                  <i class="fas fa-box-open mr-2"></i> Seçilenleri Giriş Yap (<span id="selectedCount">0</span>)
+                </button>
+                <span class="text-sm text-gray-600 ml-2">
+                  Seçilen malzemeler tam miktarıyla girilecek
+                </span>
+              </div>
             </div>
             
             <div class="overflow-x-auto">
@@ -789,6 +805,10 @@ MAT-003	Nikel Şerit	500	gr"
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <input type="checkbox" id="selectAllCheckbox" onclick="adminPage.toggleSelectAll()"
+                          class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500">
+                      </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Component</th>
@@ -814,7 +834,12 @@ MAT-003	Nikel Şerit	500	gr"
                         'pdu': 'PDU'
                       };
                       return `
-                      <tr class="hover:bg-gray-50" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-component="${item.component_type || ''}" data-material="${item.material_code} ${item.material_name}">
+                      <tr class="hover:bg-gray-50" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-component="${item.component_type || ''}" data-material="${item.material_code} ${item.material_name}"
+                          data-otpa-id="${item.otpa_id}" data-material-code="${item.material_code}" data-component-type="${item.component_type}" data-required-quantity="${item.required_quantity}">
+                        <td class="px-6 py-4">
+                          <input type="checkbox" class="material-checkbox w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            onchange="adminPage.updateSelectedCount()">
+                        </td>
                         <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                         <td class="px-6 py-4 text-sm">${item.project_name || ''}</td>
                         <td class="px-6 py-4">
@@ -1055,6 +1080,76 @@ MAT-003	Nikel Şerit	500	gr"
         filterMaterial.addEventListener('input', filterTable);
       }
     }, 100);
+  },
+
+  toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.material-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const isChecked = selectAllCheckbox.checked;
+    
+    checkboxes.forEach(cb => {
+      // Sadece görünür satırları seç
+      const row = cb.closest('tr');
+      if (row.style.display !== 'none') {
+        cb.checked = isChecked;
+      }
+    });
+    
+    this.updateSelectedCount();
+  },
+
+  updateSelectedCount() {
+    const checked = document.querySelectorAll('.material-checkbox:checked').length;
+    const countSpan = document.getElementById('selectedCount');
+    const bulkBtn = document.getElementById('bulkReceiveBtn');
+    
+    if (countSpan) countSpan.textContent = checked;
+    if (bulkBtn) bulkBtn.disabled = checked === 0;
+  },
+
+  async bulkReceiveSelected() {
+    const checkboxes = document.querySelectorAll('.material-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+      alert('Lütfen en az bir malzeme seçin');
+      return;
+    }
+
+    const items = [];
+    checkboxes.forEach(cb => {
+      const row = cb.closest('tr');
+      items.push({
+        otpa_id: parseInt(row.dataset.otpaId),
+        component_type: row.dataset.componentType,
+        material_code: row.dataset.materialCode,
+        required_quantity: parseFloat(row.dataset.requiredQuantity)
+      });
+    });
+
+    const confirmed = confirm(
+      `${items.length} malzeme için tam miktarda (gereken miktar kadar) giriş yapılacak.\n\n` +
+      `Devam etmek istiyor musunuz?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      showLoading(true);
+      
+      const response = await api.request('/goods-receipt/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ items })
+      });
+
+      alert(`✅ ${response.receipts.length} malzeme başarıyla giriş yapıldı!`);
+      
+      // Sayfayı yenile
+      this.renderReportsTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
   },
 
   async renderUsersTab() {
