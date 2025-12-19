@@ -273,7 +273,7 @@ router.get('/returns', authenticateToken, async (req, res) => {
         AND gr.material_code = b.material_code
         AND gr.component_type = b.component_type
       LEFT JOIN users u ON qr.decision_by = u.id
-      WHERE qr.status = 'red' AND qr.rejected_quantity > 0
+      WHERE qr.status = 'iade' AND qr.rejected_quantity > 0
       ORDER BY qr.decision_date DESC
     `);
 
@@ -348,7 +348,7 @@ router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin
     // Quality result'ı güncelle
     await pool.query(`
       UPDATE quality_results
-      SET status = 'red',
+      SET status = 'iade',
           accepted_quantity = accepted_quantity - $1,
           rejected_quantity = rejected_quantity + $2,
           reason = $3,

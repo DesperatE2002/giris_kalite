@@ -315,7 +315,7 @@ const dashboardPage = {
   getQualityBadge(status) {
     const statusMap = {
       'kabul': { class: 'bg-green-100 text-green-800', text: 'Kabul', icon: 'fa-check' },
-      'red': { class: 'bg-red-100 text-red-800', text: 'İade', icon: 'fa-undo' },
+      'iade': { class: 'bg-red-100 text-red-800', text: 'İade', icon: 'fa-undo' },
       'bekliyor': { class: 'bg-gray-100 text-gray-800', text: 'Bekliyor', icon: 'fa-clock' }
     };
     const s = statusMap[status] || statusMap['bekliyor'];
