@@ -29,10 +29,6 @@ const qualityPage = {
               class="quality-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-clock mr-2"></i> Bekleyen Kontroller
             </button>
-            <button onclick="qualityPage.switchTab('returns')" data-tab="returns"
-              class="quality-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
-              <i class="fas fa-undo mr-2"></i> İade Yönetimi
-            </button>
           </nav>
         </div>
 
@@ -62,9 +58,6 @@ const qualityPage = {
     switch (tab) {
       case 'pending':
         this.renderPendingTab();
-        break;
-      case 'returns':
-        this.renderReturnsTab();
         break;
     }
   },
