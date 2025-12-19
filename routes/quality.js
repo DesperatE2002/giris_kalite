@@ -256,7 +256,6 @@ router.get('/returns', authenticateToken, async (req, res) => {
         gr.material_code,
         gr.component_type,
         gr.received_quantity,
-        gr.receipt_date,
         gr.created_at,
         o.otpa_number,
         o.project_name,
