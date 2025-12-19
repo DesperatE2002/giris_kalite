@@ -69,11 +69,14 @@ const goodsReceiptPage = {
                 </div>
 
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Malzeme Kodu</label>
-                  <select id="materialCode" required 
-                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-lg font-medium">
-                    <option value="">Önce komponent seçin...</option>
-                  </select>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Malzeme Kodu 
+                    <span class="text-xs text-gray-500">(Yazmaya başlayın)</span>
+                  </label>
+                  <input type="text" id="materialCode" list="materialList" required 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-lg font-medium"
+                    placeholder="Önce komponent seçin...">
+                  <datalist id="materialList"></datalist>
                 </div>
 
                 <div id="materialInfo" class="hidden glass-card rounded-xl p-4 border-2 border-blue-300">
@@ -270,79 +273,55 @@ const goodsReceiptPage = {
 
   populateMaterialDropdown(bom) {
     const componentSelect = document.getElementById('componentType');
-    const materialSelect = document.getElementById('materialCode');
+    const materialInput = document.getElementById('materialCode');
+    const materialList = document.getElementById('materialList');
     
-    // Initialize Select2 on component select
-    $(componentSelect).select2({
-      placeholder: 'Komponent seçin...',
-      allowClear: true,
-      width: '100%'
-    });
+    // Store BOM for later use
+    this.currentBom = bom;
     
     // Komponent değiştiğinde malzemeleri filtrele
-    $(componentSelect).on('change', (e) => {
+    componentSelect.addEventListener('change', (e) => {
       const componentType = e.target.value;
       
-      // Destroy existing Select2 if exists
-      if ($(materialSelect).hasClass('select2-hidden-accessible')) {
-        $(materialSelect).select2('destroy');
-      }
-      
-      // Clear existing options
-      materialSelect.innerHTML = '<option value="">Malzeme seçin...</option>';
+      // Clear
+      materialList.innerHTML = '';
+      materialInput.value = '';
+      materialInput.placeholder = componentType ? 'Malzeme kodu veya adı yazın...' : 'Önce komponent seçin...';
       
       if (!componentType) {
-        materialSelect.innerHTML = '<option value="">Önce komponent seçin...</option>';
+        materialInput.disabled = true;
         return;
       }
+      
+      materialInput.disabled = false;
       
       // Filter BOM by component type
       const filteredBom = bom.filter(item => item.component_type === componentType);
       
       if (filteredBom.length === 0) {
-        materialSelect.innerHTML = '<option value="">Bu komponent için BOM yüklenmemiş</option>';
+        materialInput.placeholder = 'Bu komponent için BOM yüklenmemiş';
         return;
       }
       
-      // Add filtered BOM items
+      // Add filtered BOM items to datalist
       filteredBom.forEach(item => {
         const option = document.createElement('option');
         option.value = item.material_code;
         option.textContent = `${item.material_code} - ${item.material_name}`;
         option.dataset.item = JSON.stringify(item);
-        option.dataset.componentType = componentType;
-        materialSelect.appendChild(option);
+        materialList.appendChild(option);
       });
       
-      // Initialize Select2 on material select with search
-      $(materialSelect).select2({
-        placeholder: 'Malzeme kodu veya adı ile arayın...',
-        allowClear: true,
-        width: '100%',
-        matcher: function(params, data) {
-          // If there are no search terms, return all data
-          if ($.trim(params.term) === '') {
-            return data;
-          }
-
-          // Search in both material code and name
-          const searchTerm = params.term.toLowerCase();
-          const text = data.text.toLowerCase();
-          
-          if (text.indexOf(searchTerm) > -1) {
-            return data;
-          }
-
-          return null;
-        }
-      });
+      // Store filtered bom for validation
+      this.filteredBomData = filteredBom;
     });
 
-    // Malzeme değiştiğinde bilgileri göster
-    $(materialSelect).on('change', (e) => {
-      const selected = e.target.selectedOptions[0];
-      if (selected && selected.dataset.item) {
-        const item = JSON.parse(selected.dataset.item);
+    // Malzeme seçildiğinde/yazıldığında bilgileri göster
+    materialInput.addEventListener('input', (e) => {
+      const code = e.target.value;
+      const item = this.filteredBomData?.find(i => i.material_code === code);
+      
+      if (item) {
         this.showMaterialInfo(item);
       } else {
         document.getElementById('materialInfo').classList.add('hidden');
