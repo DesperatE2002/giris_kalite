@@ -250,14 +250,15 @@ router.get('/', authenticateToken, authorizeRoles('kalite', 'admin'), async (req
 // İade edilmiş malzemeleri listele
 router.get('/returns', authenticateToken, async (req, res) => {
   try {
-    // Önce basit bir query ile test edelim
+    // En basit query - sadece quality_results ve goods_receipt
     const result = await pool.query(`
       SELECT 
-        qr.id,
+        qr.id as quality_id,
         qr.rejected_quantity,
         qr.reason,
         qr.decision_date,
         qr.status,
+        qr.decision_by,
         gr.id as receipt_id,
         gr.material_code,
         gr.component_type,
@@ -267,58 +268,82 @@ router.get('/returns', authenticateToken, async (req, res) => {
       FROM quality_results qr
       INNER JOIN goods_receipt gr ON qr.receipt_id = gr.id
       WHERE qr.rejected_quantity > 0
-      ORDER BY qr.decision_date DESC NULLS LAST
+      ORDER BY COALESCE(qr.decision_date, qr.created_at) DESC
       LIMIT 100
     `);
 
-    // Eğer sonuç varsa, ek bilgileri ekleyelim
-    const enrichedResults = await Promise.all(result.rows.map(async (item) => {
-      // OTPA bilgisi
-      let otpaInfo = { otpa_number: null, project_name: null };
-      if (item.otpa_id) {
-        const otpaResult = await pool.query(
-          'SELECT otpa_number, project_name FROM otpa WHERE id = $1',
-          [item.otpa_id]
-        );
-        if (otpaResult.rows.length > 0) {
-          otpaInfo = otpaResult.rows[0];
-        }
-      }
+    if (result.rows.length === 0) {
+      return res.json([]);
+    }
 
-      // Malzeme bilgisi
-      let materialInfo = { material_name: null, unit: null };
-      if (item.otpa_id && item.material_code && item.component_type) {
-        const materialResult = await pool.query(
-          'SELECT material_name, unit FROM bom_items WHERE otpa_id = $1 AND material_code = $2 AND component_type = $3 LIMIT 1',
-          [item.otpa_id, item.material_code, item.component_type]
-        );
-        if (materialResult.rows.length > 0) {
-          materialInfo = materialResult.rows[0];
-        }
-      }
+    // OTPA bilgilerini toplu çek
+    const otpaIds = [...new Set(result.rows.map(r => r.otpa_id).filter(Boolean))];
+    const otpaMap = {};
+    if (otpaIds.length > 0) {
+      const otpaResult = await pool.query(
+        `SELECT id, otpa_number, project_name FROM otpa WHERE id = ANY($1)`,
+        [otpaIds]
+      );
+      otpaResult.rows.forEach(o => {
+        otpaMap[o.id] = o;
+      });
+    }
 
-      // Karar veren kişi
-      let decisionBy = null;
-      if (item.decision_by) {
-        const userResult = await pool.query(
-          'SELECT full_name FROM users WHERE id = $1',
-          [item.decision_by]
-        );
-        if (userResult.rows.length > 0) {
-          decisionBy = userResult.rows[0].full_name;
-        }
-      }
+    // Malzeme bilgilerini toplu çek
+    const bomKeys = result.rows
+      .filter(r => r.otpa_id && r.material_code && r.component_type)
+      .map(r => `${r.otpa_id}-${r.material_code}-${r.component_type}`);
+    
+    const bomMap = {};
+    if (bomKeys.length > 0) {
+      const bomResult = await pool.query(
+        `SELECT otpa_id, material_code, component_type, material_name, unit 
+         FROM bom_items 
+         WHERE otpa_id = ANY($1)`,
+        [otpaIds]
+      );
+      bomResult.rows.forEach(b => {
+        const key = `${b.otpa_id}-${b.material_code}-${b.component_type}`;
+        bomMap[key] = b;
+      });
+    }
 
+    // Kullanıcı bilgilerini toplu çek
+    const userIds = [...new Set(result.rows.map(r => r.decision_by).filter(Boolean))];
+    const userMap = {};
+    if (userIds.length > 0) {
+      const userResult = await pool.query(
+        `SELECT id, full_name FROM users WHERE id = ANY($1)`,
+        [userIds]
+      );
+      userResult.rows.forEach(u => {
+        userMap[u.id] = u.full_name;
+      });
+    }
+
+    // Sonuçları zenginleştir
+    const enrichedResults = result.rows.map(item => {
+      const otpa = otpaMap[item.otpa_id] || {};
+      const bomKey = `${item.otpa_id}-${item.material_code}-${item.component_type}`;
+      const bom = bomMap[bomKey] || {};
+      
       return {
-        ...item,
-        otpa_number: otpaInfo.otpa_number,
-        project_name: otpaInfo.project_name,
-        material_name: materialInfo.material_name,
-        unit: materialInfo.unit,
-        decision_by_name: decisionBy,
-        quality_status: item.status
+        id: item.receipt_id,
+        material_code: item.material_code,
+        component_type: item.component_type,
+        received_quantity: item.received_quantity,
+        created_at: item.created_at,
+        otpa_number: otpa.otpa_number || null,
+        project_name: otpa.project_name || null,
+        material_name: bom.material_name || null,
+        unit: bom.unit || null,
+        rejected_quantity: item.rejected_quantity,
+        reason: item.reason,
+        decision_date: item.decision_date,
+        quality_status: item.status,
+        decision_by_name: userMap[item.decision_by] || null
       };
-    }));
+    });
 
     res.json(enrichedResults);
   } catch (error) {
@@ -326,11 +351,12 @@ router.get('/returns', authenticateToken, async (req, res) => {
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
-      code: error.code
+      code: error.code,
+      detail: error.detail
     });
     res.status(500).json({ 
       error: 'Sunucu hatası', 
-      details: error.message,
+      message: error.message,
       code: error.code 
     });
   }
