@@ -446,4 +446,91 @@ router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin
   }
 });
 
+// Manuel iade oluştur
+router.post('/create-return', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { otpa_id, material_code, component_type, return_quantity, reason } = req.body;
+
+    if (!otpa_id || !material_code || !component_type || !return_quantity || !reason) {
+      return res.status(400).json({ error: 'Tüm alanlar gereklidir' });
+    }
+
+    await client.query('BEGIN');
+
+    // Bu OTPA + malzeme için kabul edilmiş toplam miktarı bul
+    const acceptedResult = await client.query(`
+      SELECT 
+        SUM(qr.accepted_quantity) as total_accepted,
+        SUM(qr.rejected_quantity) as total_rejected
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.otpa_id = $1 
+        AND gr.material_code = $2
+        AND gr.component_type = $3
+        AND qr.status = 'kabul'
+    `, [otpa_id, material_code, component_type]);
+
+    const totalAccepted = parseFloat(acceptedResult.rows[0]?.total_accepted || 0);
+    const totalRejected = parseFloat(acceptedResult.rows[0]?.total_rejected || 0);
+    const currentStock = totalAccepted - totalRejected;
+
+    if (return_quantity > currentStock) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: `İade miktarı mevcut stoktan fazla olamaz (Mevcut stok: ${currentStock})` 
+      });
+    }
+
+    // En son kabul edilmiş girişten iade et (FIFO mantığı)
+    const receiptResult = await client.query(`
+      SELECT gr.id, qr.id as quality_id, qr.accepted_quantity, qr.rejected_quantity
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.otpa_id = $1 
+        AND gr.material_code = $2
+        AND gr.component_type = $3
+        AND qr.status = 'kabul'
+        AND qr.accepted_quantity > qr.rejected_quantity
+      ORDER BY qr.decision_date DESC
+      LIMIT 1
+    `, [otpa_id, material_code, component_type]);
+
+    if (receiptResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'İade edilecek uygun kayıt bulunamadı' });
+    }
+
+    const receipt = receiptResult.rows[0];
+    
+    // Quality result'ı güncelle - accepted'ı azalt, rejected'ı artır
+    await client.query(`
+      UPDATE quality_results
+      SET accepted_quantity = accepted_quantity - $1,
+          rejected_quantity = rejected_quantity + $2,
+          reason = CASE 
+            WHEN reason IS NULL OR reason = '' THEN $3
+            ELSE reason || ' | ' || $4
+          END,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+    `, [return_quantity, return_quantity, reason, reason, receipt.quality_id]);
+
+    await client.query('COMMIT');
+
+    res.json({ 
+      message: 'İade başarıyla oluşturuldu',
+      returned_quantity: return_quantity 
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('İade oluşturma hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;

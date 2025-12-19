@@ -9,7 +9,7 @@ router.get('/otpa-completion', authenticateToken, async (req, res) => {
   try {
     const { otpa_id } = req.query;
 
-    // TEK QUERY - SÜPER HIZLI!
+    // TEK QUERY - SÜPER HIZLI! + İADE BİLGİSİ
     let query = `
       SELECT 
         o.id,
@@ -25,16 +25,24 @@ router.get('/otpa-completion', authenticateToken, async (req, res) => {
             LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
             WHERE gr.otpa_id = b.otpa_id 
               AND gr.material_code = b.material_code
+              AND gr.component_type = b.component_type
           ) >= b.required_quantity 
           THEN b.id 
-        END) as completed_items
+        END) as completed_items,
+        COALESCE((
+          SELECT SUM(qr.rejected_quantity)
+          FROM goods_receipt gr
+          LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+          WHERE gr.otpa_id = o.id 
+            AND qr.rejected_quantity > 0
+        ), 0) as rejected_items
       FROM otpa o
       LEFT JOIN bom_items b ON o.id = b.otpa_id
     `;
 
     const params = [];
     if (otpa_id) {
-      query += ' WHERE o.id = ?';
+      query += ' WHERE o.id = $1';
       params.push(otpa_id);
     }
 
