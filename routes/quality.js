@@ -446,13 +446,11 @@ router.get('/accepted-materials/:otpaId/:componentType', authenticateToken, asyn
 
     const result = await pool.query(`
       SELECT 
-        gr.id as receipt_id,
         gr.material_code,
         gr.component_type,
         b.material_name,
         b.unit,
-        qr.accepted_quantity,
-        qr.id as quality_id
+        SUM(qr.accepted_quantity) as accepted_quantity
       FROM goods_receipt gr
       JOIN quality_results qr ON gr.id = qr.receipt_id
       LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id 
@@ -462,7 +460,8 @@ router.get('/accepted-materials/:otpaId/:componentType', authenticateToken, asyn
         AND gr.component_type = $2
         AND qr.status = 'kabul'
         AND qr.accepted_quantity > 0
-      ORDER BY gr.receipt_date DESC
+      GROUP BY gr.material_code, gr.component_type, b.material_name, b.unit
+      ORDER BY gr.material_code
     `, [otpaId, componentType]);
 
     res.json(result.rows);
