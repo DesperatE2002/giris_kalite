@@ -145,6 +145,7 @@ router.get('/rejections', authenticateToken, async (req, res) => {
         AND gr.material_code = b.material_code
       LEFT JOIN users u ON qr.decision_by = u.id
       WHERE qr.status = ?
+        AND qr.rejected_quantity > 0
     `;
 
     const params = ['iade'];
