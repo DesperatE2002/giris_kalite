@@ -37,6 +37,11 @@ const ReturnsPage = {
                 data-tab="history">
                 <i class="fas fa-history mr-2"></i>İade Geçmişi
               </button>
+              <button onclick="ReturnsPage.switchTab('statistics')" 
+                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                data-tab="statistics">
+                <i class="fas fa-chart-bar mr-2"></i>İstatistikler
+              </button>
             </nav>
           </div>
         </div>
@@ -45,6 +50,7 @@ const ReturnsPage = {
         <div id="createReturnTab" class="tab-content"></div>
         <div id="receiptReturnTab" class="tab-content hidden"></div>
         <div id="historyReturnTab" class="tab-content hidden"></div>
+        <div id="statisticsReturnTab" class="tab-content hidden"></div>
       </div>
     `;
 
@@ -77,6 +83,9 @@ const ReturnsPage = {
     } else if (tabName === 'history') {
       document.getElementById('historyReturnTab').classList.remove('hidden');
       await this.renderHistory();
+    } else if (tabName === 'statistics') {
+      document.getElementById('statisticsReturnTab').classList.remove('hidden');
+      await this.renderStatistics();
     }
   },
 
@@ -323,7 +332,7 @@ const ReturnsPage = {
                     </td>
                     <td class="px-6 py-4 text-right font-bold text-red-600">${item.rejected_quantity}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${item.reason || '-'}</td>
-                    <td class="px-6 py-4 text-sm">${item.decision_by_name || 'Bilinmiyor'}</td>
+                    <td class="px-6 py-4 text-sm">${item.decision_by_name || '<span class="text-gray-400 italic">Kullanıcı bilgisi yok</span>'}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -680,6 +689,184 @@ const ReturnsPage = {
           <strong>Hata!</strong> ${error.message}
         </div>
       `;
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async renderStatistics() {
+    const container = document.getElementById('statisticsReturnTab');
+    
+    container.innerHTML = `
+      <div class="space-y-6">
+        <!-- Filtre -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Zaman Dilimi</label>
+              <select id="statisticPeriod" class="w-full px-4 py-2 border rounded-lg">
+                <option value="">Tüm Zamanlar</option>
+                <option value="1month">Son 1 Ay</option>
+                <option value="3months">Son 3 Ay</option>
+                <option value="1year" selected>Son 1 Yıl</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Malzeme Ara</label>
+              <div class="flex gap-2">
+                <input type="text" id="materialSearch" placeholder="Malzeme kodu girin..." 
+                  class="flex-1 px-4 py-2 border rounded-lg">
+                <button onclick="ReturnsPage.loadStatistics()" 
+                  class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                  <i class="fas fa-search mr-2"></i>Ara
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Genel İstatistikler -->
+        <div id="generalStats" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-red-100 text-sm">Toplam İade Sayısı</p>
+                <p id="totalReturnCount" class="text-4xl font-bold mt-2">-</p>
+              </div>
+              <i class="fas fa-undo text-5xl text-red-200 opacity-50"></i>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-orange-100 text-sm">Toplam İade Miktarı</p>
+                <p id="totalReturnQuantity" class="text-4xl font-bold mt-2">-</p>
+              </div>
+              <i class="fas fa-boxes text-5xl text-orange-200 opacity-50"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Malzeme Detayı -->
+        <div id="materialDetailSection" style="display:none;" class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-bold mb-4">Malzeme Detayı</h3>
+          <div id="materialDetailContent"></div>
+        </div>
+
+        <!-- En Çok İade Edilen Malzemeler -->
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-semibold">En Çok İade Edilen Malzemeler (Top 10)</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Kodu</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Adı</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Sayısı</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam Miktar</th>
+                </tr>
+              </thead>
+              <tbody id="topMaterialsTable" class="divide-y divide-gray-200">
+                <tr>
+                  <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Yükleniyor...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Event listeners
+    document.getElementById('statisticPeriod').addEventListener('change', () => this.loadStatistics());
+    
+    // İlk yükleme
+    await this.loadStatistics();
+  },
+
+  async loadStatistics() {
+    const period = document.getElementById('statisticPeriod').value;
+    const materialCode = document.getElementById('materialSearch').value.trim();
+
+    try {
+      showLoading(true);
+      
+      const params = new URLSearchParams();
+      if (period) params.append('period', period);
+      if (materialCode) params.append('material_code', materialCode);
+      
+      const stats = await api.request(`/reports/return-statistics?${params.toString()}`);
+
+      // Genel istatistikler
+      document.getElementById('totalReturnCount').textContent = stats.total.total_return_count || 0;
+      document.getElementById('totalReturnQuantity').textContent = stats.total.total_returned_quantity || 0;
+
+      // Malzeme detayı
+      if (stats.materialDetail) {
+        document.getElementById('materialDetailSection').style.display = 'block';
+        document.getElementById('materialDetailContent').innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-600">Malzeme Kodu</p>
+              <p class="text-lg font-bold">${stats.materialDetail.material_code}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Malzeme Adı</p>
+              <p class="text-lg font-bold">${stats.materialDetail.material_name || '-'}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Toplam İade Sayısı</p>
+              <p class="text-2xl font-bold text-red-600">${stats.materialDetail.return_count}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Toplam İade Miktarı</p>
+              <p class="text-2xl font-bold text-orange-600">${stats.materialDetail.total_quantity}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">İlk İade</p>
+              <p class="font-medium">${new Date(stats.materialDetail.first_return).toLocaleDateString('tr-TR')}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Son İade</p>
+              <p class="font-medium">${new Date(stats.materialDetail.last_return).toLocaleDateString('tr-TR')}</p>
+            </div>
+          </div>
+        `;
+      } else {
+        document.getElementById('materialDetailSection').style.display = 'none';
+      }
+
+      // En çok iade edilen malzemeler
+      const tableBody = document.getElementById('topMaterialsTable');
+      if (stats.topMaterials.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+              <i class="fas fa-inbox text-4xl mb-2"></i>
+              <p>Bu dönemde iade kaydı bulunmuyor</p>
+            </td>
+          </tr>
+        `;
+      } else {
+        tableBody.innerHTML = stats.topMaterials.map((item, index) => `
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm font-bold text-gray-500">${index + 1}</td>
+            <td class="px-6 py-4 font-medium">${item.material_code}</td>
+            <td class="px-6 py-4 text-sm">${item.material_name || '-'}</td>
+            <td class="px-6 py-4 text-right font-bold text-red-600">${item.return_count}</td>
+            <td class="px-6 py-4 text-right font-bold text-orange-600">${item.total_quantity}</td>
+          </tr>
+        `).join('');
+      }
+
+    } catch (error) {
+      alert('İstatistikler yüklenemedi: ' + error.message);
     } finally {
       showLoading(false);
     }

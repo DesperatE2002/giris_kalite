@@ -175,6 +175,87 @@ router.get('/rejections', authenticateToken, async (req, res) => {
   }
 });
 
+// İade İstatistikleri
+router.get('/return-statistics', authenticateToken, async (req, res) => {
+  try {
+    const { period, material_code } = req.query;
+    
+    let dateFilter = '';
+    if (period === '1month') {
+      dateFilter = `AND qr.decision_date >= date('now', '-1 month')`;
+    } else if (period === '3months') {
+      dateFilter = `AND qr.decision_date >= date('now', '-3 months')`;
+    } else if (period === '1year') {
+      dateFilter = `AND qr.decision_date >= date('now', '-1 year')`;
+    }
+
+    // Toplam iade miktarları
+    const totalQuery = `
+      SELECT 
+        COUNT(DISTINCT gr.id) as total_return_count,
+        SUM(qr.rejected_quantity) as total_returned_quantity
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE qr.status = ?
+        AND qr.rejected_quantity > 0
+        ${dateFilter}
+    `;
+    const totalResult = await pool.query(totalQuery, ['iade']);
+
+    // En çok iade edilen malzemeler
+    const topMaterialsQuery = `
+      SELECT 
+        gr.material_code,
+        b.material_name,
+        COUNT(DISTINCT gr.id) as return_count,
+        SUM(qr.rejected_quantity) as total_quantity
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      LEFT JOIN bom_items b ON gr.material_code = b.material_code
+      WHERE qr.status = ?
+        AND qr.rejected_quantity > 0
+        ${dateFilter}
+      GROUP BY gr.material_code, b.material_name
+      ORDER BY return_count DESC, total_quantity DESC
+      LIMIT 10
+    `;
+    const topMaterials = await pool.query(topMaterialsQuery, ['iade']);
+
+    // Belirli malzeme için detaylı istatistik
+    let materialDetail = null;
+    if (material_code) {
+      const materialQuery = `
+        SELECT 
+          gr.material_code,
+          b.material_name,
+          COUNT(DISTINCT gr.id) as return_count,
+          SUM(qr.rejected_quantity) as total_quantity,
+          MIN(qr.decision_date) as first_return,
+          MAX(qr.decision_date) as last_return
+        FROM quality_results qr
+        JOIN goods_receipt gr ON qr.receipt_id = gr.id
+        LEFT JOIN bom_items b ON gr.material_code = b.material_code
+        WHERE qr.status = ?
+          AND qr.rejected_quantity > 0
+          AND gr.material_code = ?
+          ${dateFilter}
+        GROUP BY gr.material_code, b.material_name
+      `;
+      const materialResult = await pool.query(materialQuery, ['iade', material_code]);
+      materialDetail = materialResult.rows[0] || null;
+    }
+
+    res.json({
+      total: totalResult.rows[0],
+      topMaterials: topMaterials.rows,
+      materialDetail: materialDetail
+    });
+  } catch (error) {
+    console.error('İade istatistikleri hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 // Özet istatistikler
 router.get('/summary', authenticateToken, async (req, res) => {
   try {
