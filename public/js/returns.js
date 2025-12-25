@@ -730,8 +730,9 @@ const ReturnsPage = {
           <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-red-100 text-sm">Toplam İade Sayısı</p>
+                <p class="text-red-100 text-sm">Seçili Periyotta İade Sayısı</p>
                 <p id="totalReturnCount" class="text-4xl font-bold mt-2">-</p>
+                <p class="text-red-100 text-xs mt-1">Toplam iade kesilen parça adedi</p>
               </div>
               <i class="fas fa-undo text-5xl text-red-200 opacity-50"></i>
             </div>
@@ -739,10 +740,11 @@ const ReturnsPage = {
           <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-orange-100 text-sm">Toplam İade Miktarı</p>
-                <p id="totalReturnQuantity" class="text-4xl font-bold mt-2">-</p>
+                <p class="text-orange-100 text-sm">En Çok İade Edilen</p>
+                <p id="topMaterialName" class="text-2xl font-bold mt-2">-</p>
+                <p id="topMaterialCount" class="text-orange-100 text-sm mt-1">- adet iade</p>
               </div>
-              <i class="fas fa-boxes text-5xl text-orange-200 opacity-50"></i>
+              <i class="fas fa-exclamation-triangle text-5xl text-orange-200 opacity-50"></i>
             </div>
           </div>
         </div>
@@ -766,12 +768,11 @@ const ReturnsPage = {
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Kodu</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Adı</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Sayısı</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam Miktar</th>
                 </tr>
               </thead>
               <tbody id="topMaterialsTable" class="divide-y divide-gray-200">
                 <tr>
-                  <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                  <td colspan="4" class="px-6 py-8 text-center text-gray-500">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                     <p>Yükleniyor...</p>
                   </td>
@@ -805,7 +806,16 @@ const ReturnsPage = {
 
       // Genel istatistikler
       document.getElementById('totalReturnCount').textContent = stats.total.total_return_count || 0;
-      document.getElementById('totalReturnQuantity').textContent = stats.total.total_returned_quantity || 0;
+      
+      // En çok iade edilen malzeme (turuncu kart)
+      if (stats.topMaterials.length > 0) {
+        const topMaterial = stats.topMaterials[0];
+        document.getElementById('topMaterialName').textContent = topMaterial.material_code;
+        document.getElementById('topMaterialCount').textContent = `${topMaterial.return_count} adet iade`;
+      } else {
+        document.getElementById('topMaterialName').textContent = '-';
+        document.getElementById('topMaterialCount').textContent = '0 adet iade';
+      }
 
       // Malzeme detayı
       if (stats.materialDetail) {
@@ -822,11 +832,7 @@ const ReturnsPage = {
             </div>
             <div>
               <p class="text-sm text-gray-600">Toplam İade Sayısı</p>
-              <p class="text-2xl font-bold text-red-600">${stats.materialDetail.return_count}</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-600">Toplam İade Miktarı</p>
-              <p class="text-2xl font-bold text-orange-600">${stats.materialDetail.total_quantity}</p>
+              <p class="text-2xl font-bold text-red-600">${stats.materialDetail.return_count} adet</p>
             </div>
             <div>
               <p class="text-sm text-gray-600">İlk İade</p>
@@ -847,7 +853,7 @@ const ReturnsPage = {
       if (stats.topMaterials.length === 0) {
         tableBody.innerHTML = `
           <tr>
-            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
               <i class="fas fa-inbox text-4xl mb-2"></i>
               <p>Bu dönemde iade kaydı bulunmuyor</p>
             </td>
@@ -859,8 +865,7 @@ const ReturnsPage = {
             <td class="px-6 py-4 text-sm font-bold text-gray-500">${index + 1}</td>
             <td class="px-6 py-4 font-medium">${item.material_code}</td>
             <td class="px-6 py-4 text-sm">${item.material_name || '-'}</td>
-            <td class="px-6 py-4 text-right font-bold text-red-600">${item.return_count}</td>
-            <td class="px-6 py-4 text-right font-bold text-orange-600">${item.total_quantity}</td>
+            <td class="px-6 py-4 text-right font-bold text-red-600">${item.return_count} adet</td>
           </tr>
         `).join('');
       }

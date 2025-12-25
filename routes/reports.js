@@ -189,39 +189,35 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '1 year'`;
     }
 
-    // Toplam iade miktarları
+    // Toplam iade miktarları (geçmişte iade edilmiş tüm kayıtlar)
     const totalQuery = `
       SELECT 
-        COUNT(DISTINCT gr.id) as total_return_count,
-        SUM(qr.rejected_quantity) as total_returned_quantity
+        COUNT(DISTINCT gr.id) as total_return_count
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       WHERE qr.status = $1
-        AND qr.rejected_quantity > 0
         ${dateFilter}
     `;
     const totalResult = await pool.query(totalQuery, ['iade']);
 
-    // En çok iade edilen malzemeler
+    // En çok iade edilen malzemeler (geçmiş tüm iade kayıtları)
     const topMaterialsQuery = `
       SELECT 
         gr.material_code,
         b.material_name,
-        COUNT(DISTINCT gr.id) as return_count,
-        SUM(qr.rejected_quantity) as total_quantity
+        COUNT(DISTINCT gr.id) as return_count
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code
       WHERE qr.status = $1
-        AND qr.rejected_quantity > 0
         ${dateFilter}
       GROUP BY gr.material_code, b.material_name
-      ORDER BY return_count DESC, total_quantity DESC
+      ORDER BY return_count DESC
       LIMIT 10
     `;
     const topMaterials = await pool.query(topMaterialsQuery, ['iade']);
 
-    // Belirli malzeme için detaylı istatistik
+    // Belirli malzeme için detaylı istatistik (geçmiş tüm iade kayıtları)
     let materialDetail = null;
     if (material_code) {
       const materialQuery = `
@@ -229,14 +225,12 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
           gr.material_code,
           b.material_name,
           COUNT(DISTINCT gr.id) as return_count,
-          SUM(qr.rejected_quantity) as total_quantity,
           MIN(qr.decision_date) as first_return,
           MAX(qr.decision_date) as last_return
         FROM quality_results qr
         JOIN goods_receipt gr ON qr.receipt_id = gr.id
         LEFT JOIN bom_items b ON gr.material_code = b.material_code
         WHERE qr.status = $1
-          AND qr.rejected_quantity > 0
           AND gr.material_code = $2
           ${dateFilter}
         GROUP BY gr.material_code, b.material_name
