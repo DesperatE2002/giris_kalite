@@ -7,6 +7,8 @@ const ReturnsPage = {
   async render() {
     const user = auth.getUser();
     
+    showLoading(true);
+    
     const container = document.getElementById('content');
     container.innerHTML = `
       <div class="max-w-7xl mx-auto">
@@ -48,10 +50,12 @@ const ReturnsPage = {
       </div>
     `;
 
-    this.switchTab('create');
+    await this.switchTab('create');
+    
+    showLoading(false);
   },
 
-  switchTab(tabName) {
+  async switchTab(tabName) {
     // Tab butonlarını güncelle
     document.querySelectorAll('.return-tab-btn').forEach(btn => {
       if (btn.dataset.tab === tabName) {
@@ -68,13 +72,13 @@ const ReturnsPage = {
     
     if (tabName === 'create') {
       document.getElementById('createReturnTab').classList.remove('hidden');
-      this.renderCreateReturn();
+      await this.renderCreateReturn();
     } else if (tabName === 'receipt') {
       document.getElementById('receiptReturnTab').classList.remove('hidden');
-      this.renderReceiptReturn();
+      await this.renderReceiptReturn();
     } else if (tabName === 'history') {
       document.getElementById('historyReturnTab').classList.remove('hidden');
-      this.renderHistory();
+      await this.renderHistory();
     }
   },
 
@@ -394,7 +398,6 @@ const ReturnsPage = {
 
   async loadOtpaList() {
     try {
-      showLoading(true);
       const otpaList = await api.otpa.list();
       this.otpaData = otpaList;
       
@@ -410,14 +413,11 @@ const ReturnsPage = {
       });
     } catch (error) {
       console.error('OTPA listesi yüklenemedi:', error);
-    } finally {
-      showLoading(false);
     }
   },
 
   async loadOtpaForReceipt() {
     try {
-      showLoading(true);
       const otpaList = await api.otpa.list();
       const select = document.getElementById('receiptOtpaId');
       
@@ -429,8 +429,6 @@ const ReturnsPage = {
       });
     } catch (error) {
       console.error('OTPA listesi yüklenemedi:', error);
-    } finally {
-      showLoading(false);
     }
   },
 
