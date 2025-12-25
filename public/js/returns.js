@@ -5,8 +5,6 @@ const ReturnsPage = {
   returnMaterialsData: {},
 
   async render() {
-    const user = auth.getUser();
-    
     showLoading(true);
     
     const container = document.getElementById('content');
