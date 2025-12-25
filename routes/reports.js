@@ -182,11 +182,11 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
     
     let dateFilter = '';
     if (period === '1month') {
-      dateFilter = `AND qr.decision_date >= date('now', '-1 month')`;
+      dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '1 month'`;
     } else if (period === '3months') {
-      dateFilter = `AND qr.decision_date >= date('now', '-3 months')`;
+      dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '3 months'`;
     } else if (period === '1year') {
-      dateFilter = `AND qr.decision_date >= date('now', '-1 year')`;
+      dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '1 year'`;
     }
 
     // Toplam iade miktarları
@@ -196,7 +196,7 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
         SUM(qr.rejected_quantity) as total_returned_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      WHERE qr.status = ?
+      WHERE qr.status = $1
         AND qr.rejected_quantity > 0
         ${dateFilter}
     `;
@@ -212,7 +212,7 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code
-      WHERE qr.status = ?
+      WHERE qr.status = $1
         AND qr.rejected_quantity > 0
         ${dateFilter}
       GROUP BY gr.material_code, b.material_name
@@ -235,9 +235,9 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
         FROM quality_results qr
         JOIN goods_receipt gr ON qr.receipt_id = gr.id
         LEFT JOIN bom_items b ON gr.material_code = b.material_code
-        WHERE qr.status = ?
+        WHERE qr.status = $1
           AND qr.rejected_quantity > 0
-          AND gr.material_code = ?
+          AND gr.material_code = $2
           ${dateFilter}
         GROUP BY gr.material_code, b.material_name
       `;
