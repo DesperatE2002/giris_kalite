@@ -37,7 +37,7 @@ router.get('/pending', authenticateToken, authorizeRoles('kalite', 'admin'), asy
 });
 
 // Manuel iade oluştur - Stoğu azalt (ÖNEMLİ: /:receiptId'den ÖNCE olmalı!)
-router.post('/manual-return', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'kalite', 'admin'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -436,6 +436,31 @@ router.get('/returns', authenticateToken, async (req, res) => {
       message: error.message,
       code: error.code 
     });
+  }
+});
+
+// İade havuzunu kontrol et (rejected pool)
+router.get('/rejected-pool/:otpaId/:componentType/:materialCode', authenticateToken, async (req, res) => {
+  try {
+    const { otpaId, componentType, materialCode } = req.params;
+
+    const result = await pool.query(`
+      SELECT SUM(qr.rejected_quantity) as total_rejected
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE gr.otpa_id = $1 
+        AND gr.component_type = $2
+        AND gr.material_code = $3
+        AND qr.status = 'iade'
+        AND qr.rejected_quantity > 0
+    `, [otpaId, componentType, materialCode]);
+
+    res.json({ 
+      total_rejected: parseFloat(result.rows[0]?.total_rejected || 0) 
+    });
+  } catch (error) {
+    console.error('İade havuzu hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
 

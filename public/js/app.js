@@ -113,6 +113,9 @@ const app = {
       case 'goods-receipt':
         goodsReceiptPage.render();
         break;
+      case 'returns':
+        ReturnsPage.render();
+        break;
       case 'quality':
         qualityPage.render();
         break;
