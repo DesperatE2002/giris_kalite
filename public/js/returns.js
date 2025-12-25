@@ -394,7 +394,8 @@ const ReturnsPage = {
 
   async loadOtpaList() {
     try {
-      const otpaList = await api.request('/otpa?status=acik');
+      showLoading(true);
+      const otpaList = await api.otpa.list();
       this.otpaData = otpaList;
       
       const datalist = document.getElementById('otpaReturnList');
@@ -409,12 +410,15 @@ const ReturnsPage = {
       });
     } catch (error) {
       console.error('OTPA listesi yüklenemedi:', error);
+    } finally {
+      showLoading(false);
     }
   },
 
   async loadOtpaForReceipt() {
     try {
-      const otpaList = await api.request('/otpa?status=acik');
+      showLoading(true);
+      const otpaList = await api.otpa.list();
       const select = document.getElementById('receiptOtpaId');
       
       otpaList.forEach(otpa => {
@@ -425,6 +429,8 @@ const ReturnsPage = {
       });
     } catch (error) {
       console.error('OTPA listesi yüklenemedi:', error);
+    } finally {
+      showLoading(false);
     }
   },
 
