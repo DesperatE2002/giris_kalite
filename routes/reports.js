@@ -192,7 +192,15 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
     // Toplam iade miktarları (geçmişte iade edilmiş tüm kayıtlar)
     const totalQuery = `
       SELECT 
-        COUNT(DISTINCT gr.id) as total_return_count
+        COUNT(DISTINCT gr.id) as total_return_transactions,
+        SUM(CASE 
+          WHEN qr.status = 'iade' THEN 
+            CASE 
+              WHEN gr.note LIKE '%İade dönüşü%' THEN qr.accepted_quantity
+              ELSE qr.rejected_quantity
+            END
+          ELSE 0
+        END) as total_return_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       WHERE qr.status = $1
@@ -205,14 +213,18 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       SELECT 
         gr.material_code,
         b.material_name,
-        COUNT(DISTINCT gr.id) as return_count
+        COUNT(DISTINCT gr.id) as return_transactions,
+        SUM(CASE 
+          WHEN gr.note LIKE '%İade dönüşü%' THEN qr.accepted_quantity
+          ELSE qr.rejected_quantity
+        END) as total_return_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code
       WHERE qr.status = $1
         ${dateFilter}
       GROUP BY gr.material_code, b.material_name
-      ORDER BY return_count DESC
+      ORDER BY total_return_quantity DESC, return_transactions DESC
       LIMIT 10
     `;
     const topMaterials = await pool.query(topMaterialsQuery, ['iade']);
@@ -224,7 +236,11 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
         SELECT 
           gr.material_code,
           b.material_name,
-          COUNT(DISTINCT gr.id) as return_count,
+          COUNT(DISTINCT gr.id) as return_transactions,
+          SUM(CASE 
+            WHEN gr.note LIKE '%İade dönüşü%' THEN qr.accepted_quantity
+            ELSE qr.rejected_quantity
+          END) as total_return_quantity,
           MIN(qr.decision_date) as first_return,
           MAX(qr.decision_date) as last_return
         FROM quality_results qr
