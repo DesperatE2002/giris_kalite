@@ -193,20 +193,13 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
     const totalQuery = `
       SELECT 
         COUNT(DISTINCT gr.id) as total_return_transactions,
-        SUM(CASE 
-          WHEN qr.status = 'iade' THEN 
-            CASE 
-              WHEN gr.note LIKE '%İade dönüşü%' THEN qr.accepted_quantity
-              ELSE qr.rejected_quantity
-            END
-          ELSE 0
-        END) as total_return_quantity
+        COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      WHERE qr.status = $1
+      WHERE qr.status = 'iade'
         ${dateFilter}
     `;
-    const totalResult = await pool.query(totalQuery, ['iade']);
+    const totalResult = await pool.query(totalQuery);
 
     // En çok iade edilen malzemeler (geçmiş tüm iade kayıtları)
     const topMaterialsQuery = `
@@ -214,20 +207,17 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
         gr.material_code,
         b.material_name,
         COUNT(DISTINCT gr.id) as return_transactions,
-        SUM(CASE 
-          WHEN gr.note LIKE '%İade dönüşü%' THEN qr.accepted_quantity
-          ELSE qr.rejected_quantity
-        END) as total_return_quantity
+        COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code
-      WHERE qr.status = $1
+      WHERE qr.status = 'iade'
         ${dateFilter}
       GROUP BY gr.material_code, b.material_name
       ORDER BY total_return_quantity DESC, return_transactions DESC
       LIMIT 10
     `;
-    const topMaterials = await pool.query(topMaterialsQuery, ['iade']);
+    const topMaterials = await pool.query(topMaterialsQuery);
 
     // Belirli malzeme için detaylı istatistik (geçmiş tüm iade kayıtları)
     let materialDetail = null;
@@ -237,21 +227,18 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
           gr.material_code,
           b.material_name,
           COUNT(DISTINCT gr.id) as return_transactions,
-          SUM(CASE 
-            WHEN gr.note LIKE '%İade dönüşü%' THEN qr.accepted_quantity
-            ELSE qr.rejected_quantity
-          END) as total_return_quantity,
+          COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity,
           MIN(qr.decision_date) as first_return,
           MAX(qr.decision_date) as last_return
         FROM quality_results qr
         JOIN goods_receipt gr ON qr.receipt_id = gr.id
         LEFT JOIN bom_items b ON gr.material_code = b.material_code
-        WHERE qr.status = $1
-          AND gr.material_code = $2
+        WHERE qr.status = 'iade'
+          AND gr.material_code = $1
           ${dateFilter}
         GROUP BY gr.material_code, b.material_name
       `;
-      const materialResult = await pool.query(materialQuery, ['iade', material_code]);
+      const materialResult = await pool.query(materialQuery, [material_code]);
       materialDetail = materialResult.rows[0] || null;
     }
 
@@ -261,8 +248,9 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       materialDetail: materialDetail
     });
   } catch (error) {
-    console.error('İade istatistikleri hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    console.error('İade istatistikleri hatası:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: 'Sunucu hatası', details: error.message });
   }
 });
 
