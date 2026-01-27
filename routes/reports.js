@@ -1,8 +1,51 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
+
+// Admin: İade istatistiklerini sıfırla (TEST İÇİN)
+router.post('/reset-return-stats', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Mevcut durumu al
+    const beforeResult = await client.query(`
+      SELECT 
+        COUNT(*) as total_records,
+        COALESCE(SUM(rejected_quantity), 0) as total_rejected
+      FROM quality_results
+      WHERE rejected_quantity > 0
+    `);
+    
+    // Sıfırla
+    const resetResult = await client.query(`
+      UPDATE quality_results
+      SET rejected_quantity = 0
+      WHERE rejected_quantity > 0
+    `);
+    
+    await client.query('COMMIT');
+    
+    res.json({
+      message: 'İade istatistikleri sıfırlandı',
+      before: {
+        records: parseInt(beforeResult.rows[0].total_records),
+        total_rejected: parseFloat(beforeResult.rows[0].total_rejected)
+      },
+      reset_count: resetResult.rowCount
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('İstatistik sıfırlama hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
+  }
+});
 
 // OTPA tamamlama raporu
 router.get('/otpa-completion', authenticateToken, async (req, res) => {

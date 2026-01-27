@@ -699,6 +699,22 @@ const ReturnsPage = {
     
     container.innerHTML = `
       <div class="space-y-6">
+        <!-- Admin: İstatistik Sıfırlama -->
+        ${currentUser?.role === 'admin' ? `
+          <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="font-bold text-yellow-900">⚠️ Test Modu</h3>
+                <p class="text-sm text-yellow-700 mt-1">İade istatistiklerini sıfırlayın (tüm rejected_quantity değerleri 0 olacak)</p>
+              </div>
+              <button onclick="ReturnsPage.resetStatistics()" 
+                class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg transition">
+                <i class="fas fa-trash mr-2"></i>Sıfırla
+              </button>
+            </div>
+          </div>
+        ` : ''}
+        
         <!-- Filtre -->
         <div class="bg-white rounded-lg shadow p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -883,6 +899,30 @@ const ReturnsPage = {
 
     } catch (error) {
       alert('İstatistikler yüklenemedi: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async resetStatistics() {
+    if (!confirm('⚠️ DİKKAT!\n\nTüm iade istatistikleri sıfırlanacak.\nBu işlem geri alınamaz.\n\nDevam etmek istediğinize emin misiniz?')) {
+      return;
+    }
+
+    try {
+      showLoading(true);
+      
+      const result = await api.request('/reports/reset-return-stats', {
+        method: 'POST'
+      });
+
+      alert(`✅ İstatistikler sıfırlandı!\n\n${result.reset_count} kayıt güncellendi.\nEski toplam: ${result.before.total_rejected} adet`);
+      
+      // Sayfayı yenile
+      await this.loadStatistics();
+      
+    } catch (error) {
+      alert('❌ Hata: ' + error.message);
     } finally {
       showLoading(false);
     }
