@@ -527,13 +527,17 @@ const ReturnsPage = {
     try {
       showLoading(true);
       
-      const response = await api.quality.createReturn({
+      const payload = {
         otpa_id: parseInt(otpaId),
         component_type: componentType,
         material_code: materialCode,
         return_quantity: returnQuantity,
         reason: reason
-      });
+      };
+      
+      console.log('🔍 İade gönderiliyor:', payload);
+      
+      const response = await api.quality.createReturn(payload);
 
       document.getElementById('returnResult').innerHTML = `
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">

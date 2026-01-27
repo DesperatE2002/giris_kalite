@@ -43,6 +43,8 @@ router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'ka
   try {
     const { otpa_id, component_type, material_code, return_quantity, reason } = req.body;
 
+    console.log('📥 Manuel iade isteği:', { otpa_id, component_type, material_code, return_quantity, reason });
+
     if (!otpa_id || !component_type || !material_code || !return_quantity || !reason) {
       return res.status(400).json({ error: 'OTPA, komponent, malzeme, miktar ve sebep gereklidir' });
     }
@@ -84,6 +86,8 @@ router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'ka
     }
 
     // Quality result'ı güncelle - Stoktan düş, iade havuzuna ekle
+    console.log(`📝 Quality result güncelleniyor: ID=${record.quality_id}, Eski rejected=${record.rejected_quantity}, Yeni rejected=${record.rejected_quantity + return_quantity}`);
+    
     await client.query(`
       UPDATE quality_results
       SET status = 'iade',
@@ -95,6 +99,8 @@ router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'ka
           updated_at = CURRENT_TIMESTAMP
       WHERE id = $5
     `, [return_quantity, return_quantity, reason, req.user.userId, record.quality_id]);
+
+    console.log('✅ İade başarıyla kaydedildi');
 
     await client.query('COMMIT');
 
