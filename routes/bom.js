@@ -107,6 +107,7 @@ router.post('/upload', authenticateToken, authorizeRoles('admin'), upload.single
       const materialName = row['Malzeme Adı'] || row['malzeme_adi'] || row['material_name'] || row['MALZEME ADI'];
       const requiredQuantity = row['Miktar'] || row['miktar'] || row['required_quantity'] || row['MIKTAR'];
       const unit = row['Birim'] || row['birim'] || row['unit'] || row['BIRIM'];
+      const componentType = row['Komponent'] || row['komponent'] || row['component_type'] || row['KOMPONENT'];
 
       if (!materialCode || !materialName || !requiredQuantity || !unit) {
         errors.push(`Satır ${lineNumber}: Eksik bilgi (Malzeme Kodu, Malzeme Adı, Miktar, Birim gerekli)`);
@@ -119,11 +120,25 @@ router.post('/upload', authenticateToken, authorizeRoles('admin'), upload.single
         return;
       }
 
+      // Component type'ı normalize et - Varsayılan: batarya
+      let normalizedComponentType = 'batarya';
+      if (componentType) {
+        const componentTypeLower = componentType.toString().toLowerCase().trim();
+        if (componentTypeLower.includes('vccu')) {
+          normalizedComponentType = 'vccu';
+        } else if (componentTypeLower.includes('junction') || componentTypeLower.includes('box')) {
+          normalizedComponentType = 'junction_box';
+        } else if (componentTypeLower.includes('pdu')) {
+          normalizedComponentType = 'pdu';
+        }
+      }
+
       bomItems.push({
         material_code: materialCode.toString().trim(),
         material_name: materialName.toString().trim(),
         required_quantity: quantity,
-        unit: unit.toString().trim()
+        unit: unit.toString().trim(),
+        component_type: normalizedComponentType
       });
     });
 
@@ -143,21 +158,37 @@ router.post('/upload', authenticateToken, authorizeRoles('admin'), upload.single
     // Önce mevcut BOM'u sil
     await pool.query('DELETE FROM bom_items WHERE otpa_id = ?', [otpaId]);
 
-    // Yeni BOM'u ekle (miktarları paket sayısıyla çarp)
+    // Yeni BOM'u ekle (sadece batarya için miktarları paket sayısıyla çarp)
+    let batteryCount = 0;
+    let otherCount = 0;
+    
     for (const item of bomItems) {
-      const adjustedQuantity = item.required_quantity * batteryPackCount;
+      // Sadece batarya komponentleri için paket sayısıyla çarp
+      const multiplier = item.component_type === 'batarya' ? batteryPackCount : 1;
+      const adjustedQuantity = item.required_quantity * multiplier;
+      
       await pool.query(
-        `INSERT INTO bom_items (otpa_id, material_code, material_name, required_quantity, unit)
-         VALUES (?, ?, ?, ?, ?)`,
-        [otpaId, item.material_code, item.material_name, adjustedQuantity, item.unit]
+        `INSERT INTO bom_items (otpa_id, component_type, material_code, material_name, required_quantity, unit)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [otpaId, item.component_type, item.material_code, item.material_name, adjustedQuantity, item.unit]
       );
+      
+      if (item.component_type === 'batarya') {
+        batteryCount++;
+      } else {
+        otherCount++;
+      }
     }
+
+    console.log(`✅ ${batteryCount} batarya malzemesi (${batteryPackCount}x), ${otherCount} diğer malzeme (1x) eklendi`);
 
     res.json({
       message: 'BOM başarıyla yüklendi',
       count: bomItems.length,
       battery_pack_count: batteryPackCount,
-      note: `Miktarlar ${batteryPackCount} paket için ayarlandı`
+      battery_items: batteryCount,
+      other_items: otherCount,
+      note: `Batarya: ${batteryCount} malzeme (${batteryPackCount}x çarpıldı), Diğer: ${otherCount} malzeme (1x)`
     });
   } catch (error) {
     console.error('BOM yükleme hatası:', error);

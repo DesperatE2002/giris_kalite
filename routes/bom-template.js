@@ -229,13 +229,27 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
       return res.status(400).json({ error: 'Şablonda malzeme bulunamadı' });
     }
 
+    // OTPA'nın paket sayısını al
+    const otpaResult = await client.query(`
+      SELECT battery_pack_count FROM otpa WHERE id = $1
+    `, [otpaId]);
+    
+    const batteryPackCount = otpaResult.rows[0]?.battery_pack_count || 1;
+    
+    // Sadece batarya için paket sayısıyla çarp, diğerleri için 1x
+    const multiplier = component_type === 'batarya' ? batteryPackCount : 1;
+    
+    console.log(`📦 Şablon uygulanıyor - ${component_type.toUpperCase()}, Çarpan: ${multiplier}x`);
+
     // Mevcut component_type BOM'unu sil
     await client.query(`
       DELETE FROM bom_items WHERE otpa_id = $1 AND component_type = $2
     `, [otpaId, component_type]);
 
-    // Şablon malzemelerini OTPA'ya kopyala
+    // Şablon malzemelerini OTPA'ya kopyala (batarya için paket sayısıyla çarp)
     for (const item of itemsResult.rows) {
+      const adjustedQuantity = item.quantity * multiplier;
+      
       await client.query(`
         INSERT INTO bom_items (otpa_id, component_type, material_code, material_name, required_quantity, unit)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -246,17 +260,21 @@ router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('adm
         component_type,
         item.material_code,
         item.material_name,
-        item.quantity,
+        adjustedQuantity,
         item.unit
       ]);
     }
 
     await client.query('COMMIT');
 
+    console.log(`✅ ${itemsResult.rows.length} malzeme ${component_type} için uygulandı (${multiplier}x çarpıldı)`);
+
     res.json({
       message: `BOM şablonu ${component_type} için başarıyla uygulandı`,
       item_count: itemsResult.rows.length,
-      component_type: component_type
+      component_type: component_type,
+      multiplier: multiplier,
+      battery_pack_count: batteryPackCount
     });
   } catch (error) {
     await client.query('ROLLBACK');
