@@ -700,7 +700,7 @@ const ReturnsPage = {
     container.innerHTML = `
       <div class="space-y-6">
         <!-- Admin: İstatistik Sıfırlama -->
-        ${currentUser?.role === 'admin' ? `
+        ${authManager.currentUser?.role === 'admin' ? `
           <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
             <div class="flex items-center justify-between">
               <div>
