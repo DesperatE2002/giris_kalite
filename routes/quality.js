@@ -100,6 +100,26 @@ router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'ka
       WHERE id = $5
     `, [return_quantity, return_quantity, reason, req.user.userId, record.quality_id]);
 
+    // İade kaydını return_logs tablosuna kaydet (kalıcı log)
+    const materialNameResult = await client.query(
+      `SELECT material_name, unit FROM bom_items WHERE otpa_id = $1 AND material_code = $2 LIMIT 1`,
+      [otpa_id, material_code]
+    );
+    
+    await client.query(`
+      INSERT INTO return_logs (otpa_id, component_type, material_code, material_name, return_quantity, unit, reason, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `, [
+      otpa_id,
+      component_type, 
+      material_code,
+      materialNameResult.rows[0]?.material_name || null,
+      return_quantity,
+      materialNameResult.rows[0]?.unit || 'adet',
+      reason,
+      req.user.userId
+    ]);
+
     console.log('✅ İade başarıyla kaydedildi');
 
     await client.query('COMMIT');

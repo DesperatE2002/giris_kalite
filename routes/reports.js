@@ -232,31 +232,29 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '1 year'`;
     }
 
-    // Toplam iade miktarları (rejected_quantity > 0 olan tüm kayıtlar)
+    // Toplam iade miktarları (return_logs tablosundan - kalıcı kayıtlar)
     const totalQuery = `
       SELECT 
-        COUNT(DISTINCT gr.material_code) as unique_materials,
-        COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity
-      FROM quality_results qr
-      JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      WHERE qr.rejected_quantity > 0
-        ${dateFilter}
+        COUNT(DISTINCT rl.material_code) as unique_materials,
+        COALESCE(SUM(rl.return_quantity), 0) as total_return_quantity
+      FROM return_logs rl
+      WHERE 1=1
+        ${dateFilter.replace('qr.decision_date', 'rl.created_at')}
     `;
     const totalResult = await pool.query(totalQuery);
 
-    // En çok iade edilen malzemeler (rejected_quantity > 0 olan tüm kayıtlar)
-    // BOM ile JOIN yapmadan direkt topla (JOIN çarpım sorunu önlenir)
+    // En çok iade edilen malzemeler (return_logs'dan - kalıcı kayıtlar)
     const topMaterialsQuery = `
       SELECT 
-        gr.material_code,
-        (SELECT b.material_name FROM bom_items b WHERE b.material_code = gr.material_code LIMIT 1) as material_name,
-        COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity,
-        COUNT(DISTINCT gr.otpa_id) as affected_otpas
-      FROM quality_results qr
-      JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      WHERE qr.rejected_quantity > 0
-        ${dateFilter}
-      GROUP BY gr.material_code
+        rl.material_code,
+        MAX(rl.material_name) as material_name,
+        COALESCE(SUM(rl.return_quantity), 0) as total_return_quantity,
+        COUNT(DISTINCT rl.otpa_id) as affected_otpas,
+        COUNT(*) as return_count
+      FROM return_logs rl
+      WHERE 1=1
+        ${dateFilter.replace('qr.decision_date', 'rl.created_at')}
+      GROUP BY rl.material_code
       ORDER BY total_return_quantity DESC
       LIMIT 10
     `;
@@ -267,17 +265,16 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
     if (material_code) {
       const materialQuery = `
         SELECT 
-          gr.material_code,
-          (SELECT b.material_name FROM bom_items b WHERE b.material_code = gr.material_code LIMIT 1) as material_name,
-          COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity,
-          MIN(qr.decision_date) as first_return,
-          MAX(qr.decision_date) as last_return
-        FROM quality_results qr
-        JOIN goods_receipt gr ON qr.receipt_id = gr.id
-        WHERE qr.rejected_quantity > 0
-          AND gr.material_code = $1
-          ${dateFilter}
-        GROUP BY gr.material_code
+          rl.material_code,
+          MAX(rl.material_name) as material_name,
+          COALESCE(SUM(rl.return_quantity), 0) as total_return_quantity,
+          MIN(rl.created_at) as first_return,
+          MAX(rl.created_at) as last_return,
+          COUNT(*) as return_count
+        FROM return_logs rl
+        WHERE rl.material_code = $1
+          ${dateFilter.replace('qr.decision_date', 'rl.created_at')}
+        GROUP BY rl.material_code
       `;
       const materialResult = await pool.query(materialQuery, [material_code]);
       materialDetail = materialResult.rows[0] || null;
