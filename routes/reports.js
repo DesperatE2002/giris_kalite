@@ -197,7 +197,6 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       WHERE qr.rejected_quantity > 0
-        AND gr.return_of_rejected = false
         ${dateFilter}
     `;
     const totalResult = await pool.query(totalQuery);
@@ -212,7 +211,6 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code AND gr.component_type = b.component_type
       WHERE qr.rejected_quantity > 0
-        AND gr.return_of_rejected = false
         ${dateFilter}
       GROUP BY gr.material_code
       ORDER BY total_return_quantity DESC
@@ -234,7 +232,6 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
         JOIN goods_receipt gr ON qr.receipt_id = gr.id
         LEFT JOIN bom_items b ON gr.material_code = b.material_code AND gr.component_type = b.component_type
         WHERE qr.rejected_quantity > 0
-          AND gr.return_of_rejected = false
           AND gr.material_code = $1
           ${dateFilter}
         GROUP BY gr.material_code
