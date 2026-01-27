@@ -726,25 +726,35 @@ const ReturnsPage = {
         </div>
 
         <!-- Genel İstatistikler -->
-        <div id="generalStats" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div id="generalStats" class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-red-100 text-sm">Toplam İade Edilen Adet</p>
-                <p id="totalReturnQuantity" class="text-4xl font-bold mt-2">-</p>
-                <p id="totalReturnTransactions" class="text-red-100 text-xs mt-1">- işlem</p>
+                <p class="text-red-100 text-sm font-medium">Toplam İade Kesilen</p>
+                <p id="totalReturnQuantity" class="text-5xl font-bold mt-3">-</p>
+                <p class="text-red-100 text-xs mt-2">adet</p>
               </div>
-              <i class="fas fa-undo text-5xl text-red-200 opacity-50"></i>
+              <i class="fas fa-undo text-6xl text-red-200 opacity-30"></i>
             </div>
           </div>
           <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-orange-100 text-sm">En Çok İade Edilen</p>
-                <p id="topMaterialName" class="text-2xl font-bold mt-2">-</p>
-                <p id="topMaterialCount" class="text-orange-100 text-sm mt-1">- adet iade</p>
+                <p class="text-orange-100 text-sm font-medium">En Çok İade Edilen</p>
+                <p id="topMaterialCode" class="text-2xl font-bold mt-3">-</p>
+                <p id="topMaterialCount" class="text-orange-100 text-sm mt-2">- adet</p>
               </div>
-              <i class="fas fa-exclamation-triangle text-5xl text-orange-200 opacity-50"></i>
+              <i class="fas fa-exclamation-triangle text-6xl text-orange-200 opacity-30"></i>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-blue-100 text-sm font-medium">Farklı Malzeme Sayısı</p>
+                <p id="uniqueMaterialCount" class="text-5xl font-bold mt-3">-</p>
+                <p class="text-blue-100 text-xs mt-2">çeşit</p>
+              </div>
+              <i class="fas fa-boxes text-6xl text-blue-200 opacity-30"></i>
             </div>
           </div>
         </div>
@@ -767,8 +777,7 @@ const ReturnsPage = {
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Kodu</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Adı</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam Adet</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İşlem Sayısı</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Kesilen Adet</th>
                 </tr>
               </thead>
               <tbody id="topMaterialsTable" class="divide-y divide-gray-200">
@@ -806,17 +815,17 @@ const ReturnsPage = {
       const stats = await api.request(`/reports/return-statistics?${params.toString()}`);
 
       // Genel istatistikler
-      document.getElementById('totalReturnQuantity').textContent = stats.total.total_return_quantity || 0;
-      document.getElementById('totalReturnTransactions').textContent = `${stats.total.total_return_transactions || 0} işlem`;
+      document.getElementById('totalReturnQuantity').textContent = Math.round(stats.total.total_return_quantity || 0);
+      document.getElementById('uniqueMaterialCount').textContent = stats.total.unique_materials || 0;
       
       // En çok iade edilen malzeme (turuncu kart)
       if (stats.topMaterials.length > 0) {
         const topMaterial = stats.topMaterials[0];
-        document.getElementById('topMaterialName').textContent = topMaterial.material_code;
-        document.getElementById('topMaterialCount').textContent = `${topMaterial.total_return_quantity || 0} adet (${topMaterial.return_transactions || 0} işlem)`;
+        document.getElementById('topMaterialCode').textContent = topMaterial.material_code;
+        document.getElementById('topMaterialCount').textContent = `${Math.round(topMaterial.total_return_quantity || 0)} adet`;
       } else {
-        document.getElementById('topMaterialName').textContent = '-';
-        document.getElementById('topMaterialCount').textContent = '0 adet iade';
+        document.getElementById('topMaterialCode').textContent = '-';
+        document.getElementById('topMaterialCount').textContent = '0 adet';
       }
 
       // Malzeme detayı
@@ -833,12 +842,8 @@ const ReturnsPage = {
               <p class="text-lg font-bold">${stats.materialDetail.material_name || '-'}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Toplam İade Edilen Adet</p>
-              <p class="text-2xl font-bold text-red-600">${stats.materialDetail.total_return_quantity || 0} adet</p>
-            </div>
-            <div>
-              <p class="text-sm text-gray-600">İade İşlem Sayısı</p>
-              <p class="text-2xl font-bold text-orange-600">${stats.materialDetail.return_transactions || 0} işlem</p>
+              <p class="text-sm text-gray-600">Toplam İade Kesilen</p>
+              <p class="text-3xl font-bold text-red-600">${Math.round(stats.materialDetail.total_return_quantity || 0)} adet</p>
             </div>
             <div>
               <p class="text-sm text-gray-600">İlk İade</p>
@@ -867,12 +872,11 @@ const ReturnsPage = {
         `;
       } else {
         tableBody.innerHTML = stats.topMaterials.map((item, index) => `
-          <tr class="hover:bg-gray-50">
+          <tr class="hover:bg-gray-50 cursor-pointer" onclick="document.getElementById('materialSearch').value='${item.material_code}'; ReturnsPage.loadStatistics();">
             <td class="px-6 py-4 text-sm font-bold text-gray-500">${index + 1}</td>
-            <td class="px-6 py-4 font-medium">${item.material_code}</td>
+            <td class="px-6 py-4 font-medium text-blue-600">${item.material_code}</td>
             <td class="px-6 py-4 text-sm">${item.material_name || '-'}</td>
-            <td class="px-6 py-4 text-right font-bold text-red-600">${item.total_return_quantity || 0} adet</td>
-            <td class="px-6 py-4 text-right font-bold text-orange-600">${item.return_transactions || 0} işlem</td>
+            <td class="px-6 py-4 text-right font-bold text-red-600 text-lg">${Math.round(item.total_return_quantity || 0)} adet</td>
           </tr>
         `).join('');
       }
