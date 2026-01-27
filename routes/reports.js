@@ -202,11 +202,13 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
     const totalResult = await pool.query(totalQuery);
 
     // En çok iade edilen malzemeler (rejected_quantity > 0 olan tüm kayıtlar)
+    // Her malzeme kodu için tüm OTPA'lardaki iadeleri topla
     const topMaterialsQuery = `
       SELECT 
         gr.material_code,
         MAX(b.material_name) as material_name,
-        COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity
+        COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity,
+        COUNT(DISTINCT gr.otpa_id) as affected_otpas
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code AND gr.component_type = b.component_type
