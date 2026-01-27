@@ -189,19 +189,19 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '1 year'`;
     }
 
-    // Toplam iade miktarları (geçmişte iade edilmiş tüm kayıtlar)
+    // Toplam iade miktarları (rejected_quantity > 0 olan tüm kayıtlar)
     const totalQuery = `
       SELECT 
         COUNT(DISTINCT gr.id) as total_return_transactions,
         COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
-      WHERE qr.status = 'iade'
+      WHERE qr.rejected_quantity > 0
         ${dateFilter}
     `;
     const totalResult = await pool.query(totalQuery);
 
-    // En çok iade edilen malzemeler (geçmiş tüm iade kayıtları)
+    // En çok iade edilen malzemeler (rejected_quantity > 0 olan tüm kayıtlar)
     const topMaterialsQuery = `
       SELECT 
         gr.material_code,
@@ -211,7 +211,7 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN bom_items b ON gr.material_code = b.material_code
-      WHERE qr.status = 'iade'
+      WHERE qr.rejected_quantity > 0
         ${dateFilter}
       GROUP BY gr.material_code, b.material_name
       ORDER BY total_return_quantity DESC, return_transactions DESC
@@ -233,7 +233,7 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
         FROM quality_results qr
         JOIN goods_receipt gr ON qr.receipt_id = gr.id
         LEFT JOIN bom_items b ON gr.material_code = b.material_code
-        WHERE qr.status = 'iade'
+        WHERE qr.rejected_quantity > 0
           AND gr.material_code = $1
           ${dateFilter}
         GROUP BY gr.material_code, b.material_name
