@@ -206,12 +206,12 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       await pool.query(
         `UPDATE users SET full_name = ?, role = ?, is_active = ?, password = ? WHERE id = ? RETURNING id, username, full_name, role, is_active, created_at`,
-        [full_name, role, is_active ? 1 : 0, hashedPassword, userId]
+        [full_name, role, is_active ? true : false, hashedPassword, userId]
       );
     } else {
       await pool.query(
         `UPDATE users SET full_name = ?, role = ?, is_active = ? WHERE id = ? RETURNING id, username, full_name, role, is_active, created_at`,
-        [full_name, role, is_active ? 1 : 0, userId]
+        [full_name, role, is_active ? true : false, userId]
       );
     }
 

@@ -23,7 +23,7 @@ function calculatePerformanceScore(difficulty, durationMinutes) {
 router.get('/users', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, username, full_name, role FROM users WHERE is_active = 1 ORDER BY full_name`
+      `SELECT id, username, full_name, role FROM users WHERE is_active = TRUE ORDER BY full_name`
     );
     res.json(result.rows);
   } catch (error) {
@@ -39,7 +39,7 @@ router.get('/workforce', authenticateToken, async (req, res) => {
   try {
     // Tüm aktif kullanıcılar
     const techResult = await pool.query(
-      `SELECT id, username, full_name, role FROM users WHERE is_active = 1 ORDER BY full_name`
+      `SELECT id, username, full_name, role FROM users WHERE is_active = TRUE ORDER BY full_name`
     );
     const technicians = techResult.rows;
 
@@ -440,7 +440,7 @@ router.get('/leaderboard', authenticateToken, async (req, res) => {
         MAX(a.performance_score) as best_score
       FROM users u
       LEFT JOIN tech_assignments a ON a.assigned_to = u.id AND a.status = 'completed' ${dateFilter}
-      WHERE u.is_active = 1
+      WHERE u.is_active = TRUE
       GROUP BY u.id, u.full_name, u.username
       ORDER BY total_score DESC, avg_score DESC
     `, dateParams);
