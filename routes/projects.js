@@ -264,7 +264,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, re
 // Görev oluştur
 router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason } = req.body;
+    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: 'Görev adı gereklidir' });
@@ -279,9 +279,9 @@ router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), asy
     }
     
     const result = await pool.query(
-      `INSERT INTO project_tasks (project_id, title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
-      [req.params.projectId, title, owner_text || '', status || 'backlog', duration_workdays || 1, progress_percent || 0, manual_start_date || null, depends_on_task_id || null, blocked_reason || null]
+      `INSERT INTO project_tasks (project_id, title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      [req.params.projectId, title, owner_text || '', status || 'backlog', duration_workdays || 1, progress_percent || 0, manual_start_date || null, depends_on_task_id || null, blocked_reason || null, notes || null]
     );
     
     res.status(201).json(result.rows[0]);
@@ -294,7 +294,7 @@ router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), asy
 // Görev güncelle
 router.put('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason } = req.body;
+    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes } = req.body;
     
     // Döngüsel bağımlılık kontrolü
     if (depends_on_task_id) {
@@ -319,11 +319,11 @@ router.put('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin
       `UPDATE project_tasks SET 
         title = ?, owner_text = ?, status = ?, duration_workdays = ?,
         progress_percent = ?, manual_start_date = ?, depends_on_task_id = ?,
-        blocked_reason = ?, updated_at = CURRENT_TIMESTAMP
+        blocked_reason = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND project_id = ? RETURNING *`,
       [title, owner_text || '', status || 'backlog', duration_workdays || 1, 
        progress_percent || 0, manual_start_date || null, depends_on_task_id || null,
-       blocked_reason || null, req.params.taskId, req.params.projectId]
+       blocked_reason || null, notes || null, req.params.taskId, req.params.projectId]
     );
     
     if (result.rows.length === 0) {

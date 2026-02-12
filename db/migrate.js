@@ -135,6 +135,44 @@ const migrate = async () => {
     await client.query('CREATE INDEX IF NOT EXISTS idx_project_tasks_depends ON project_tasks(depends_on_task_id)');
     console.log('✅ Project Tasks tablosu oluşturuldu');
 
+    // Tech Assignments tablosu
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tech_assignments (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(300) NOT NULL,
+        description TEXT,
+        assigned_to INTEGER NOT NULL REFERENCES users(id),
+        assigned_by INTEGER REFERENCES users(id),
+        difficulty INTEGER DEFAULT 3 CHECK (difficulty >= 1 AND difficulty <= 5),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'blocked', 'completed')),
+        notes TEXT,
+        blocked_reason TEXT,
+        started_at TIMESTAMP,
+        completed_at TIMESTAMP,
+        actual_duration_minutes INTEGER,
+        performance_score REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_tech_assignments_assigned ON tech_assignments(assigned_to)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_tech_assignments_status ON tech_assignments(status)');
+    console.log('✅ Tech Assignments tablosu oluşturuldu');
+
+    // Tech Activity Logs tablosu
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tech_activity_logs (
+        id SERIAL PRIMARY KEY,
+        assignment_id INTEGER NOT NULL REFERENCES tech_assignments(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id),
+        action VARCHAR(20) NOT NULL CHECK (action IN ('start', 'complete', 'block', 'note')),
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_tech_logs_assignment ON tech_activity_logs(assignment_id)');
+    console.log('✅ Tech Activity Logs tablosu oluşturuldu');
+
     // Varsayılan admin kullanıcısı oluştur
     const hashedPassword = await bcrypt.hash('admin123', 10);
     await client.query(`

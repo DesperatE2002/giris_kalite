@@ -87,6 +87,15 @@ const app = {
         btn.style.display = 'none';
       }
     });
+
+    // Technicians page - admin and tekniker (always visible)
+    document.querySelectorAll('[data-page="technicians"]').forEach(btn => {
+      if (user.role === 'admin' || user.role === 'tekniker') {
+        btn.style.display = '';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
   },
 
   navigate(page) {
@@ -133,6 +142,9 @@ const app = {
         break;
       case 'projects':
         ProjectsPage.render();
+        break;
+      case 'technicians':
+        TechPage.render();
         break;
       default:
         this.navigate('dashboard');

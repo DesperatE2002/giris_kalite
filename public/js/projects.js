@@ -311,6 +311,7 @@ const ProjectsPage = {
                       ${depTask ? `<span class="text-purple-600"><i class="fas fa-link mr-1"></i>${depTask.title}</span>` : ''}
                     </div>
                     ${t.status === 'blocked' && t.blocked_reason ? `<div class="mt-1 text-xs text-orange-600"><i class="fas fa-ban mr-1"></i>${t.blocked_reason}</div>` : ''}
+                    ${t.notes ? `<div class="mt-1 text-xs text-gray-500 bg-gray-50 rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${t.notes}</div>` : ''}
                   </div>
 
                   <!-- Sağ: İlerleme & Aksiyonlar -->
@@ -615,6 +616,13 @@ const ProjectsPage = {
               class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Neden bloke?">
           </div>
 
+          <!-- Notlar -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-sticky-note text-yellow-500 mr-1"></i>Notlar</label>
+            <textarea id="tf_notes" rows="2" 
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Görevle ilgili kısa notlar...">${task?.notes || ''}</textarea>
+          </div>
+
           <div class="flex gap-3">
             <button type="submit" class="gradient-btn text-white px-6 py-2 rounded-lg font-semibold">
               <i class="fas fa-save mr-1"></i>${task ? 'Güncelle' : 'Ekle'}
@@ -646,7 +654,8 @@ const ProjectsPage = {
       progress_percent: parseInt(document.getElementById('tf_progress').value) || 0,
       manual_start_date: document.getElementById('tf_manual_start').value || null,
       depends_on_task_id: document.getElementById('tf_hasDep').checked ? (parseInt(document.getElementById('tf_depSelect').value) || null) : null,
-      blocked_reason: document.getElementById('tf_status').value === 'blocked' ? document.getElementById('tf_blocked_reason').value : null
+      blocked_reason: document.getElementById('tf_status').value === 'blocked' ? document.getElementById('tf_blocked_reason').value : null,
+      notes: document.getElementById('tf_notes').value || null
     };
 
     // Done ise %100 yap

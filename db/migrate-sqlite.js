@@ -157,6 +157,7 @@ try {
       manual_start_date TEXT,
       depends_on_task_id INTEGER,
       blocked_reason TEXT,
+      notes TEXT,
       calculated_start_date TEXT,
       calculated_end_date TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -166,6 +167,56 @@ try {
     )
   `);
   console.log('✅ Project Tasks tablosu oluşturuldu');
+
+  // Tech Assignments tablosu
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tech_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      assigned_to INTEGER NOT NULL,
+      assigned_by INTEGER,
+      difficulty INTEGER DEFAULT 3,
+      status TEXT NOT NULL DEFAULT 'pending',
+      notes TEXT,
+      blocked_reason TEXT,
+      started_at TEXT,
+      completed_at TEXT,
+      actual_duration_minutes INTEGER,
+      performance_score REAL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (assigned_to) REFERENCES users(id),
+      FOREIGN KEY (assigned_by) REFERENCES users(id)
+    )
+  `);
+  console.log('✅ Tech Assignments tablosu oluşturuldu');
+
+  // Tech Activity Logs tablosu
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tech_activity_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      assignment_id INTEGER NOT NULL,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      note TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (assignment_id) REFERENCES tech_assignments(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  console.log('✅ Tech Activity Logs tablosu oluşturuldu');
+
+  // Mevcut project_tasks tablosuna notes sütunu ekle
+  try {
+    const ptCols = db.pragma('table_info(project_tasks)');
+    if (!ptCols.some(c => c.name === 'notes')) {
+      db.exec(`ALTER TABLE project_tasks ADD COLUMN notes TEXT`);
+      console.log('✅ project_tasks.notes sütunu eklendi');
+    }
+  } catch (e) {
+    console.log('ℹ️ project_tasks notes kontrolü');
+  }
 
   console.log('✅ Migration başarıyla tamamlandı!');
   console.log('✅ E-LAB Süreç Kontrol Sistemi hazır!');

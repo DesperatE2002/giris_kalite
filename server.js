@@ -27,6 +27,7 @@ import goodsReceiptRoutes from './routes/goods-receipt.js';
 import qualityRoutes from './routes/quality.js';
 import reportsRoutes from './routes/reports.js';
 import projectsRoutes from './routes/projects.js';
+import techniciansRoutes from './routes/technicians.js';
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.use('/api/goods-receipt', goodsReceiptRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/projects', projectsRoutes);
+app.use('/api/technicians', techniciansRoutes);
 
 // Auto-migration: total_returned_quantity ve returned_by sütunlarını ekle
 import pool from './db/database.js';
@@ -104,6 +106,53 @@ import pool from './db/database.js';
   } catch (e) {
     if (!e.message.includes('already exists')) {
       console.error('⚠️ Projects auto-migration uyarısı:', e.message);
+    }
+  }
+
+  // Auto-migration: project_tasks notes sütunu
+  try {
+    await pool.query(`ALTER TABLE project_tasks ADD COLUMN IF NOT EXISTS notes TEXT`);
+  } catch (e) {
+    if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) {
+      console.error('⚠️ project_tasks notes migration:', e.message);
+    }
+  }
+
+  // Auto-migration: Tekniker İş Takip tabloları
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tech_assignments (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        assigned_to INTEGER NOT NULL REFERENCES users(id),
+        assigned_by INTEGER REFERENCES users(id),
+        difficulty INTEGER DEFAULT 3 CHECK (difficulty >= 1 AND difficulty <= 5),
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'blocked', 'completed')),
+        notes TEXT,
+        blocked_reason TEXT,
+        started_at TIMESTAMP,
+        completed_at TIMESTAMP,
+        actual_duration_minutes INTEGER,
+        performance_score REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tech_activity_logs (
+        id SERIAL PRIMARY KEY,
+        assignment_id INTEGER NOT NULL REFERENCES tech_assignments(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id),
+        action TEXT NOT NULL CHECK (action IN ('start', 'complete', 'block', 'note')),
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Auto-migration: tech_assignments ve tech_activity_logs tabloları hazır');
+  } catch (e) {
+    if (!e.message.includes('already exists')) {
+      console.error('⚠️ Technicians auto-migration uyarısı:', e.message);
     }
   }
 })();
