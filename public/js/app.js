@@ -78,6 +78,15 @@ const app = {
         btn.style.display = 'none';
       }
     });
+
+    // Projects page - only for admin
+    document.querySelectorAll('[data-page="projects"]').forEach(btn => {
+      if (user.role === 'admin') {
+        btn.style.display = '';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
   },
 
   navigate(page) {
@@ -121,6 +130,9 @@ const app = {
         break;
       case 'admin':
         adminPage.render();
+        break;
+      case 'projects':
+        ProjectsPage.render();
         break;
       default:
         this.navigate('dashboard');

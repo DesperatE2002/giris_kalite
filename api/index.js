@@ -32,6 +32,7 @@ import bomTemplateRoutes from '../routes/bom-template.js';
 import goodsReceiptRoutes from '../routes/goods-receipt.js';
 import qualityRoutes from '../routes/quality.js';
 import reportsRoutes from '../routes/reports.js';
+import projectsRoutes from '../routes/projects.js';
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use('/api/bom-templates', bomTemplateRoutes);
 app.use('/api/goods-receipt', goodsReceiptRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/projects', projectsRoutes);
 
 // Auto-migration: total_returned_quantity ve returned_by sütunlarını ekle
 import pool from '../db/database.js';
@@ -68,6 +70,43 @@ import pool from '../db/database.js';
   } catch (e) {
     if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) {
       console.error('⚠️ Auto-migration uyarısı:', e.message);
+    }
+  }
+
+  // Auto-migration: Projects tabloları
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        start_date TEXT,
+        estimated_end_date TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS project_tasks (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        owner_text TEXT,
+        status TEXT NOT NULL DEFAULT 'backlog',
+        duration_workdays INTEGER DEFAULT 1,
+        progress_percent INTEGER DEFAULT 0,
+        manual_start_date TEXT,
+        depends_on_task_id INTEGER REFERENCES project_tasks(id) ON DELETE SET NULL,
+        blocked_reason TEXT,
+        calculated_start_date TEXT,
+        calculated_end_date TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Auto-migration: projects ve project_tasks tabloları hazır');
+  } catch (e) {
+    if (!e.message.includes('already exists')) {
+      console.error('⚠️ Projects auto-migration uyarısı:', e.message);
     }
   }
 })();

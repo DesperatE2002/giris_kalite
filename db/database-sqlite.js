@@ -57,6 +57,22 @@ const pool = {
           }
         }
         
+        if (hasReturning && isUpdate) {
+          // Extract table name and WHERE clause from UPDATE query
+          const tableMatch = query.match(/UPDATE\s+(\w+)/i);
+          const whereMatch = query.match(/WHERE\s+(.+)/i);
+          if (tableMatch && whereMatch && info.changes > 0) {
+            const tableName = tableMatch[1];
+            // Re-run the WHERE clause as a SELECT to get updated rows
+            const selectStmt = db.prepare(`SELECT * FROM ${tableName} WHERE ${whereMatch[1]}`);
+            // Use the params that correspond to the WHERE clause (last params)
+            const whereParamCount = (whereMatch[1].match(/\?/g) || []).length;
+            const whereParams = params.slice(params.length - whereParamCount);
+            const rows = selectStmt.all(...whereParams);
+            return { rows, rowCount: rows.length };
+          }
+        }
+        
         return { 
           rows: info.changes > 0 && info.lastInsertRowid ? [{ id: info.lastInsertRowid }] : [],
           rowCount: info.changes 

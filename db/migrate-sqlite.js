@@ -131,8 +131,44 @@ try {
     console.log('✅ Varsayılan admin kullanıcısı oluşturuldu (username: admin, password: admin123)');
   }
 
+  // Projects tablosu
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      start_date TEXT,
+      estimated_end_date TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  console.log('✅ Projects tablosu oluşturuldu');
+
+  // Project Tasks tablosu
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS project_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      owner_text TEXT,
+      status TEXT NOT NULL DEFAULT 'backlog',
+      duration_workdays INTEGER DEFAULT 1,
+      progress_percent INTEGER DEFAULT 0,
+      manual_start_date TEXT,
+      depends_on_task_id INTEGER,
+      blocked_reason TEXT,
+      calculated_start_date TEXT,
+      calculated_end_date TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+      FOREIGN KEY (depends_on_task_id) REFERENCES project_tasks(id) ON DELETE SET NULL
+    )
+  `);
+  console.log('✅ Project Tasks tablosu oluşturuldu');
+
   console.log('✅ Migration başarıyla tamamlandı!');
-  console.log('✅ Temsa Kalite Sistemi hazır!');
+  console.log('✅ E-LAB Süreç Kontrol Sistemi hazır!');
   console.log('📁 Veritabanı: database.sqlite');
   
 } catch (error) {
