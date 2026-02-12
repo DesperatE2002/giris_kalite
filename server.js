@@ -53,6 +53,23 @@ app.use('/api/goods-receipt', goodsReceiptRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/reports', reportsRoutes);
 
+// Auto-migration: total_returned_quantity ve returned_by sütunlarını ekle
+import pool from './db/database.js';
+(async () => {
+  try {
+    await pool.query(`ALTER TABLE quality_results ADD COLUMN IF NOT EXISTS total_returned_quantity REAL DEFAULT 0`);
+    await pool.query(`ALTER TABLE quality_results ADD COLUMN IF NOT EXISTS returned_by INTEGER REFERENCES users(id)`);
+    await pool.query(`UPDATE quality_results SET total_returned_quantity = rejected_quantity WHERE rejected_quantity > 0 AND (total_returned_quantity IS NULL OR total_returned_quantity = 0)`);
+    await pool.query(`UPDATE quality_results SET returned_by = decision_by WHERE status = 'iade' AND decision_by IS NOT NULL AND returned_by IS NULL`);
+    console.log('✅ Auto-migration: total_returned_quantity ve returned_by sütunları hazır');
+  } catch (e) {
+    // Sütunlar zaten varsa hata vermez
+    if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) {
+      console.error('⚠️ Auto-migration uyarısı:', e.message);
+    }
+  }
+})();
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

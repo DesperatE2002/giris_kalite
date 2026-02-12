@@ -310,31 +310,52 @@ const ReturnsPage = {
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Miktarı</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sebep</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlem Yapan</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İade Kesen</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200">
                 ${returns.length === 0 ? `
                   <tr>
-                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                       <i class="fas fa-inbox text-4xl mb-2"></i>
                       <p>Henüz iade kaydı bulunmuyor</p>
                     </td>
                   </tr>
-                ` : returns.map(item => `
+                ` : returns.map(item => {
+                  const totalReturned = item.total_returned_quantity || item.rejected_quantity || 0;
+                  const currentRejected = item.rejected_quantity || 0;
+                  const isReplaced = totalReturned > 0 && currentRejected === 0;
+                  const isPartiallyReplaced = totalReturned > currentRejected && currentRejected > 0;
+                  
+                  let statusBadge = '';
+                  if (isReplaced) {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check mr-1"></i>Yenisi Geldi</span>';
+                  } else if (isPartiallyReplaced) {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Kısmi Geldi</span>';
+                  } else {
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-undo mr-1"></i>İade Bekliyor</span>';
+                  }
+                  
+                  return `
                   <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">${new Date(item.decision_date).toLocaleString('tr-TR')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${item.decision_date ? new Date(item.decision_date).toLocaleString('tr-TR') : '-'}</td>
                     <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                     <td class="px-6 py-4">
                       <div class="font-medium">${item.material_code}</div>
                       <div class="text-xs text-gray-500">${item.material_name || '-'}</div>
                     </td>
-                    <td class="px-6 py-4 text-right font-bold text-red-600">${item.rejected_quantity}</td>
+                    <td class="px-6 py-4 text-right font-bold text-red-600">${Math.round(totalReturned)}</td>
+                    <td class="px-6 py-4 text-sm">${statusBadge}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${item.reason || '-'}</td>
-                    <td class="px-6 py-4 text-sm">${item.decision_by_name || '<span class="text-gray-400 italic">Kullanıcı bilgisi yok</span>'}</td>
+                    <td class="px-6 py-4 text-sm">
+                      ${item.returned_by_name || item.decision_by_name 
+                        ? `<span class="font-medium text-blue-700"><i class="fas fa-user mr-1"></i>${item.returned_by_name || item.decision_by_name}</span>` 
+                        : '<span class="text-gray-400 italic">Kullanıcı bilgisi yok</span>'}
+                    </td>
                   </tr>
-                `).join('')}
+                `}).join('')}
               </tbody>
             </table>
           </div>
@@ -703,6 +724,17 @@ const ReturnsPage = {
     
     container.innerHTML = `
       <div class="space-y-6">
+        <!-- Kümülatif Bilgi -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-600 mr-3 text-lg"></i>
+            <div>
+              <h3 class="font-semibold text-blue-900">Kümülatif İade İstatistikleri</h3>
+              <p class="text-sm text-blue-700 mt-1">Bu istatistikler tüm zamanların toplam iade sayılarını gösterir. Yerine yenisi gelse bile iade sayıları düşmez, böylece kalite takibi doğru yapılabilir.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Admin: İstatistik Sıfırlama -->
         ${authManager.currentUser?.role === 'admin' ? `
           <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">

@@ -191,7 +191,7 @@ router.post('/', authenticateToken, async (req, res) => {
       `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [otpa_id, component_type, material_code, received_quantity, 
-       return_of_rejected ? `İade dönüşü - ${notes || ''}` : notes, req.user.userId]
+       return_of_rejected ? `İade dönüşü - ${notes || ''}` : notes, req.user.id]
     );
 
     const receipt = receiptResult.rows[0];
@@ -255,7 +255,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
       const receiptResult = await client.query(
         `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [otpa_id, component_type, material_code, required_quantity, 'Toplu giriş', req.user.userId]
+        [otpa_id, component_type, material_code, required_quantity, 'Toplu giriş', req.user.id]
       );
 
       const receipt = receiptResult.rows[0];

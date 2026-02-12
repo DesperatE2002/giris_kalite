@@ -94,7 +94,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
       INSERT INTO bom_templates (template_name, description, created_by)
       VALUES ($1, $2, $3)
       RETURNING *
-    `, [template_name, description || null, req.user.userId]);
+    `, [template_name, description || null, req.user.id]);
 
     const templateId = templateResult.rows[0].id;
 

@@ -89,30 +89,11 @@ const migrate = async () => {
     `);
     console.log('✅ Quality Results tablosu oluşturuldu');
 
-    // Return Logs tablosu (kalıcı iade kayıtları)
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS return_logs (
-        id SERIAL PRIMARY KEY,
-        otpa_id INTEGER NOT NULL REFERENCES otpa(id) ON DELETE CASCADE,
-        component_type VARCHAR(20) NOT NULL,
-        material_code VARCHAR(100) NOT NULL,
-        material_name VARCHAR(200),
-        return_quantity DECIMAL(10, 2) NOT NULL,
-        unit VARCHAR(20),
-        reason TEXT,
-        created_by INTEGER REFERENCES users(id),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ Return Logs tablosu oluşturuldu');
-
     // İndeksler
     await client.query('CREATE INDEX IF NOT EXISTS idx_bom_otpa ON bom_items(otpa_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_receipt_otpa ON goods_receipt(otpa_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_receipt_material ON goods_receipt(material_code)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_quality_receipt ON quality_results(receipt_id)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_return_logs_otpa ON return_logs(otpa_id)');
-    await client.query('CREATE INDEX IF NOT EXISTS idx_return_logs_material ON return_logs(material_code)');
     console.log('✅ İndeksler oluşturuldu');
 
     // Varsayılan admin kullanıcısı oluştur

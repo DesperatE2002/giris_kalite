@@ -15,16 +15,17 @@ router.post('/reset-return-stats', authenticateToken, authorizeRoles('admin'), a
     const beforeResult = await client.query(`
       SELECT 
         COUNT(*) as total_records,
-        COALESCE(SUM(rejected_quantity), 0) as total_rejected
+        COALESCE(SUM(COALESCE(total_returned_quantity, rejected_quantity)), 0) as total_rejected
       FROM quality_results
-      WHERE rejected_quantity > 0
+      WHERE COALESCE(total_returned_quantity, rejected_quantity) > 0
     `);
     
-    // Sıfırla
+    // Sıfırla - hem rejected_quantity hem total_returned_quantity
     const resetResult = await client.query(`
       UPDATE quality_results
-      SET rejected_quantity = 0
-      WHERE rejected_quantity > 0
+      SET rejected_quantity = 0,
+          total_returned_quantity = 0
+      WHERE COALESCE(total_returned_quantity, rejected_quantity) > 0
     `);
     
     await client.query('COMMIT');
@@ -177,9 +178,11 @@ router.get('/rejections', authenticateToken, async (req, res) => {
         qr.status,
         qr.accepted_quantity,
         qr.rejected_quantity,
+        COALESCE(qr.total_returned_quantity, qr.rejected_quantity) as total_returned_quantity,
         qr.reason,
         qr.decision_date,
-        u.full_name as decision_by_name
+        u.full_name as decision_by_name,
+        u2.full_name as returned_by_name
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       JOIN otpa o ON gr.otpa_id = o.id
@@ -187,11 +190,11 @@ router.get('/rejections', authenticateToken, async (req, res) => {
         AND gr.component_type = b.component_type 
         AND gr.material_code = b.material_code
       LEFT JOIN users u ON qr.decision_by = u.id
-      WHERE qr.status = ?
-        AND qr.rejected_quantity > 0
+      LEFT JOIN users u2 ON qr.returned_by = u2.id
+      WHERE COALESCE(qr.total_returned_quantity, qr.rejected_quantity) > 0
     `;
 
-    const params = ['iade'];
+    const params = [];
 
     if (start_date) {
       query += ` AND gr.receipt_date >= ?`;
@@ -232,105 +235,52 @@ router.get('/return-statistics', authenticateToken, async (req, res) => {
       dateFilter = `AND qr.decision_date >= CURRENT_DATE - INTERVAL '1 year'`;
     }
 
-    // Toplam iade miktarları (return_logs varsa ordan, yoksa quality_results'tan)
-    let totalQuery;
-    try {
-      // Önce return_logs var mı kontrol et
-      await pool.query('SELECT 1 FROM return_logs LIMIT 1');
-      // Varsa return_logs kullan
-      totalQuery = `
-        SELECT 
-          COUNT(DISTINCT rl.material_code) as unique_materials,
-          COALESCE(SUM(rl.return_quantity), 0) as total_return_quantity
-        FROM return_logs rl
-        WHERE 1=1
-          ${dateFilter.replace('qr.decision_date', 'rl.created_at')}
-      `;
-    } catch (e) {
-      // Yoksa quality_results kullan
-      totalQuery = `
-        SELECT 
-          COUNT(DISTINCT gr.material_code) as unique_materials,
-          COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity
-        FROM quality_results qr
-        JOIN goods_receipt gr ON qr.receipt_id = gr.id
-        WHERE qr.rejected_quantity > 0
-          ${dateFilter}
-      `;
-    }
+    // Toplam iade miktarları - KÜMÜLATİF (total_returned_quantity asla azalmaz)
+    const totalQuery = `
+      SELECT 
+        COUNT(DISTINCT gr.material_code) as unique_materials,
+        COALESCE(SUM(COALESCE(qr.total_returned_quantity, qr.rejected_quantity)), 0) as total_return_quantity
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE COALESCE(qr.total_returned_quantity, qr.rejected_quantity) > 0
+        ${dateFilter}
+    `;
     const totalResult = await pool.query(totalQuery);
 
-    // En çok iade edilen malzemeler
-    let topMaterialsQuery;
-    try {
-      await pool.query('SELECT 1 FROM return_logs LIMIT 1');
-      topMaterialsQuery = `
-        SELECT 
-          rl.material_code,
-          MAX(rl.material_name) as material_name,
-          COALESCE(SUM(rl.return_quantity), 0) as total_return_quantity,
-          COUNT(DISTINCT rl.otpa_id) as affected_otpas,
-          COUNT(*) as return_count
-        FROM return_logs rl
-        WHERE 1=1
-          ${dateFilter.replace('qr.decision_date', 'rl.created_at')}
-        GROUP BY rl.material_code
-        ORDER BY total_return_quantity DESC
-        LIMIT 10
-      `;
-    } catch (e) {
-      topMaterialsQuery = `
+    // En çok iade edilen malzemeler - KÜMÜLATİF
+    const topMaterialsQuery = `
+      SELECT 
+        gr.material_code,
+        (SELECT b.material_name FROM bom_items b WHERE b.material_code = gr.material_code LIMIT 1) as material_name,
+        COALESCE(SUM(COALESCE(qr.total_returned_quantity, qr.rejected_quantity)), 0) as total_return_quantity,
+        COUNT(DISTINCT gr.otpa_id) as affected_otpas
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE COALESCE(qr.total_returned_quantity, qr.rejected_quantity) > 0
+        ${dateFilter}
+      GROUP BY gr.material_code
+      ORDER BY total_return_quantity DESC
+      LIMIT 10
+    `;
+    const topMaterials = await pool.query(topMaterialsQuery);
+
+    // Belirli malzeme için detaylı istatistik - KÜMÜLATİF
+    let materialDetail = null;
+    if (material_code) {
+      const materialQuery = `
         SELECT 
           gr.material_code,
           (SELECT b.material_name FROM bom_items b WHERE b.material_code = gr.material_code LIMIT 1) as material_name,
-          COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity,
-          COUNT(DISTINCT gr.otpa_id) as affected_otpas
+          COALESCE(SUM(COALESCE(qr.total_returned_quantity, qr.rejected_quantity)), 0) as total_return_quantity,
+          MIN(qr.decision_date) as first_return,
+          MAX(qr.decision_date) as last_return
         FROM quality_results qr
         JOIN goods_receipt gr ON qr.receipt_id = gr.id
-        WHERE qr.rejected_quantity > 0
+        WHERE COALESCE(qr.total_returned_quantity, qr.rejected_quantity) > 0
+          AND gr.material_code = $1
           ${dateFilter}
         GROUP BY gr.material_code
-        ORDER BY total_return_quantity DESC
-        LIMIT 10
       `;
-    }
-    const topMaterials = await pool.query(topMaterialsQuery);
-
-    // Belirli malzeme için detaylı istatistik (geçmiş tüm iade kayıtları)
-    let materialDetail = null;
-    if (material_code) {
-      let materialQuery;
-      try {
-        await pool.query('SELECT 1 FROM return_logs LIMIT 1');
-        materialQuery = `
-          SELECT 
-            rl.material_code,
-            MAX(rl.material_name) as material_name,
-            COALESCE(SUM(rl.return_quantity), 0) as total_return_quantity,
-            MIN(rl.created_at) as first_return,
-            MAX(rl.created_at) as last_return,
-            COUNT(*) as return_count
-          FROM return_logs rl
-          WHERE rl.material_code = $1
-            ${dateFilter.replace('qr.decision_date', 'rl.created_at')}
-          GROUP BY rl.material_code
-        `;
-      } catch (e) {
-        materialQuery = `
-          SELECT 
-            gr.material_code,
-            (SELECT b.material_name FROM bom_items b WHERE b.material_code = gr.material_code LIMIT 1) as material_name,
-            COALESCE(SUM(qr.rejected_quantity), 0) as total_return_quantity,
-            MIN(qr.decision_date) as first_return,
-            MAX(qr.decision_date) as last_return
-          FROM quality_results qr
-          JOIN goods_receipt gr ON qr.receipt_id = gr.id
-          WHERE qr.rejected_quantity > 0
-            AND gr.material_code = $1
-            ${dateFilter}
-          GROUP BY gr.material_code
-        `;
-      }
       const materialResult = await pool.query(materialQuery, [material_code]);
       materialDetail = materialResult.rows[0] || null;
     }
