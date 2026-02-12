@@ -88,13 +88,9 @@ const app = {
       }
     });
 
-    // Technicians page - admin and tekniker (always visible)
+    // Technicians page - visible to all users
     document.querySelectorAll('[data-page="technicians"]').forEach(btn => {
-      if (user.role === 'admin' || user.role === 'tekniker') {
-        btn.style.display = '';
-      } else {
-        btn.style.display = 'none';
-      }
+      btn.style.display = '';
     });
   },
 

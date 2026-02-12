@@ -1177,6 +1177,7 @@ MAT-003	Nikel Şerit	500	gr"
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kayıt Tarihi</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlem</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200">
@@ -1191,6 +1192,12 @@ MAT-003	Nikel Şerit	500	gr"
                         : '<span class="text-red-600">✗ Pasif</span>'}
                     </td>
                     <td class="px-6 py-4 text-sm">${new Date(user.created_at).toLocaleDateString('tr-TR')}</td>
+                    <td class="px-6 py-4">
+                      <button onclick="adminPage.showEditUserModal(${user.id}, '${user.username}', '${user.full_name.replace(/'/g, "\\'")}', '${user.role}', ${user.is_active ? 'true' : 'false'})" 
+                        class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                        <i class="fas fa-edit mr-1"></i>Düzenle
+                      </button>
+                    </td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1272,6 +1279,96 @@ MAT-003	Nikel Şerit	500	gr"
 
         modal.remove();
         alert('✅ Kullanıcı başarıyla oluşturuldu!');
+        this.renderUsersTab();
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    };
+  },
+
+  showEditUserModal(userId, username, fullName, role, isActive) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div class="p-6">
+          <h2 class="text-2xl font-bold mb-4"><i class="fas fa-user-edit mr-2 text-blue-600"></i>Kullanıcı Düzenle</h2>
+          <form id="editUserForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">Kullanıcı Adı</label>
+              <input type="text" value="${username}" disabled
+                class="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Ad Soyad *</label>
+              <input type="text" id="editFullName" value="${fullName}" required 
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Rol *</label>
+              <select id="editRole" required 
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="tekniker" ${role === 'tekniker' ? 'selected' : ''}>Tekniker</option>
+                <option value="kalite" ${role === 'kalite' ? 'selected' : ''}>Kalite</option>
+                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Durum</label>
+              <select id="editActive" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="true" ${isActive ? 'selected' : ''}>✓ Aktif</option>
+                <option value="false" ${!isActive ? 'selected' : ''}>✗ Pasif</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-2">Yeni Şifre <span class="text-gray-400 font-normal">(değiştirmek istemiyorsanız boş bırakın)</span></label>
+              <input type="password" id="editPassword" placeholder="En az 6 karakter"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex gap-3 pt-4">
+              <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-save mr-2"></i> Güncelle
+              </button>
+              <button type="button" onclick="this.closest('.fixed').remove()" 
+                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#editUserForm').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const newPassword = modal.querySelector('#editPassword').value;
+      if (newPassword && newPassword.length < 6) {
+        alert('Şifre en az 6 karakter olmalıdır');
+        return;
+      }
+
+      try {
+        showLoading(true);
+        
+        const data = {
+          full_name: modal.querySelector('#editFullName').value,
+          role: modal.querySelector('#editRole').value,
+          is_active: modal.querySelector('#editActive').value === 'true'
+        };
+
+        if (newPassword) {
+          data.password = newPassword;
+        }
+
+        await api.auth.updateUser(userId, data);
+
+        modal.remove();
+        alert('✅ Kullanıcı başarıyla güncellendi!');
         this.renderUsersTab();
       } catch (error) {
         alert('Hata: ' + error.message);

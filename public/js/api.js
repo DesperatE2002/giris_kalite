@@ -58,6 +58,12 @@ const api = {
       api.request('/auth/users', {
         method: 'POST',
         body: JSON.stringify(userData)
+      }),
+
+    updateUser: (userId, userData) =>
+      api.request(`/auth/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData)
       })
   },
 

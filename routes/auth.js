@@ -185,4 +185,46 @@ router.post('/users', authenticateToken, async (req, res) => {
   }
 });
 
+// Kullanıcı güncelle (sadece admin - rol, isim, durum, şifre)
+router.put('/users/:id', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Yetkiniz yok' });
+    }
+
+    const { full_name, role, is_active, password } = req.body;
+    const userId = req.params.id;
+
+    // Mevcut kullanıcıyı kontrol et
+    const existing = await pool.query('SELECT id FROM users WHERE id = ?', [userId]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    // Şifre değiştirilecekse hashle
+    if (password && password.length >= 6) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await pool.query(
+        `UPDATE users SET full_name = ?, role = ?, is_active = ?, password = ? WHERE id = ? RETURNING id, username, full_name, role, is_active, created_at`,
+        [full_name, role, is_active ? 1 : 0, hashedPassword, userId]
+      );
+    } else {
+      await pool.query(
+        `UPDATE users SET full_name = ?, role = ?, is_active = ? WHERE id = ? RETURNING id, username, full_name, role, is_active, created_at`,
+        [full_name, role, is_active ? 1 : 0, userId]
+      );
+    }
+
+    const updated = await pool.query(
+      'SELECT id, username, full_name, role, is_active, created_at FROM users WHERE id = ?',
+      [userId]
+    );
+
+    res.json(updated.rows[0]);
+  } catch (error) {
+    console.error('Kullanıcı güncelleme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 export default router;

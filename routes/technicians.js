@@ -19,11 +19,11 @@ function calculatePerformanceScore(difficulty, durationMinutes) {
 
 // ─── TEKNİKER LİSTESİ ───────────────────────────────────────────────────────
 
-// Aktif teknikerleri getir (admin için)
+// Aktif kullanıcıları getir (görev atama için)
 router.get('/users', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, username, full_name, role FROM users WHERE role = 'tekniker' AND is_active = 1 ORDER BY full_name`
+      `SELECT id, username, full_name, role FROM users WHERE is_active = 1 ORDER BY full_name`
     );
     res.json(result.rows);
   } catch (error) {
@@ -37,9 +37,9 @@ router.get('/users', authenticateToken, async (req, res) => {
 // Kim boşta, kim çalışıyor, kim yoğun
 router.get('/workforce', authenticateToken, async (req, res) => {
   try {
-    // Tüm teknikerler
+    // Tüm aktif kullanıcılar
     const techResult = await pool.query(
-      `SELECT id, username, full_name FROM users WHERE role = 'tekniker' AND is_active = 1 ORDER BY full_name`
+      `SELECT id, username, full_name, role FROM users WHERE is_active = 1 ORDER BY full_name`
     );
     const technicians = techResult.rows;
 
@@ -106,8 +106,8 @@ router.get('/assignments', authenticateToken, async (req, res) => {
     const params = [];
     let paramIdx = 0;
 
-    // Tekniker sadece kendi görevlerini görür
-    if (req.user.role === 'tekniker') {
+    // Admin dışındakiler sadece kendi görevlerini görür
+    if (req.user.role !== 'admin') {
       paramIdx++;
       query += ` AND a.assigned_to = ?`;
       params.push(req.user.id);
@@ -215,7 +215,7 @@ router.post('/assignments/:id/start', authenticateToken, async (req, res) => {
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role === 'tekniker' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
@@ -253,7 +253,7 @@ router.post('/assignments/:id/complete', authenticateToken, async (req, res) => 
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role === 'tekniker' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
@@ -304,7 +304,7 @@ router.post('/assignments/:id/block', authenticateToken, async (req, res) => {
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role === 'tekniker' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
@@ -440,7 +440,7 @@ router.get('/leaderboard', authenticateToken, async (req, res) => {
         MAX(a.performance_score) as best_score
       FROM users u
       LEFT JOIN tech_assignments a ON a.assigned_to = u.id AND a.status = 'completed' ${dateFilter}
-      WHERE u.role = 'tekniker' AND u.is_active = 1
+      WHERE u.is_active = 1
       GROUP BY u.id, u.full_name, u.username
       ORDER BY total_score DESC, avg_score DESC
     `, dateParams);
