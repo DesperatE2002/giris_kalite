@@ -74,7 +74,7 @@ import pool from './db/database.js';
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS projects (
-        id ${process.env.USE_SQLITE === 'true' ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'SERIAL PRIMARY KEY'},
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         start_date TEXT,
         estimated_end_date TEXT,
@@ -84,7 +84,7 @@ import pool from './db/database.js';
     `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS project_tasks (
-        id ${process.env.USE_SQLITE === 'true' ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'SERIAL PRIMARY KEY'},
+        id SERIAL PRIMARY KEY,
         project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
         owner_text TEXT,

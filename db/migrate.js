@@ -64,6 +64,7 @@ const migrate = async () => {
         component_type VARCHAR(20) NOT NULL CHECK (component_type IN ('batarya', 'vccu', 'junction_box', 'pdu')),
         material_code VARCHAR(100) NOT NULL,
         received_quantity DECIMAL(10, 2) NOT NULL,
+        return_of_rejected BOOLEAN DEFAULT false,
         receipt_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_by INTEGER REFERENCES users(id),
         notes TEXT,
@@ -80,8 +81,10 @@ const migrate = async () => {
         status VARCHAR(20) NOT NULL DEFAULT 'bekliyor' CHECK (status IN ('kabul', 'iade', 'bekliyor')),
         accepted_quantity DECIMAL(10, 2) DEFAULT 0,
         rejected_quantity DECIMAL(10, 2) DEFAULT 0,
+        total_returned_quantity DECIMAL(10, 2) DEFAULT 0,
         reason TEXT,
         decision_by INTEGER REFERENCES users(id),
+        returned_by INTEGER REFERENCES users(id),
         decision_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -96,6 +99,42 @@ const migrate = async () => {
     await client.query('CREATE INDEX IF NOT EXISTS idx_quality_receipt ON quality_results(receipt_id)');
     console.log('✅ İndeksler oluşturuldu');
 
+    // Projects tablosu
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(200) NOT NULL,
+        start_date DATE,
+        estimated_end_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ Projects tablosu oluşturuldu');
+
+    // Project Tasks tablosu
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS project_tasks (
+        id SERIAL PRIMARY KEY,
+        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title VARCHAR(300) NOT NULL,
+        owner_text VARCHAR(200),
+        status VARCHAR(20) NOT NULL DEFAULT 'backlog' CHECK (status IN ('backlog', 'doing', 'blocked', 'done')),
+        duration_workdays INTEGER DEFAULT 1,
+        progress_percent INTEGER DEFAULT 0 CHECK (progress_percent >= 0 AND progress_percent <= 100),
+        manual_start_date DATE,
+        depends_on_task_id INTEGER REFERENCES project_tasks(id) ON DELETE SET NULL,
+        blocked_reason TEXT,
+        calculated_start_date DATE,
+        calculated_end_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query('CREATE INDEX IF NOT EXISTS idx_project_tasks_project ON project_tasks(project_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_project_tasks_depends ON project_tasks(depends_on_task_id)');
+    console.log('✅ Project Tasks tablosu oluşturuldu');
+
     // Varsayılan admin kullanıcısı oluştur
     const hashedPassword = await bcrypt.hash('admin123', 10);
     await client.query(`
@@ -107,7 +146,7 @@ const migrate = async () => {
 
     await client.query('COMMIT');
     console.log('✅ Migration başarıyla tamamlandı!');
-    console.log('✅ Temsa Kalite Sistemi hazır!');
+    console.log('✅ E-LAB Süreç Kontrol Sistemi hazır!');
     
   } catch (error) {
     await client.query('ROLLBACK');
