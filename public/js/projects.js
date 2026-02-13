@@ -856,13 +856,11 @@ const ProjectsPage = {
       const statusColor = { 'done': '#16a34a', 'doing': '#2563eb', 'blocked': '#ea580c', 'backlog': '#6b7280' };
       
       // Profesyonel Word raporu — doğru sayfa düzeni
-      let html = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" 
       xmlns:w="urn:schemas-microsoft-com:office:word" 
       xmlns="http://www.w3.org/TR/REC-html40">
 <head>
-<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="ProgId" content="Word.Document">
 <meta name="Generator" content="Microsoft Word 15">
 <!--[if gte mso 9]>
