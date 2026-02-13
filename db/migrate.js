@@ -127,6 +127,7 @@ const migrate = async () => {
         blocked_reason TEXT,
         calculated_start_date DATE,
         calculated_end_date DATE,
+        deadline DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

@@ -308,6 +308,15 @@ const ProjectsPage = {
                       <span class="px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[t.status]}">${statusLabels[t.status]}</span>
                       <span><i class="fas fa-clock mr-1"></i>${t.duration_workdays} iş günü</span>
                       <span><i class="fas fa-calendar-alt mr-1"></i>${t.calculated_start_date} → ${t.calculated_end_date}</span>
+                      ${t.deadline ? (() => {
+                        const dl = new Date(t.deadline + 'T23:59:59');
+                        const diffD = Math.ceil((dl - new Date()) / (1000*60*60*24));
+                        const isLate = diffD < 0 && t.status !== 'done';
+                        const isClose = diffD >= 0 && diffD <= 3 && t.status !== 'done';
+                        const cls = isLate ? 'bg-red-100 text-red-700' : isClose ? 'bg-orange-100 text-orange-700' : 'bg-indigo-50 text-indigo-600';
+                        const label = t.status === 'done' ? '✓' : isLate ? `${Math.abs(diffD)} gün gecikmiş!` : diffD === 0 ? 'Bugün son gün!' : `${diffD} gün kaldı`;
+                        return `<span class="${cls} px-2 py-0.5 rounded-full font-medium"><i class="fas fa-flag mr-1"></i>${new Date(t.deadline).toLocaleDateString('tr-TR')} — ${label}</span>`;
+                      })() : ''}
                       ${depTask ? `<span class="text-purple-600"><i class="fas fa-link mr-1"></i>${depTask.title}</span>` : ''}
                     </div>
                     ${t.status === 'blocked' && t.blocked_reason ? `<div class="mt-1 text-xs text-orange-600"><i class="fas fa-ban mr-1"></i>${t.blocked_reason}</div>` : ''}
@@ -623,6 +632,14 @@ const ProjectsPage = {
               class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Görevle ilgili kısa notlar...">${task?.notes || ''}</textarea>
           </div>
 
+          <!-- Son Tarih (Deadline) -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-calendar-times text-red-400 mr-1"></i>Son Tarih (Deadline)</label>
+            <input type="date" id="tf_deadline" value="${task?.deadline || ''}"
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
+            <p class="text-xs text-gray-400 mt-1">Opsiyonel — belirlenirse otomatik hesaplanan bitiş yerine bu tarih kullanılır</p>
+          </div>
+
           <div class="flex gap-3">
             <button type="submit" class="gradient-btn text-white px-6 py-2 rounded-lg font-semibold">
               <i class="fas fa-save mr-1"></i>${task ? 'Güncelle' : 'Ekle'}
@@ -655,7 +672,8 @@ const ProjectsPage = {
       manual_start_date: document.getElementById('tf_manual_start').value || null,
       depends_on_task_id: document.getElementById('tf_hasDep').checked ? (parseInt(document.getElementById('tf_depSelect').value) || null) : null,
       blocked_reason: document.getElementById('tf_status').value === 'blocked' ? document.getElementById('tf_blocked_reason').value : null,
-      notes: document.getElementById('tf_notes').value || null
+      notes: document.getElementById('tf_notes').value || null,
+      deadline: document.getElementById('tf_deadline').value || null
     };
 
     // Done ise %100 yap

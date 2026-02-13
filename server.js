@@ -112,9 +112,10 @@ import pool from './db/database.js';
   // Auto-migration: project_tasks notes sütunu
   try {
     await pool.query(`ALTER TABLE project_tasks ADD COLUMN IF NOT EXISTS notes TEXT`);
+    await pool.query(`ALTER TABLE project_tasks ADD COLUMN IF NOT EXISTS deadline DATE`);
   } catch (e) {
     if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) {
-      console.error('⚠️ project_tasks notes migration:', e.message);
+      console.error('⚠️ project_tasks migration:', e.message);
     }
   }
 

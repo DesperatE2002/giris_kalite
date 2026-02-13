@@ -92,6 +92,11 @@ function scheduleTasks(tasks, projectStartDate) {
 
     task.calculated_start_date = formatDate(startDate);
     task.calculated_end_date = formatDate(endDate);
+
+    // Deadline varsa: deadline'ı kullan override olarak
+    if (task.deadline) {
+      task.calculated_end_date = task.deadline;
+    }
     
     resolved.add(taskId);
     return task;
@@ -264,7 +269,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, re
 // Görev oluştur
 router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes } = req.body;
+    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes, deadline } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: 'Görev adı gereklidir' });
@@ -279,9 +284,9 @@ router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), asy
     }
     
     const result = await pool.query(
-      `INSERT INTO project_tasks (project_id, title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
-      [req.params.projectId, title, owner_text || '', status || 'backlog', duration_workdays || 1, progress_percent || 0, manual_start_date || null, depends_on_task_id || null, blocked_reason || null, notes || null]
+      `INSERT INTO project_tasks (project_id, title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes, deadline)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      [req.params.projectId, title, owner_text || '', status || 'backlog', duration_workdays || 1, progress_percent || 0, manual_start_date || null, depends_on_task_id || null, blocked_reason || null, notes || null, deadline || null]
     );
     
     res.status(201).json(result.rows[0]);
@@ -294,7 +299,7 @@ router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), asy
 // Görev güncelle
 router.put('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes } = req.body;
+    const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes, deadline } = req.body;
     
     // Döngüsel bağımlılık kontrolü
     if (depends_on_task_id) {
@@ -319,11 +324,11 @@ router.put('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin
       `UPDATE project_tasks SET 
         title = ?, owner_text = ?, status = ?, duration_workdays = ?,
         progress_percent = ?, manual_start_date = ?, depends_on_task_id = ?,
-        blocked_reason = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+        blocked_reason = ?, notes = ?, deadline = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND project_id = ? RETURNING *`,
       [title, owner_text || '', status || 'backlog', duration_workdays || 1, 
        progress_percent || 0, manual_start_date || null, depends_on_task_id || null,
-       blocked_reason || null, notes || null, req.params.taskId, req.params.projectId]
+       blocked_reason || null, notes || null, deadline || null, req.params.taskId, req.params.projectId]
     );
     
     if (result.rows.length === 0) {
@@ -400,6 +405,7 @@ router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req
         end_date: t.calculated_end_date,
         dependency: t.depends_on_task_id ? scheduledTasks.find(x => x.id === t.depends_on_task_id)?.title || '-' : '-',
         blocked_reason: t.blocked_reason || '-',
+        deadline: t.deadline || null,
         is_overdue: t.status !== 'done' && t.calculated_end_date < today
       })),
       summary: {

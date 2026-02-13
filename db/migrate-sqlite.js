@@ -158,6 +158,7 @@ try {
       depends_on_task_id INTEGER,
       blocked_reason TEXT,
       notes TEXT,
+      deadline TEXT,
       calculated_start_date TEXT,
       calculated_end_date TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -208,15 +209,19 @@ try {
   `);
   console.log('✅ Tech Activity Logs tablosu oluşturuldu');
 
-  // Mevcut project_tasks tablosuna notes sütunu ekle
+  // Mevcut project_tasks tablosuna notes ve deadline sütunları ekle
   try {
     const ptCols = db.pragma('table_info(project_tasks)');
     if (!ptCols.some(c => c.name === 'notes')) {
       db.exec(`ALTER TABLE project_tasks ADD COLUMN notes TEXT`);
       console.log('✅ project_tasks.notes sütunu eklendi');
     }
+    if (!ptCols.some(c => c.name === 'deadline')) {
+      db.exec(`ALTER TABLE project_tasks ADD COLUMN deadline TEXT`);
+      console.log('✅ project_tasks.deadline sütunu eklendi');
+    }
   } catch (e) {
-    console.log('ℹ️ project_tasks notes kontrolü');
+    console.log('ℹ️ project_tasks migration kontrolü');
   }
 
   console.log('✅ Migration başarıyla tamamlandı!');
