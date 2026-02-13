@@ -148,16 +148,16 @@ router.get('/assignments', authenticateToken, async (req, res) => {
 // Görev oluştur (admin)
 router.post('/assignments', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { title, description, assigned_to, difficulty, notes } = req.body;
+    const { title, description, assigned_to, difficulty, notes, deadline } = req.body;
 
     if (!title || !assigned_to) {
       return res.status(400).json({ error: 'Görev adı ve tekniker seçimi gereklidir' });
     }
 
     const result = await pool.query(
-      `INSERT INTO tech_assignments (title, description, assigned_to, assigned_by, difficulty, notes)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
-      [title, description || null, assigned_to, req.user.id, difficulty || 3, notes || null]
+      `INSERT INTO tech_assignments (title, description, assigned_to, assigned_by, difficulty, notes, deadline)
+       VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      [title, description || null, assigned_to, req.user.id, difficulty || 3, notes || null, deadline || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -170,13 +170,13 @@ router.post('/assignments', authenticateToken, authorizeRoles('admin'), async (r
 // Görev güncelle (admin)
 router.put('/assignments/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
-    const { title, description, assigned_to, difficulty, notes, status } = req.body;
+    const { title, description, assigned_to, difficulty, notes, status, deadline } = req.body;
 
     const result = await pool.query(
       `UPDATE tech_assignments SET title = ?, description = ?, assigned_to = ?, 
-        difficulty = ?, notes = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+        difficulty = ?, notes = ?, status = ?, deadline = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ? RETURNING *`,
-      [title, description || null, assigned_to, difficulty || 3, notes || null, status || 'pending', req.params.id]
+      [title, description || null, assigned_to, difficulty || 3, notes || null, status || 'pending', deadline || null, req.params.id]
     );
 
     if (result.rows.length === 0) {

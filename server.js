@@ -135,10 +135,13 @@ import pool from './db/database.js';
         completed_at TIMESTAMP,
         actual_duration_minutes INTEGER,
         performance_score REAL,
+        deadline DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    // deadline kolonu eklenmemişse ekle
+    try { await pool.query('ALTER TABLE tech_assignments ADD COLUMN IF NOT EXISTS deadline DATE'); } catch(e) {}
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tech_activity_logs (
         id SERIAL PRIMARY KEY,

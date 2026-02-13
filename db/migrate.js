@@ -151,6 +151,7 @@ const migrate = async () => {
         completed_at TIMESTAMP,
         actual_duration_minutes INTEGER,
         performance_score REAL,
+        deadline DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

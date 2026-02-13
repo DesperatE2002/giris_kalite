@@ -184,6 +184,7 @@ try {
       completed_at TEXT,
       actual_duration_minutes INTEGER,
       performance_score REAL,
+      deadline TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (assigned_to) REFERENCES users(id),

@@ -197,6 +197,19 @@ const TechPage = {
         
         ${a.notes ? `<div class="text-xs text-gray-500 mb-2 bg-gray-50 rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${a.notes}</div>` : ''}
 
+        ${a.deadline && a.status !== 'completed' ? (() => {
+          const deadlineDate = new Date(a.deadline + 'T23:59:59');
+          const now = new Date();
+          const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+          const isOverdue = diffDays < 0;
+          const isUrgent = diffDays >= 0 && diffDays <= 2;
+          const cls = isOverdue ? 'bg-red-100 text-red-700' : isUrgent ? 'bg-orange-100 text-orange-700' : 'bg-blue-50 text-blue-600';
+          const icon = isOverdue ? 'fa-exclamation-circle' : isUrgent ? 'fa-clock' : 'fa-calendar-alt';
+          const label = isOverdue ? `${Math.abs(diffDays)} gün gecikmiş!` : diffDays === 0 ? 'Bugün son gün!' : `${diffDays} gün kaldı`;
+          return `<div class="text-xs mb-2 ${cls} rounded px-2 py-1 font-medium"><i class="fas ${icon} mr-1"></i>${new Date(a.deadline).toLocaleDateString('tr-TR')} — ${label}</div>`;
+        })() : ''}
+        ${a.deadline && a.status === 'completed' ? `<div class="text-xs mb-2 bg-gray-50 text-gray-400 rounded px-2 py-1"><i class="fas fa-calendar-check mr-1"></i>Deadline: ${new Date(a.deadline).toLocaleDateString('tr-TR')}</div>` : ''}
+
         ${actions ? `<div class="mt-2">${actions}</div>` : ''}
       </div>
     `;
@@ -547,6 +560,12 @@ const TechPage = {
               <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-sticky-note text-yellow-500 mr-1"></i>Notlar</label>
               <textarea id="af_notes" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Ek notlar...">${task?.notes || ''}</textarea>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-calendar-times text-red-400 mr-1"></i>Son Tarih (Deadline)</label>
+              <input type="date" id="af_deadline" value="${task?.deadline || ''}"
+                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <p class="text-xs text-gray-400 mt-1">Opsiyonel — belirlenirse kart üzerinde geri sayım gösterilir</p>
+            </div>
             <div class="flex gap-3 pt-2">
               <button type="submit" class="gradient-btn text-white px-6 py-2.5 rounded-lg font-semibold flex-1">
                 <i class="fas fa-save mr-1"></i>${task ? 'Güncelle' : 'Ata'}
@@ -571,7 +590,8 @@ const TechPage = {
       description: document.getElementById('af_desc').value || null,
       assigned_to: parseInt(document.getElementById('af_tech').value),
       difficulty: parseInt(document.getElementById('af_difficulty').value) || 3,
-      notes: document.getElementById('af_notes').value || null
+      notes: document.getElementById('af_notes').value || null,
+      deadline: document.getElementById('af_deadline').value || null
     };
 
     if (editId) {

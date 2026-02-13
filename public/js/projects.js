@@ -835,92 +835,404 @@ const ProjectsPage = {
       const data = await api.request(`/projects/${this.currentProject.id}/export`);
       
       const statusTR = { 'backlog': 'Bekliyor', 'doing': 'Yapılıyor', 'blocked': 'Bloke', 'done': 'Tamamlandı' };
+      const statusColor = { 'done': '#16a34a', 'doing': '#2563eb', 'blocked': '#ea580c', 'backlog': '#6b7280' };
       
-      // HTML tabanlı .doc formatı (Word uyumlu)
-      let html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-        <head><meta charset="utf-8"><title>Proje Raporu</title>
-        <style>
-          body { font-family: Calibri, Arial, sans-serif; padding: 30px; color: #333; }
-          h1 { color: #5b21b6; border-bottom: 3px solid #5b21b6; padding-bottom: 10px; }
-          h2 { color: #7c3aed; margin-top: 25px; }
-          table { border-collapse: collapse; width: 100%; margin: 15px 0; }
-          th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; font-size: 11pt; }
-          th { background: #f3f4f6; font-weight: bold; }
-          .overdue { background: #fef2f2; color: #dc2626; font-weight: bold; }
-          .done { background: #f0fdf4; }
-          .info-table td { border: none; padding: 4px 12px; }
-          .info-table td:first-child { font-weight: bold; color: #6b7280; width: 200px; }
-          .badge { padding: 2px 8px; border-radius: 4px; font-size: 10pt; font-weight: bold; }
-          .badge-done { background: #dcfce7; color: #16a34a; }
-          .badge-doing { background: #dbeafe; color: #2563eb; }
-          .badge-blocked { background: #ffedd5; color: #ea580c; }
-          .badge-backlog { background: #f3f4f6; color: #6b7280; }
-        </style></head>
-        <body>
-          <h1>📊 ${data.project.name} — Proje Durum Raporu</h1>
-          
-          <table class="info-table">
-            <tr><td>Başlangıç Tarihi</td><td>${data.project.start_date}</td></tr>
-            <tr><td>Tahmini Bitiş Tarihi</td><td><strong>${data.project.estimated_end_date || '—'}</strong></td></tr>
-            <tr><td>Genel İlerleme</td><td><strong>%${data.project.progress_percent}</strong></td></tr>
-            <tr><td>Rapor Tarihi</td><td>${data.project.export_date}</td></tr>
-          </table>
+      // Profesyonel Word raporu — doğru sayfa düzeni
+      let html = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+      xmlns:w="urn:schemas-microsoft-com:office:word" 
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<meta name="ProgId" content="Word.Document">
+<meta name="Generator" content="Microsoft Word 15">
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:SpellingState>Clean</w:SpellingState>
+  <w:GrammarState>Clean</w:GrammarState>
+  <w:DoNotOptimizeForBrowser/>
+  <w:AllowPNG/>
+</w:WordDocument>
+<o:OfficeDocumentSettings>
+  <o:AllowPNG/>
+  <o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
+<style>
+  /* Sayfa Ayarları */
+  @page {
+    size: A4 landscape;
+    margin: 1.5cm 2cm 2cm 2cm;
+    mso-header-margin: .5cm;
+    mso-footer-margin: .75cm;
+    mso-page-orientation: landscape;
+  }
+  @page Section1 {
+    size: 29.7cm 21cm;
+    margin: 1.5cm 2cm 2cm 2cm;
+    mso-header-margin: .5cm;
+    mso-footer-margin: .75cm;
+    mso-page-orientation: landscape;
+  }
+  div.Section1 { page: Section1; }
 
-          <h2>📋 Özet</h2>
-          <table>
-            <tr><th>Toplam Görev</th><th>Tamamlanan</th><th>Yapılan</th><th>Bloke</th><th>Bekleyen</th><th>Geciken</th></tr>
-            <tr>
-              <td><strong>${data.summary.total_tasks}</strong></td>
-              <td style="color:green"><strong>${data.summary.done}</strong></td>
-              <td style="color:blue"><strong>${data.summary.doing}</strong></td>
-              <td style="color:orange"><strong>${data.summary.blocked}</strong></td>
-              <td>${data.summary.backlog}</td>
-              <td style="color:red"><strong>${data.summary.overdue}</strong></td>
-            </tr>
-          </table>
+  /* Genel Stiller */
+  body {
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-size: 10pt;
+    color: #1f2937;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0;
+  }
 
-          <h2>📝 Görev Detayları</h2>
-          <table>
-            <tr>
-              <th>#</th><th>Görev</th><th>Sorumlu</th><th>Durum</th>
-              <th>Süre</th><th>İlerleme</th><th>Başlangıç</th><th>Bitiş</th>
-              <th>Bağımlılık</th><th>Not</th>
-            </tr>
-            ${data.tasks.map((t, i) => `
-              <tr class="${t.is_overdue ? 'overdue' : ''} ${t.status === 'done' ? 'done' : ''}">
-                <td>${i + 1}</td>
-                <td><strong>${t.title}</strong></td>
-                <td>${t.owner}</td>
-                <td><span class="badge badge-${t.status}">${statusTR[t.status] || t.status}</span></td>
-                <td>${t.duration} gün</td>
-                <td>%${t.progress}</td>
-                <td>${t.start_date}</td>
-                <td>${t.end_date}${t.is_overdue ? ' ⚠️' : ''}</td>
-                <td>${t.dependency}</td>
-                <td>${t.blocked_reason !== '-' ? t.blocked_reason : ''}</td>
-              </tr>
-            `).join('')}
-          </table>
+  /* Başlık Alanı */
+  .report-header {
+    border-bottom: 3px solid #4f46e5;
+    padding-bottom: 12pt;
+    margin-bottom: 16pt;
+  }
+  .report-title {
+    font-size: 20pt;
+    font-weight: bold;
+    color: #312e81;
+    margin: 0 0 4pt 0;
+    letter-spacing: -0.5pt;
+  }
+  .report-subtitle {
+    font-size: 10pt;
+    color: #6b7280;
+    margin: 0;
+  }
 
-          ${data.summary.overdue > 0 ? `
-          <h2 style="color:red">⚠️ Geciken Görevler</h2>
-          <table>
-            <tr><th>Görev</th><th>Sorumlu</th><th>Bitmesi Gereken</th></tr>
-            ${data.tasks.filter(t => t.is_overdue).map(t => `
-              <tr class="overdue"><td>${t.title}</td><td>${t.owner}</td><td>${t.end_date}</td></tr>
-            `).join('')}
-          </table>
-          ` : ''}
+  /* Bilgi Kutusu */
+  .info-box {
+    background: #f8fafc;
+    border: 1pt solid #e2e8f0;
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin-bottom: 16pt;
+  }
+  .info-grid {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .info-grid td {
+    border: none;
+    padding: 3pt 8pt;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+  .info-label {
+    font-weight: bold;
+    color: #4b5563;
+    width: 140pt;
+    white-space: nowrap;
+  }
+  .info-value {
+    color: #1f2937;
+  }
 
-          <br><br>
-          <p style="color: #9ca3af; font-size: 9pt; text-align: center;">
-            Bu rapor E-LAB Süreç Kontrol sistemi tarafından ${data.project.export_date} tarihinde otomatik oluşturulmuştur.
-          </p>
-        </body></html>
-      `;
+  /* İlerleme Çubuğu */
+  .progress-bar-outer {
+    background: #e5e7eb;
+    height: 14pt;
+    border-radius: 7pt;
+    overflow: hidden;
+    width: 200pt;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .progress-bar-inner {
+    height: 14pt;
+    border-radius: 7pt;
+    background: #4f46e5;
+  }
 
-      const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+  /* Bölüm Başlıkları */
+  .section-title {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #312e81;
+    border-bottom: 2pt solid #e0e7ff;
+    padding-bottom: 5pt;
+    margin: 18pt 0 10pt 0;
+  }
+
+  /* Özet Kartları Tablosu */
+  .summary-cards {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 14pt;
+  }
+  .summary-cards td {
+    border: 1pt solid #e5e7eb;
+    padding: 8pt 12pt;
+    text-align: center;
+    width: 16.66%;
+    vertical-align: top;
+  }
+  .summary-number {
+    font-size: 18pt;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 2pt;
+  }
+  .summary-label {
+    font-size: 8pt;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+  }
+
+  /* Görev Tablosu */
+  table.task-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 9pt;
+    margin-bottom: 14pt;
+  }
+  table.task-table th {
+    background: #312e81;
+    color: white;
+    padding: 6pt 8pt;
+    text-align: left;
+    font-weight: bold;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+    border: 1pt solid #312e81;
+  }
+  table.task-table td {
+    border: 1pt solid #d1d5db;
+    padding: 5pt 8pt;
+    vertical-align: top;
+  }
+  table.task-table tr:nth-child(even) {
+    background: #f9fafb;
+  }
+  table.task-table tr.overdue-row {
+    background: #fef2f2;
+  }
+  table.task-table tr.done-row {
+    background: #f0fdf4;
+  }
+
+  /* Durum Badge */
+  .status-badge {
+    padding: 2pt 6pt;
+    border-radius: 3pt;
+    font-size: 8pt;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  /* Mini İlerleme */
+  .mini-progress {
+    background: #e5e7eb;
+    height: 6pt;
+    border-radius: 3pt;
+    overflow: hidden;
+    width: 60pt;
+    margin-top: 2pt;
+  }
+  .mini-progress-fill {
+    height: 6pt;
+    border-radius: 3pt;
+  }
+
+  /* Geciken Tablo */
+  .overdue-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 9.5pt;
+    margin-bottom: 14pt;
+  }
+  .overdue-table th {
+    background: #dc2626;
+    color: white;
+    padding: 6pt 10pt;
+    text-align: left;
+    font-weight: bold;
+    border: 1pt solid #dc2626;
+  }
+  .overdue-table td {
+    border: 1pt solid #fca5a5;
+    padding: 5pt 10pt;
+    background: #fef2f2;
+  }
+
+  /* Footer */
+  .report-footer {
+    margin-top: 20pt;
+    padding-top: 8pt;
+    border-top: 1pt solid #d1d5db;
+    text-align: center;
+    font-size: 8pt;
+    color: #9ca3af;
+  }
+
+  /* Sayfa Kesme */
+  .page-break {
+    page-break-before: always;
+    mso-break-type: section-break;
+  }
+</style>
+</head>
+<body>
+<div class="Section1">
+
+  <!-- BAŞLIK -->
+  <div class="report-header">
+    <p class="report-title">📊 ${data.project.name}</p>
+    <p class="report-subtitle">Proje Durum Raporu — ${data.project.export_date}</p>
+  </div>
+
+  <!-- PROJE BİLGİLERİ -->
+  <div class="info-box">
+    <table class="info-grid">
+      <tr>
+        <td class="info-label">Proje Adı:</td>
+        <td class="info-value"><strong>${data.project.name}</strong></td>
+        <td class="info-label">Rapor Tarihi:</td>
+        <td class="info-value">${data.project.export_date}</td>
+      </tr>
+      <tr>
+        <td class="info-label">Başlangıç Tarihi:</td>
+        <td class="info-value">${data.project.start_date}</td>
+        <td class="info-label">Tahmini Bitiş:</td>
+        <td class="info-value"><strong>${data.project.estimated_end_date || '—'}</strong></td>
+      </tr>
+      <tr>
+        <td class="info-label">Genel İlerleme:</td>
+        <td class="info-value" colspan="3">
+          <strong>%${data.project.progress_percent}</strong>
+          <span style="margin-left:8pt;">
+            <span class="progress-bar-outer">
+              <span class="progress-bar-inner" style="width:${data.project.progress_percent}%;"></span>
+            </span>
+          </span>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ÖZET KARTLARI -->
+  <p class="section-title">📋 Görev Özeti</p>
+  <table class="summary-cards">
+    <tr>
+      <td style="border-left:3pt solid #4f46e5;">
+        <span class="summary-number" style="color:#4f46e5;">${data.summary.total_tasks}</span>
+        <span class="summary-label">Toplam</span>
+      </td>
+      <td style="border-left:3pt solid #16a34a;">
+        <span class="summary-number" style="color:#16a34a;">${data.summary.done}</span>
+        <span class="summary-label">Tamamlanan</span>
+      </td>
+      <td style="border-left:3pt solid #2563eb;">
+        <span class="summary-number" style="color:#2563eb;">${data.summary.doing}</span>
+        <span class="summary-label">Yapılıyor</span>
+      </td>
+      <td style="border-left:3pt solid #ea580c;">
+        <span class="summary-number" style="color:#ea580c;">${data.summary.blocked}</span>
+        <span class="summary-label">Bloke</span>
+      </td>
+      <td style="border-left:3pt solid #6b7280;">
+        <span class="summary-number" style="color:#6b7280;">${data.summary.backlog}</span>
+        <span class="summary-label">Bekleyen</span>
+      </td>
+      <td style="border-left:3pt solid #dc2626;">
+        <span class="summary-number" style="color:#dc2626;">${data.summary.overdue}</span>
+        <span class="summary-label">Geciken</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- GÖREV DETAY TABLOSU -->
+  <p class="section-title">📝 Görev Detayları</p>
+  <table class="task-table">
+    <thead>
+      <tr>
+        <th style="width:20pt;">#</th>
+        <th style="width:auto;">Görev Adı</th>
+        <th style="width:80pt;">Sorumlu</th>
+        <th style="width:65pt;">Durum</th>
+        <th style="width:40pt;">Süre</th>
+        <th style="width:55pt;">İlerleme</th>
+        <th style="width:65pt;">Başlangıç</th>
+        <th style="width:65pt;">Bitiş</th>
+        <th style="width:80pt;">Bağımlılık</th>
+        <th style="width:80pt;">Not</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${data.tasks.map((t, i) => {
+        const rowClass = t.is_overdue ? 'overdue-row' : t.status === 'done' ? 'done-row' : '';
+        const statusBg = { 'done': '#dcfce7', 'doing': '#dbeafe', 'blocked': '#ffedd5', 'backlog': '#f3f4f6' }[t.status] || '#f3f4f6';
+        const statusClr = statusColor[t.status] || '#6b7280';
+        const progressClr = t.progress >= 80 ? '#16a34a' : t.progress >= 40 ? '#2563eb' : '#6b7280';
+        return `
+          <tr class="${rowClass}">
+            <td style="text-align:center;font-weight:bold;color:#6b7280;">${i + 1}</td>
+            <td><strong>${t.title}</strong></td>
+            <td>${t.owner}</td>
+            <td><span class="status-badge" style="background:${statusBg};color:${statusClr};">${statusTR[t.status] || t.status}</span></td>
+            <td style="text-align:center;">${t.duration} gün</td>
+            <td>
+              <span style="font-weight:bold;color:${progressClr};">%${t.progress}</span>
+              <div class="mini-progress"><div class="mini-progress-fill" style="width:${t.progress}%;background:${progressClr};"></div></div>
+            </td>
+            <td style="font-size:8.5pt;">${t.start_date}</td>
+            <td style="font-size:8.5pt;${t.is_overdue ? 'color:#dc2626;font-weight:bold;' : ''}">${t.end_date}${t.is_overdue ? ' ⚠️' : ''}</td>
+            <td style="font-size:8.5pt;">${t.dependency !== '-' ? t.dependency : ''}</td>
+            <td style="font-size:8.5pt;color:#6b7280;">${t.blocked_reason !== '-' ? t.blocked_reason : ''}</td>
+          </tr>
+        `;
+      }).join('')}
+    </tbody>
+  </table>
+
+  ${data.summary.overdue > 0 ? `
+  <!-- GECİKEN GÖREVLER -->
+  <p class="section-title" style="color:#dc2626;">⚠️ Geciken Görevler</p>
+  <table class="overdue-table">
+    <thead>
+      <tr>
+        <th>Görev</th>
+        <th>Sorumlu</th>
+        <th>Bitiş Tarihi</th>
+        <th>Gecikme</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${data.tasks.filter(t => t.is_overdue).map(t => {
+        const daysLate = Math.ceil((new Date() - new Date(t.end_date)) / (1000*60*60*24));
+        return `<tr><td><strong>${t.title}</strong></td><td>${t.owner}</td><td>${t.end_date}</td><td style="color:#dc2626;font-weight:bold;">${daysLate} gün</td></tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  ` : `
+  <div class="info-box" style="background:#f0fdf4;border-color:#bbf7d0;">
+    <p style="margin:0;color:#16a34a;font-weight:bold;">✅ Geciken görev bulunmamaktadır.</p>
+  </div>
+  `}
+
+  <!-- FOOTER -->
+  <div class="report-footer">
+    <p style="margin:0;">Bu rapor <strong>E-LAB Süreç Kontrol</strong> sistemi tarafından ${data.project.export_date} tarihinde otomatik oluşturulmuştur.</p>
+    <p style="margin:2pt 0 0 0;">Sayfa 1</p>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+      const blob = new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `${data.project.name.replace(/\s+/g, '_')}_Rapor_${data.project.export_date}.doc`;
