@@ -1841,8 +1841,7 @@ MAT-003	Nikel Şerit	500	gr"
     } finally {
       showLoading(false);
     }
-  }
-};
+  },
 
   renderSettingsTab() {
     const container = document.getElementById('tabContent');
