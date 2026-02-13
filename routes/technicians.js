@@ -106,8 +106,11 @@ router.get('/assignments', authenticateToken, async (req, res) => {
     const params = [];
     let paramIdx = 0;
 
-    // Admin dışındakiler sadece kendi görevlerini görür
-    if (req.user.role !== 'admin') {
+    // view=all parametresi varsa (görev panosu) herkese tüm görevleri göster
+    const viewAll = req.query.view === 'all';
+    
+    // Admin veya viewAll dışındakiler sadece kendi görevlerini görür
+    if (!viewAll && req.user.role !== 'admin') {
       paramIdx++;
       query += ` AND a.assigned_to = ?`;
       params.push(req.user.id);

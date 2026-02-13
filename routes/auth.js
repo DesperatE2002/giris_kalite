@@ -227,4 +227,40 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Şifre değiştir (kendi şifresini - tüm kullanıcılar)
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Mevcut şifre ve yeni şifre gereklidir' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Yeni şifre en az 6 karakter olmalıdır' });
+    }
+
+    // Mevcut kullanıcıyı ve şifresini al
+    const result = await pool.query('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    const user = result.rows[0];
+    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Mevcut şifre hatalı' });
+    }
+
+    // Yeni şifreyi hashle ve güncelle
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+
+    res.json({ message: 'Şifre başarıyla değiştirildi' });
+  } catch (error) {
+    console.error('Şifre değiştirme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 export default router;

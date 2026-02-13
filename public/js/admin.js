@@ -41,6 +41,10 @@ const adminPage = {
               class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-users mr-2"></i> Kullanıcılar
             </button>
+            <button onclick="adminPage.switchTab('settings')" data-tab="settings"
+              class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
+              <i class="fas fa-sliders-h mr-2"></i> Ayarlar
+            </button>
           </nav>
         </div>
 
@@ -90,6 +94,9 @@ const adminPage = {
         break;
       case 'users':
         this.renderUsersTab();
+        break;
+      case 'settings':
+        this.renderSettingsTab();
         break;
     }
   },
@@ -1829,6 +1836,105 @@ MAT-003	Nikel Şerit	500	gr"
       await api.bomTemplates.delete(templateId);
       alert('✅ Şablon başarıyla silindi!');
       this.renderBomTemplatesTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  }
+};
+
+  renderSettingsTab() {
+    const container = document.getElementById('tabContent');
+    const user = authManager.currentUser;
+
+    container.innerHTML = `
+      <div class="space-y-6 fade-in">
+        <!-- Şifre Değiştirme -->
+        <div class="glass-card rounded-2xl shadow-xl p-6">
+          <h2 class="text-2xl font-bold gradient-text mb-6">
+            <i class="fas fa-key mr-2"></i> Şifre Değiştir
+          </h2>
+          <div class="max-w-md space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Mevcut Şifre</label>
+              <input type="password" id="currentPassword" 
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                placeholder="Mevcut şifrenizi girin">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Yeni Şifre</label>
+              <input type="password" id="newPassword" 
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                placeholder="Yeni şifre (en az 6 karakter)">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Yeni Şifre (Tekrar)</label>
+              <input type="password" id="confirmPassword" 
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                placeholder="Yeni şifreyi tekrar girin">
+            </div>
+            <button onclick="adminPage.changePassword()" 
+              class="gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 hover-lift">
+              <i class="fas fa-save mr-2"></i> Şifreyi Değiştir
+            </button>
+          </div>
+        </div>
+
+        <!-- Hesap Bilgileri -->
+        <div class="glass-card rounded-2xl shadow-xl p-6">
+          <h2 class="text-2xl font-bold gradient-text mb-6">
+            <i class="fas fa-user-circle mr-2"></i> Hesap Bilgileri
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-50 rounded-xl p-4">
+              <p class="text-sm text-gray-500">Kullanıcı Adı</p>
+              <p class="text-lg font-bold text-gray-800">${user?.username || '-'}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+              <p class="text-sm text-gray-500">Ad Soyad</p>
+              <p class="text-lg font-bold text-gray-800">${user?.full_name || '-'}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+              <p class="text-sm text-gray-500">Rol</p>
+              <p class="text-lg font-bold text-gray-800">${{'admin':'Yönetici','kalite':'Kalite','tekniker':'Tekniker'}[user?.role] || user?.role || '-'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  async changePassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Tüm alanları doldurun');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert('Yeni şifre en az 6 karakter olmalıdır');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert('Yeni şifreler eşleşmiyor');
+      return;
+    }
+
+    try {
+      showLoading(true);
+      await api.request('/auth/change-password', {
+        method: 'PUT',
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      alert('✅ Şifre başarıyla değiştirildi!');
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
     } catch (error) {
       alert('Hata: ' + error.message);
     } finally {
