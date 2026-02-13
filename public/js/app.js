@@ -92,6 +92,11 @@ const app = {
     document.querySelectorAll('[data-page="technicians"]').forEach(btn => {
       btn.style.display = '';
     });
+
+    // Taskboard - visible to all users
+    document.querySelectorAll('[data-page="taskboard"]').forEach(btn => {
+      btn.style.display = '';
+    });
   },
 
   navigate(page) {
@@ -141,6 +146,9 @@ const app = {
         break;
       case 'technicians':
         TechPage.render();
+        break;
+      case 'taskboard':
+        TaskBoard.render();
         break;
       default:
         this.navigate('dashboard');
