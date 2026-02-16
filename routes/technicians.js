@@ -348,22 +348,24 @@ router.get('/daily-report', authenticateToken, async (req, res) => {
       [date]
     );
 
-    // Bugünkü aktifler
+    // O gün başlatılan aktifler
     const active = await pool.query(
       `SELECT a.*, u.full_name as assigned_to_name
        FROM tech_assignments a
        LEFT JOIN users u ON a.assigned_to = u.id
-       WHERE a.status = 'active'
-       ORDER BY a.started_at`
+       WHERE a.status = 'active' AND DATE(a.started_at) = ?
+       ORDER BY a.started_at`,
+      [date]
     );
 
-    // Bugünkü bloklar
+    // O gün oluşan bloklar
     const blocked = await pool.query(
       `SELECT a.*, u.full_name as assigned_to_name
        FROM tech_assignments a
        LEFT JOIN users u ON a.assigned_to = u.id
-       WHERE a.status = 'blocked'
-       ORDER BY a.updated_at DESC`
+       WHERE a.status = 'blocked' AND DATE(a.updated_at) = ?
+       ORDER BY a.updated_at DESC`,
+      [date]
     );
 
     // Kişi bazlı süre özet

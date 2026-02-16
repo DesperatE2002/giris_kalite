@@ -259,31 +259,82 @@ const TaskBoard = {
     } finally { showLoading(false); }
   },
 
-  async completeTask(id) {
-    const note = prompt('Tamamlama notu (opsiyonel):');
-    try {
-      showLoading(true);
-      await api.request(`/technicians/assignments/${id}/complete`, { 
-        method: 'POST', body: JSON.stringify({ note: note || undefined }) 
-      });
-      await this.render();
-    } catch (e) {
-      alert('Hata: ' + e.message);
-    } finally { showLoading(false); }
+  completeTask(id) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-check-circle text-green-500 mr-2"></i>Görevi Tamamla</h3>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tamamlama Notu (opsiyonel)</label>
+          <textarea id="tb_completeNote" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none text-base" placeholder="Not ekleyin..."></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button id="tb_confirmComplete" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl text-base transition-all shadow-md">
+            <i class="fas fa-check mr-2"></i>Tamamla
+          </button>
+          <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 border-2 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold">İptal</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Focus textarea
+    setTimeout(() => document.getElementById('tb_completeNote')?.focus(), 100);
+    
+    document.getElementById('tb_confirmComplete').addEventListener('click', async () => {
+      const note = document.getElementById('tb_completeNote').value.trim();
+      modal.remove();
+      try {
+        showLoading(true);
+        await api.request(`/technicians/assignments/${id}/complete`, { 
+          method: 'POST', body: JSON.stringify({ note: note || undefined }) 
+        });
+        await this.render();
+      } catch (e) {
+        alert('Hata: ' + e.message);
+      } finally { showLoading(false); }
+    });
   },
 
-  async blockTask(id) {
-    const reason = prompt('Bloke sebebi:');
-    if (!reason) return;
-    try {
-      showLoading(true);
-      await api.request(`/technicians/assignments/${id}/block`, { 
-        method: 'POST', body: JSON.stringify({ reason }) 
-      });
-      await this.render();
-    } catch (e) {
-      alert('Hata: ' + e.message);
-    } finally { showLoading(false); }
+  blockTask(id) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-ban text-orange-500 mr-2"></i>Görevi Bloke Et</h3>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Bloke Sebebi *</label>
+          <textarea id="tb_blockReason" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none text-base" placeholder="Neden bloke edildi?"></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button id="tb_confirmBlock" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-base transition-all shadow-md">
+            <i class="fas fa-ban mr-2"></i>Bloke Et
+          </button>
+          <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 border-2 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold">İptal</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    setTimeout(() => document.getElementById('tb_blockReason')?.focus(), 100);
+    
+    document.getElementById('tb_confirmBlock').addEventListener('click', async () => {
+      const reason = document.getElementById('tb_blockReason').value.trim();
+      if (!reason) { alert('Bloke sebebi yazmalısınız'); return; }
+      modal.remove();
+      try {
+        showLoading(true);
+        await api.request(`/technicians/assignments/${id}/block`, { 
+          method: 'POST', body: JSON.stringify({ reason }) 
+        });
+        await this.render();
+      } catch (e) {
+        alert('Hata: ' + e.message);
+      } finally { showLoading(false); }
+    });
   },
 
   async refresh() {

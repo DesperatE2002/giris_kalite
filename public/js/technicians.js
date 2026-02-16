@@ -534,16 +534,32 @@ const TechPage = {
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tekniker *</label>
-                <select id="af_tech" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-                  <option value="">Seçin...</option>
-                  ${this.technicians.map(t => {
-                    const wf = this.workforce.find(w => w.id === t.id);
-                    const badge = wf ? (wf.availability === 'free' ? ' 🟢' : wf.availability === 'busy' ? ' 🔵' : ' 🔴') : '';
-                    const selected = (task?.assigned_to === t.id || preselectedTech === t.id) ? 'selected' : '';
-                    return `<option value="${t.id}" ${selected}>${t.full_name}${badge}</option>`;
-                  }).join('')}
-                </select>
+                <label class="block text-sm font-medium text-gray-700 mb-1">${task ? 'Tekniker *' : 'Tekniker(ler) *'}</label>
+                ${task ? `
+                  <select id="af_tech" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Seçin...</option>
+                    ${this.technicians.map(t => {
+                      const wf = this.workforce.find(w => w.id === t.id);
+                      const badge = wf ? (wf.availability === 'free' ? ' 🟢' : wf.availability === 'busy' ? ' 🔵' : ' 🔴') : '';
+                      const selected = task.assigned_to === t.id ? 'selected' : '';
+                      return `<option value="${t.id}" ${selected}>${t.full_name}${badge}</option>`;
+                    }).join('')}
+                  </select>
+                ` : `
+                  <div id="af_tech_multi" class="border rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
+                    ${this.technicians.map(t => {
+                      const wf = this.workforce.find(w => w.id === t.id);
+                      const badge = wf ? (wf.availability === 'free' ? '🟢' : wf.availability === 'busy' ? '🔵' : '🔴') : '';
+                      const checked = preselectedTech === t.id ? 'checked' : '';
+                      return `<label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-indigo-50 cursor-pointer transition-all">
+                        <input type="checkbox" name="af_techs" value="${t.id}" ${checked} class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                        <span class="text-sm font-medium">${t.full_name}</span>
+                        <span class="text-xs">${badge}</span>
+                      </label>`;
+                    }).join('')}
+                  </div>
+                  <p class="text-xs text-gray-400 mt-1">Birden fazla kişi seçebilirsiniz</p>
+                `}
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Zorluk (1-5)</label>
@@ -585,26 +601,34 @@ const TechPage = {
   },
 
   async saveAssignment(editId) {
-    const data = {
-      title: document.getElementById('af_title').value,
-      description: document.getElementById('af_desc').value || null,
-      assigned_to: parseInt(document.getElementById('af_tech').value),
-      difficulty: parseInt(document.getElementById('af_difficulty').value) || 3,
-      notes: document.getElementById('af_notes').value || null,
-      deadline: document.getElementById('af_deadline').value || null
-    };
-
-    if (editId) {
-      const existing = this.assignments.find(a => a.id === editId);
-      data.status = existing?.status || 'pending';
-    }
+    const title = document.getElementById('af_title').value;
+    const description = document.getElementById('af_desc').value || null;
+    const difficulty = parseInt(document.getElementById('af_difficulty').value) || 3;
+    const notes = document.getElementById('af_notes').value || null;
+    const deadline = document.getElementById('af_deadline').value || null;
 
     try {
       showLoading(true);
       if (editId) {
+        const existing = this.assignments.find(a => a.id === editId);
+        const data = { title, description, assigned_to: parseInt(document.getElementById('af_tech').value), difficulty, notes, deadline, status: existing?.status || 'pending' };
         await api.request(`/technicians/assignments/${editId}`, { method: 'PUT', body: JSON.stringify(data) });
       } else {
-        await api.request('/technicians/assignments', { method: 'POST', body: JSON.stringify(data) });
+        // Çoklu seçim kontrolü
+        const checkboxes = document.querySelectorAll('input[name="af_techs"]:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        
+        if (selectedIds.length === 0) {
+          alert('En az bir kişi seçmelisiniz');
+          showLoading(false);
+          return;
+        }
+        
+        // Her seçilen kişi için ayrı görev oluştur
+        for (const techId of selectedIds) {
+          const data = { title, description, assigned_to: techId, difficulty, notes, deadline };
+          await api.request('/technicians/assignments', { method: 'POST', body: JSON.stringify(data) });
+        }
       }
       document.getElementById('techFormArea').innerHTML = '';
       await this.render();
@@ -627,27 +651,71 @@ const TechPage = {
     } finally { showLoading(false); }
   },
 
-  async completeTask(id) {
-    const note = prompt('Tamamlama notu (opsiyonel):');
-    try {
-      showLoading(true);
-      await api.request(`/technicians/assignments/${id}/complete`, { method: 'POST', body: JSON.stringify({ note: note || undefined }) });
-      await this.render();
-    } catch (e) {
-      alert('Hata: ' + e.message);
-    } finally { showLoading(false); }
+  completeTask(id) {
+    const formArea = document.getElementById('techFormArea');
+    formArea.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) document.getElementById('techFormArea').innerHTML=''">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-check-circle text-green-500 mr-2"></i>Görevi Tamamla</h3>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tamamlama Notu (opsiyonel)</label>
+            <textarea id="tp_completeNote" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Not ekleyin..."></textarea>
+          </div>
+          <div class="flex gap-3">
+            <button id="tp_confirmComplete" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md">
+              <i class="fas fa-check mr-2"></i>Tamamla
+            </button>
+            <button onclick="document.getElementById('techFormArea').innerHTML=''" class="px-6 py-3 border rounded-xl text-gray-600 hover:bg-gray-50">İptal</button>
+          </div>
+        </div>
+      </div>
+    `;
+    setTimeout(() => document.getElementById('tp_completeNote')?.focus(), 100);
+    document.getElementById('tp_confirmComplete').addEventListener('click', async () => {
+      const note = document.getElementById('tp_completeNote').value.trim();
+      document.getElementById('techFormArea').innerHTML = '';
+      try {
+        showLoading(true);
+        await api.request(`/technicians/assignments/${id}/complete`, { method: 'POST', body: JSON.stringify({ note: note || undefined }) });
+        await this.render();
+      } catch (e) {
+        alert('Hata: ' + e.message);
+      } finally { showLoading(false); }
+    });
   },
 
-  async blockTask(id) {
-    const reason = prompt('Bloke sebebi:');
-    if (!reason) return;
-    try {
-      showLoading(true);
-      await api.request(`/technicians/assignments/${id}/block`, { method: 'POST', body: JSON.stringify({ reason }) });
-      await this.render();
-    } catch (e) {
-      alert('Hata: ' + e.message);
-    } finally { showLoading(false); }
+  blockTask(id) {
+    const formArea = document.getElementById('techFormArea');
+    formArea.innerHTML = `
+      <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) document.getElementById('techFormArea').innerHTML=''">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-ban text-orange-500 mr-2"></i>Görevi Bloke Et</h3>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Bloke Sebebi *</label>
+            <textarea id="tp_blockReason" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none" placeholder="Neden bloke edildi?"></textarea>
+          </div>
+          <div class="flex gap-3">
+            <button id="tp_confirmBlock" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md">
+              <i class="fas fa-ban mr-2"></i>Bloke Et
+            </button>
+            <button onclick="document.getElementById('techFormArea').innerHTML=''" class="px-6 py-3 border rounded-xl text-gray-600 hover:bg-gray-50">İptal</button>
+          </div>
+        </div>
+      </div>
+    `;
+    setTimeout(() => document.getElementById('tp_blockReason')?.focus(), 100);
+    document.getElementById('tp_confirmBlock').addEventListener('click', async () => {
+      const reason = document.getElementById('tp_blockReason').value.trim();
+      if (!reason) { alert('Bloke sebebi yazmalısınız'); return; }
+      document.getElementById('techFormArea').innerHTML = '';
+      try {
+        showLoading(true);
+        await api.request(`/technicians/assignments/${id}/block`, { method: 'POST', body: JSON.stringify({ reason }) });
+        await this.render();
+      } catch (e) {
+        alert('Hata: ' + e.message);
+      } finally { showLoading(false); }
+    });
   },
 
   async deleteAssignment(id) {
