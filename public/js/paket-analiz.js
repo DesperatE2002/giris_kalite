@@ -10,7 +10,7 @@ const PaketAnaliz = {
   previewData: null,
 
   async render() {
-    const main = document.getElementById('main-content');
+    const main = document.getElementById('content');
     main.innerHTML = `
       <div class="fade-in">
         <div class="flex items-center justify-between mb-6">
