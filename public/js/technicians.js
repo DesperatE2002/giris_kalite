@@ -315,8 +315,14 @@ const TechPage = {
       <div class="glass-card rounded-xl p-5 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-calendar-day mr-2 text-indigo-600"></i>Günlük Faaliyet Raporu</h3>
-          <input type="date" id="dailyDatePicker" value="${date}" onchange="TechPage.renderTab()" 
-            class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+          <div class="flex items-center gap-3">
+            <input type="date" id="dailyDatePicker" value="${date}" onchange="TechPage.renderTab()" 
+              class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+            <button onclick="TechPage.generateDailyWordReport()" 
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 whitespace-nowrap">
+              <i class="fas fa-file-word"></i>Rapor Oluştur
+            </button>
+          </div>
         </div>
 
         <!-- Özet -->
@@ -727,5 +733,407 @@ const TechPage = {
     } catch (e) {
       alert('Hata: ' + e.message);
     } finally { showLoading(false); }
+  },
+
+  // ─── GÜNLÜK WORD RAPORU ────────────────────────────────────────────────────
+
+  async generateDailyWordReport() {
+    const date = document.getElementById('dailyDatePicker')?.value || new Date().toISOString().split('T')[0];
+    let report;
+    try {
+      showLoading(true);
+      report = await api.request(`/technicians/daily-report?date=${date}`);
+    } catch(e) {
+      alert('Rapor verisi alınamadı: ' + e.message);
+      showLoading(false);
+      return;
+    }
+
+    const s = report.summary;
+    const totalHours = Math.floor((s.total_minutes || 0) / 60);
+    const totalMins = (s.total_minutes || 0) % 60;
+    const dateFormatted = new Date(date + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const now = new Date().toLocaleString('tr-TR');
+
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+    xmlns:w="urn:schemas-microsoft-com:office:word" 
+    xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="ProgId" content="Word.Document">
+<meta name="Generator" content="Microsoft Word 15">
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:DoNotOptimizeForBrowser/>
+  <w:AllowPNG/>
+</w:WordDocument>
+<o:OfficeDocumentSettings>
+  <o:AllowPNG/>
+  <o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 2cm 2cm 2.5cm 2cm;
+    mso-header-margin: .5cm;
+    mso-footer-margin: .75cm;
+  }
+  @page Section1 {
+    size: 21cm 29.7cm;
+    margin: 2cm 2cm 2.5cm 2cm;
+    mso-header-margin: .5cm;
+    mso-footer-margin: .75cm;
+  }
+  div.Section1 { page: Section1; }
+
+  body {
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    color: #1f2937;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+  .header-bar {
+    border-bottom: 3pt solid #4338ca;
+    padding-bottom: 10pt;
+    margin-bottom: 18pt;
+  }
+  .header-title {
+    font-size: 22pt;
+    font-weight: bold;
+    color: #312e81;
+    margin: 0 0 2pt 0;
+  }
+  .header-subtitle {
+    font-size: 12pt;
+    color: #6366f1;
+    margin: 0;
+  }
+  .header-date {
+    font-size: 10pt;
+    color: #6b7280;
+    margin: 4pt 0 0 0;
+  }
+  .section-title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1e3a5f;
+    border-left: 4pt solid #4338ca;
+    padding-left: 8pt;
+    margin: 18pt 0 10pt 0;
+  }
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16pt;
+  }
+  .summary-table td {
+    border: 1pt solid #e5e7eb;
+    padding: 10pt 14pt;
+    text-align: center;
+  }
+  .summary-label {
+    font-size: 9pt;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+  }
+  .summary-value {
+    font-size: 20pt;
+    font-weight: bold;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14pt;
+    font-size: 10pt;
+  }
+  .data-table th {
+    background-color: #f1f5f9;
+    border: 1pt solid #d1d5db;
+    padding: 6pt 10pt;
+    text-align: left;
+    font-weight: bold;
+    color: #374151;
+    font-size: 9pt;
+    text-transform: uppercase;
+  }
+  .data-table td {
+    border: 1pt solid #e5e7eb;
+    padding: 6pt 10pt;
+    vertical-align: top;
+  }
+  .data-table tr:nth-child(even) td {
+    background-color: #fafbfc;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2pt 8pt;
+    border-radius: 3pt;
+    font-size: 8pt;
+    font-weight: bold;
+  }
+  .tag-green { background-color: #dcfce7; color: #166534; }
+  .tag-blue { background-color: #dbeafe; color: #1e40af; }
+  .tag-orange { background-color: #fff7ed; color: #9a3412; }
+  .tag-red { background-color: #fef2f2; color: #991b1b; }
+  .tag-purple { background-color: #f3e8ff; color: #6b21a8; }
+  .stars { color: #eab308; font-size: 10pt; }
+  .footer {
+    margin-top: 24pt;
+    padding-top: 10pt;
+    border-top: 1pt solid #d1d5db;
+    font-size: 8pt;
+    color: #9ca3af;
+  }
+  .no-data {
+    color: #9ca3af;
+    font-style: italic;
+    padding: 10pt 0;
+  }
+</style>
+</head>
+<body>
+<div class="Section1">
+
+  <!-- BAŞLIK -->
+  <div class="header-bar">
+    <p class="header-title">GÜNLÜK FAALİYET RAPORU</p>
+    <p class="header-subtitle">${dateFormatted}</p>
+    <p class="header-date">Oluşturulma: ${now} — E-LAB Süreç Kontrol</p>
+  </div>
+
+  <!-- ÖZET -->
+  <p class="section-title">Özet Bilgiler</p>
+  <table class="summary-table">
+    <tr>
+      <td style="background-color:#f0fdf4;">
+        <p class="summary-value" style="color:#16a34a;">${s.total_completed || 0}</p>
+        <p class="summary-label">Tamamlanan</p>
+      </td>
+      <td style="background-color:#eff6ff;">
+        <p class="summary-value" style="color:#2563eb;">${s.total_active || 0}</p>
+        <p class="summary-label">Aktif</p>
+      </td>
+      <td style="background-color:#fff7ed;">
+        <p class="summary-value" style="color:#ea580c;">${s.total_blocked || 0}</p>
+        <p class="summary-label">Bloke</p>
+      </td>
+      <td style="background-color:#eef2ff;">
+        <p class="summary-value" style="color:#4338ca;">${totalHours}s ${totalMins}dk</p>
+        <p class="summary-label">Toplam Çalışma</p>
+      </td>
+    </tr>
+  </table>`;
+
+    // KİŞİ BAZLI ÖZET
+    if (report.person_summary.length > 0) {
+      html += `
+  <p class="section-title">Kişi Bazlı Performans</p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Personel</th>
+        <th style="text-align:center;">Görev Sayısı</th>
+        <th style="text-align:center;">Çalışma Süresi</th>
+        <th style="text-align:center;">Ort. Puan</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      report.person_summary.forEach(p => {
+        const hrs = Math.floor(p.total_minutes / 60);
+        const mins = p.total_minutes % 60;
+        const scoreColor = parseFloat(p.avg_score) >= 5 ? '#16a34a' : parseFloat(p.avg_score) >= 3 ? '#ca8a04' : '#dc2626';
+        html += `
+      <tr>
+        <td style="font-weight:bold;">${p.full_name}</td>
+        <td style="text-align:center; font-weight:bold; font-size:12pt;">${p.task_count}</td>
+        <td style="text-align:center;">${hrs}s ${mins}dk</td>
+        <td style="text-align:center;"><span class="tag" style="background-color:#eef2ff; color:${scoreColor}; font-size:10pt;">${parseFloat(p.avg_score).toFixed(1)}</span></td>
+      </tr>`;
+      });
+      // Toplam satır
+      const totalTasks = report.person_summary.reduce((s, p) => s + parseInt(p.task_count), 0);
+      html += `
+      <tr style="background-color:#f1f5f9; font-weight:bold;">
+        <td>TOPLAM</td>
+        <td style="text-align:center; font-size:12pt;">${totalTasks}</td>
+        <td style="text-align:center;">${totalHours}s ${totalMins}dk</td>
+        <td style="text-align:center;">-</td>
+      </tr>
+    </tbody>
+  </table>`;
+    }
+
+    // TAMAMLANAN İŞLER
+    html += `
+  <p class="section-title">Tamamlanan İşler</p>`;
+    if (report.completed.length > 0) {
+      html += `
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:28%;">Görev</th>
+        <th style="width:18%;">Personel</th>
+        <th style="width:10%; text-align:center;">Zorluk</th>
+        <th style="width:12%; text-align:center;">Süre</th>
+        <th style="width:10%; text-align:center;">Puan</th>
+        <th style="width:17%;">Not</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      report.completed.forEach((a, idx) => {
+        const mins = a.actual_duration_minutes || 0;
+        const durText = mins < 60 ? `${mins} dk` : `${Math.floor(mins/60)}s ${mins%60}dk`;
+        const stars = '\u2605'.repeat(a.difficulty || 3) + '\u2606'.repeat(5 - (a.difficulty || 3));
+        const scoreVal = a.performance_score ? parseFloat(a.performance_score).toFixed(1) : '-';
+        const scoreClass = a.performance_score >= 5 ? 'tag-green' : a.performance_score >= 3 ? 'tag-blue' : 'tag-orange';
+        
+        // Tamamlanma saati
+        const completedTime = a.completed_at ? new Date(a.completed_at).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}) : '';
+        
+        html += `
+      <tr>
+        <td style="text-align:center; color:#9ca3af;">${idx + 1}</td>
+        <td>
+          <b>${a.title}</b>
+          ${a.description ? `<br><span style="font-size:9pt; color:#6b7280;">${a.description}</span>` : ''}
+        </td>
+        <td>${a.assigned_to_name || '-'}</td>
+        <td style="text-align:center;"><span class="stars">${stars}</span></td>
+        <td style="text-align:center;">${durText}${completedTime ? `<br><span style="font-size:8pt; color:#9ca3af;">${completedTime}</span>` : ''}</td>
+        <td style="text-align:center;"><span class="tag ${scoreClass}">${scoreVal}</span></td>
+        <td style="font-size:9pt; color:#6b7280;">${a.notes || '-'}</td>
+      </tr>`;
+      });
+      html += `
+    </tbody>
+  </table>`;
+    } else {
+      html += `<p class="no-data">Bu tarihte tamamlanan görev bulunmamaktadır.</p>`;
+    }
+
+    // AKTİF İŞLER
+    if (report.active.length > 0) {
+      html += `
+  <p class="section-title">Aktif / Devam Eden İşler</p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:30%;">Görev</th>
+        <th style="width:20%;">Personel</th>
+        <th style="width:15%; text-align:center;">Zorluk</th>
+        <th style="width:15%; text-align:center;">Başlanma</th>
+        <th style="width:15%;">Not</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      report.active.forEach((a, idx) => {
+        const stars = '\u2605'.repeat(a.difficulty || 3) + '\u2606'.repeat(5 - (a.difficulty || 3));
+        const startedTime = a.started_at ? new Date(a.started_at).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}) : '-';
+        html += `
+      <tr>
+        <td style="text-align:center; color:#9ca3af;">${idx + 1}</td>
+        <td><b>${a.title}</b></td>
+        <td>${a.assigned_to_name || '-'}</td>
+        <td style="text-align:center;"><span class="stars">${stars}</span></td>
+        <td style="text-align:center;"><span class="tag tag-blue">${startedTime}</span></td>
+        <td style="font-size:9pt; color:#6b7280;">${a.notes || '-'}</td>
+      </tr>`;
+      });
+      html += `
+    </tbody>
+  </table>`;
+    }
+
+    // BLOKE İŞLER
+    if (report.blocked.length > 0) {
+      html += `
+  <p class="section-title">Bloke Edilen İşler</p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:30%;">Görev</th>
+        <th style="width:20%;">Personel</th>
+        <th style="width:45%;">Bloke Sebebi</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      report.blocked.forEach((a, idx) => {
+        html += `
+      <tr>
+        <td style="text-align:center; color:#9ca3af;">${idx + 1}</td>
+        <td><b>${a.title}</b></td>
+        <td>${a.assigned_to_name || '-'}</td>
+        <td><span class="tag tag-orange">${a.blocked_reason || 'Belirtilmedi'}</span></td>
+      </tr>`;
+      });
+      html += `
+    </tbody>
+  </table>`;
+    }
+
+    // AKTİVİTE LOGLARI
+    if (report.activity_logs && report.activity_logs.length > 0) {
+      html += `
+  <p class="section-title">Aktivite Zaman Çizelgesi</p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:12%;">Saat</th>
+        <th style="width:18%;">Personel</th>
+        <th style="width:25%;">Görev</th>
+        <th style="width:12%; text-align:center;">Aksiyon</th>
+        <th style="width:33%;">Not</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      const actionLabels = { start: 'Başlatıldı', complete: 'Tamamlandı', block: 'Bloke Edildi' };
+      const actionClasses = { start: 'tag-blue', complete: 'tag-green', block: 'tag-orange' };
+      report.activity_logs.forEach(log => {
+        const time = new Date(log.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+        html += `
+      <tr>
+        <td style="font-weight:bold;">${time}</td>
+        <td>${log.full_name || '-'}</td>
+        <td>${log.task_title || '-'}</td>
+        <td style="text-align:center;"><span class="tag ${actionClasses[log.action] || 'tag-blue'}">${actionLabels[log.action] || log.action}</span></td>
+        <td style="font-size:9pt; color:#6b7280;">${log.note || '-'}</td>
+      </tr>`;
+      });
+      html += `
+    </tbody>
+  </table>`;
+    }
+
+    // FOOTER
+    html += `
+  <div class="footer">
+    <p>Bu rapor <b>E-LAB Süreç Kontrol</b> sistemi tarafından ${now} tarihinde otomatik oluşturulmuştur.</p>
+    <p style="margin-top:2pt;">Rapor Tarihi: ${dateFormatted}</p>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+    // İndir
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Gunluk_Rapor_${date}.doc`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    showLoading(false);
   }
 };
