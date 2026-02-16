@@ -97,6 +97,15 @@ const app = {
     document.querySelectorAll('[data-page="taskboard"]').forEach(btn => {
       btn.style.display = '';
     });
+
+    // Paket-Analiz - only for admin
+    document.querySelectorAll('[data-page="paket-analiz"]').forEach(btn => {
+      if (user.role === 'admin') {
+        btn.style.display = '';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
   },
 
   navigate(page) {
@@ -149,6 +158,9 @@ const app = {
         break;
       case 'taskboard':
         TaskBoard.render();
+        break;
+      case 'paket-analiz':
+        PaketAnaliz.render();
         break;
       default:
         this.navigate('dashboard');

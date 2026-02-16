@@ -34,6 +34,7 @@ import qualityRoutes from '../routes/quality.js';
 import reportsRoutes from '../routes/reports.js';
 import projectsRoutes from '../routes/projects.js';
 import techniciansRoutes from '../routes/technicians.js';
+import paketAnalizRoutes, { migratePacketAnaliz } from '../routes/paket-analiz.js';
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/quality', qualityRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/technicians', techniciansRoutes);
+app.use('/api/paket-analiz', paketAnalizRoutes);
 
 // Auto-migration: total_returned_quantity ve returned_by sütunlarını ekle
 import pool from '../db/database.js';
@@ -162,6 +164,11 @@ import pool from '../db/database.js';
       console.error('⚠️ Technicians auto-migration uyarısı:', e.message);
     }
   }
+})();
+
+// Auto-migration: Paket-Analiz tabloları
+(async () => {
+  await migratePacketAnaliz();
 })();
 
 // Health check
