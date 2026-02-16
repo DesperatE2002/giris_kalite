@@ -14,25 +14,25 @@ const PaketAnaliz = {
     main.innerHTML = `
       <div class="fade-in">
         <div class="flex items-center justify-between mb-6">
-          <h1 class="text-2xl font-bold text-white"><i class="fas fa-cubes mr-2"></i>Paket-Analiz</h1>
+          <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-cubes mr-2 text-purple-600"></i>Paket-Analiz</h1>
         </div>
 
         <!-- TAB NAVİGASYON -->
         <div class="flex gap-2 mb-6 flex-wrap">
           <button onclick="PaketAnaliz.switchTab('analysis')" id="pa-tab-analysis"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-blue-500 text-white">
+            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all gradient-btn text-white shadow-lg">
             <i class="fas fa-chart-bar mr-1"></i>Analiz
           </button>
           <button onclick="PaketAnaliz.switchTab('import')" id="pa-tab-import"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-white/10 text-white/70 hover:bg-white/20">
+            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
             <i class="fas fa-file-excel mr-1"></i>Excel Import
           </button>
           <button onclick="PaketAnaliz.switchTab('packages')" id="pa-tab-packages"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-white/10 text-white/70 hover:bg-white/20">
+            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
             <i class="fas fa-box-open mr-1"></i>Paket Yönetimi
           </button>
           <button onclick="PaketAnaliz.switchTab('items')" id="pa-tab-items"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-white/10 text-white/70 hover:bg-white/20">
+            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
             <i class="fas fa-list mr-1"></i>Kalem Listesi
           </button>
         </div>
@@ -61,8 +61,8 @@ const PaketAnaliz = {
       const btn = document.getElementById(`pa-tab-${t}`);
       if (btn) {
         btn.className = t === tab
-          ? 'px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-blue-500 text-white'
-          : 'px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-white/10 text-white/70 hover:bg-white/20';
+          ? 'px-4 py-2 rounded-lg font-semibold text-sm transition-all gradient-btn text-white shadow-lg'
+          : 'px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200';
       }
     });
 
@@ -82,24 +82,24 @@ const PaketAnaliz = {
   // ═══════════════════════════════════════════════════════════════════════════════
   renderAnalysisTab(container) {
     container.innerHTML = `
-      <div class="glass-card p-6 mb-6">
-        <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-calculator mr-2"></i>Paket Analizi</h2>
+      <div class="glass-card rounded-2xl p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-calculator mr-2 text-blue-500"></i>Paket Analizi</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Seç</label>
-            <select id="pa-analysis-pkg" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
+            <select id="pa-analysis-pkg" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
               <option value="">-- Paket seçin --</option>
               ${this.packages.map(p => `<option value="${p.id}" ${p.id == this.selectedPackageId ? 'selected' : ''}>${p.name} ${p.code ? '(' + p.code + ')' : ''} — ${p.item_count || 0} kalem</option>`).join('')}
             </select>
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Adedi</label>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Adedi</label>
             <input id="pa-analysis-count" type="number" min="1" value="1"
-              class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20" placeholder="Üretilecek adet">
+              class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" placeholder="Üretilecek adet">
           </div>
           <div class="flex items-end">
             <button onclick="PaketAnaliz.runAnalysis()" 
-              class="w-full p-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-all">
+              class="w-full p-3 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
               <i class="fas fa-play mr-2"></i>Hesapla
             </button>
           </div>
@@ -117,14 +117,14 @@ const PaketAnaliz = {
 
     this.selectedPackageId = pkgId;
     const results = document.getElementById('pa-analysis-results');
-    results.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-400"></i><p class="text-white/60 mt-2">Analiz hesaplanıyor...</p></div>';
+    results.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i><p class="text-gray-500 mt-2">Analiz hesaplanıyor...</p></div>';
 
     try {
       const res = await API.fetch(`/api/paket-analiz/packages/${pkgId}/analysis?count=${count}`);
       this.analysisData = await res.json();
       this.renderAnalysisResults(results);
     } catch (e) {
-      results.innerHTML = `<div class="glass-card p-6 text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Analiz hatası: ${e.message}</div>`;
+      results.innerHTML = `<div class="glass-card rounded-2xl p-6 text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i>Analiz hatası: ${e.message}</div>`;
     }
   },
 
@@ -139,33 +139,45 @@ const PaketAnaliz = {
     container.innerHTML = `
       <!-- ÖZET KARTLAR -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="glass-card p-4 text-center">
-          <div class="text-3xl font-bold text-blue-400">${fmtInt(s.total_items)}</div>
-          <div class="text-white/60 text-sm">Toplam Kalem</div>
+        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
+          <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
+            <i class="fas fa-list text-white text-lg"></i>
+          </div>
+          <div class="text-2xl font-bold text-gray-800">${fmtInt(s.total_items)}</div>
+          <div class="text-gray-500 text-sm">Toplam Kalem</div>
         </div>
-        <div class="glass-card p-4 text-center">
-          <div class="text-3xl font-bold text-red-400">${fmtInt(s.missing_items)}</div>
-          <div class="text-white/60 text-sm">Eksik Kalem</div>
+        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
+          <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
+            <i class="fas fa-exclamation text-white text-lg"></i>
+          </div>
+          <div class="text-2xl font-bold text-red-600">${fmtInt(s.missing_items)}</div>
+          <div class="text-gray-500 text-sm">Eksik Kalem</div>
         </div>
-        <div class="glass-card p-4 text-center">
-          <div class="text-3xl font-bold text-yellow-400">${d.package_count}</div>
-          <div class="text-white/60 text-sm">Paket Adedi</div>
+        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
+          <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
+            <i class="fas fa-boxes text-white text-lg"></i>
+          </div>
+          <div class="text-2xl font-bold text-gray-800">${d.package_count}</div>
+          <div class="text-gray-500 text-sm">Paket Adedi</div>
         </div>
-        <div class="glass-card p-4 text-center">
-          <div class="text-3xl font-bold text-emerald-400">${fmt(s.total_missing_cost)}</div>
-          <div class="text-white/60 text-sm">Toplam Eksik Maliyet</div>
+        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
+          <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
+            <i class="fas fa-dollar-sign text-white text-lg"></i>
+          </div>
+          <div class="text-2xl font-bold text-green-600">${fmt(s.total_missing_cost)}</div>
+          <div class="text-gray-500 text-sm">Eksik Maliyet</div>
         </div>
       </div>
 
       <!-- SENARYO KARTLARI -->
-      <div class="glass-card p-6 mb-6">
-        <h3 class="text-lg font-bold text-white mb-3"><i class="fas fa-chart-line mr-2"></i>Senaryo Analizi</h3>
+      <div class="glass-card rounded-2xl p-6 mb-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-3"><i class="fas fa-chart-line mr-2 text-purple-500"></i>Senaryo Analizi</h3>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
           ${d.scenarios.map(sc => `
-            <div class="bg-white/5 rounded-lg p-3 text-center border ${sc.count == d.package_count ? 'border-blue-500 bg-blue-500/10' : 'border-white/10'}">
-              <div class="text-lg font-bold text-white">${sc.count} Paket</div>
-              <div class="text-sm text-yellow-400 font-semibold">${fmt(sc.total_missing_cost)}</div>
-              <div class="text-xs text-white/50">eksik maliyet</div>
+            <div class="rounded-xl p-4 text-center border-2 transition-all ${sc.count == d.package_count ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}">
+              <div class="text-lg font-bold text-gray-800">${sc.count} Paket</div>
+              <div class="text-sm text-orange-600 font-semibold mt-1">${fmt(sc.total_missing_cost)}</div>
+              <div class="text-xs text-gray-400">eksik maliyet</div>
             </div>
           `).join('')}
         </div>
@@ -173,29 +185,29 @@ const PaketAnaliz = {
 
       <!-- EXPORT BUTONLARI -->
       <div class="flex gap-3 mb-6 flex-wrap">
-        <button onclick="PaketAnaliz.exportMissing()" class="px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white text-sm font-semibold transition-all">
+        <button onclick="PaketAnaliz.exportMissing()" class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-all hover-lift shadow">
           <i class="fas fa-file-excel mr-1"></i>Eksik Kalemleri İndir
         </button>
-        <button onclick="PaketAnaliz.exportCritical()" class="px-4 py-2 rounded-lg bg-orange-500/80 hover:bg-orange-500 text-white text-sm font-semibold transition-all">
+        <button onclick="PaketAnaliz.exportCritical()" class="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-all hover-lift shadow">
           <i class="fas fa-exclamation-triangle mr-1"></i>Kritik Kalemleri İndir
         </button>
-        <button onclick="PaketAnaliz.exportScenarios()" class="px-4 py-2 rounded-lg bg-purple-500/80 hover:bg-purple-500 text-white text-sm font-semibold transition-all">
+        <button onclick="PaketAnaliz.exportScenarios()" class="px-4 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold transition-all hover-lift shadow">
           <i class="fas fa-chart-bar mr-1"></i>Senaryo Raporu İndir
         </button>
       </div>
 
       <!-- FİLTRE VE TABLO -->
-      <div class="glass-card p-6">
+      <div class="glass-card rounded-2xl p-6">
         <div class="flex flex-wrap gap-3 mb-4 items-center">
           <input id="pa-filter-search" type="text" placeholder="Parça kodu veya adı ara..."
-            class="flex-1 min-w-[200px] p-2 rounded-lg bg-white/10 text-white border border-white/20 text-sm"
+            class="flex-1 min-w-[200px] p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm focus:border-blue-400"
             oninput="PaketAnaliz.filterItems()">
-          <label class="flex items-center gap-2 text-white/70 text-sm">
-            <input type="checkbox" id="pa-filter-missing" onchange="PaketAnaliz.filterItems()" class="rounded">
+          <label class="flex items-center gap-2 text-gray-600 text-sm cursor-pointer">
+            <input type="checkbox" id="pa-filter-missing" onchange="PaketAnaliz.filterItems()" class="rounded border-gray-300 text-blue-500">
             Sadece eksik
           </label>
           <select id="pa-filter-sort" onchange="PaketAnaliz.filterItems()"
-            class="p-2 rounded-lg bg-white/10 text-white border border-white/20 text-sm">
+            class="p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm">
             <option value="part_code">Parça Kodu</option>
             <option value="missing_cost_desc">Eksik Maliyet ↓</option>
             <option value="lead_time_desc">Lead Time ↓</option>
@@ -205,21 +217,21 @@ const PaketAnaliz = {
 
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
-            <thead>
-              <tr class="text-white/60 border-b border-white/10">
-                <th class="text-left p-2">Parça Kodu</th>
-                <th class="text-left p-2">Parça Adı</th>
-                <th class="text-right p-2">BOM</th>
-                <th class="text-right p-2">İhtiyaç</th>
-                <th class="text-right p-2">Stok</th>
-                <th class="text-right p-2">Eksik</th>
-                <th class="text-right p-2">Fiyat</th>
-                <th class="text-right p-2">Eksik Maliyet</th>
-                <th class="text-right p-2">Lead Time</th>
-                <th class="text-left p-2">Tedarikçi</th>
+            <thead class="bg-gray-50">
+              <tr class="text-gray-500 border-b border-gray-200">
+                <th class="text-left p-3 font-semibold">Parça Kodu</th>
+                <th class="text-left p-3 font-semibold">Parça Adı</th>
+                <th class="text-right p-3 font-semibold">BOM</th>
+                <th class="text-right p-3 font-semibold">İhtiyaç</th>
+                <th class="text-right p-3 font-semibold">Stok</th>
+                <th class="text-right p-3 font-semibold">Eksik</th>
+                <th class="text-right p-3 font-semibold">Fiyat</th>
+                <th class="text-right p-3 font-semibold">Eksik Maliyet</th>
+                <th class="text-right p-3 font-semibold">Lead Time</th>
+                <th class="text-left p-3 font-semibold">Tedarikçi</th>
               </tr>
             </thead>
-            <tbody id="pa-analysis-tbody">
+            <tbody id="pa-analysis-tbody" class="divide-y divide-gray-100">
             </tbody>
           </table>
         </div>
@@ -238,7 +250,6 @@ const PaketAnaliz = {
 
     let items = [...this.analysisData.items];
 
-    // Filtre
     if (search) {
       items = items.filter(i =>
         (i.part_code || '').toLowerCase().includes(search) ||
@@ -250,7 +261,6 @@ const PaketAnaliz = {
       items = items.filter(i => i.missing_quantity > 0);
     }
 
-    // Sıralama
     switch (sort) {
       case 'missing_cost_desc': items.sort((a, b) => b.missing_cost - a.missing_cost); break;
       case 'lead_time_desc': items.sort((a, b) => (b.lead_time_days || 0) - (a.lead_time_days || 0)); break;
@@ -263,27 +273,27 @@ const PaketAnaliz = {
     if (!tbody) return;
 
     tbody.innerHTML = items.map(item => {
-      const rowClass = item.missing_quantity > 0 ? 'bg-red-500/5' : '';
-      const missingClass = item.missing_quantity > 0 ? 'text-red-400 font-bold' : 'text-emerald-400';
-      const ltClass = (item.lead_time_days || 0) >= 30 ? 'text-orange-400 font-bold' : 'text-white/80';
+      const rowClass = item.missing_quantity > 0 ? 'bg-red-50' : '';
+      const missingClass = item.missing_quantity > 0 ? 'text-red-600 font-bold' : 'text-green-600';
+      const ltClass = (item.lead_time_days || 0) >= 30 ? 'text-orange-600 font-bold' : 'text-gray-700';
 
       return `
-        <tr class="border-b border-white/5 hover:bg-white/5 ${rowClass}">
-          <td class="p-2 text-white font-mono text-xs">${item.part_code || ''}</td>
-          <td class="p-2 text-white/80">${item.part_name || '-'}</td>
-          <td class="p-2 text-right text-white/80">${fmt(item.bom_quantity)}</td>
-          <td class="p-2 text-right text-white/80">${fmt(item.total_need)}</td>
-          <td class="p-2 text-right text-white/80">${fmt(item.temsa_stock)}</td>
-          <td class="p-2 text-right ${missingClass}">${fmt(item.missing_quantity)}</td>
-          <td class="p-2 text-right text-white/80">${fmt(item.unit_price)}</td>
-          <td class="p-2 text-right ${item.missing_cost > 0 ? 'text-yellow-400 font-semibold' : 'text-white/60'}">${fmt(item.missing_cost)}</td>
-          <td class="p-2 text-right ${ltClass}">${item.lead_time_days || 0} gün</td>
-          <td class="p-2 text-white/60">${item.supplier || '-'}</td>
+        <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all ${rowClass}">
+          <td class="p-3 text-gray-800 font-mono text-xs font-semibold">${item.part_code || ''}</td>
+          <td class="p-3 text-gray-600">${item.part_name || '-'}</td>
+          <td class="p-3 text-right text-gray-700">${fmt(item.bom_quantity)}</td>
+          <td class="p-3 text-right text-gray-700">${fmt(item.total_need)}</td>
+          <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
+          <td class="p-3 text-right ${missingClass}">${fmt(item.missing_quantity)}</td>
+          <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)}</td>
+          <td class="p-3 text-right ${item.missing_cost > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400'}">${fmt(item.missing_cost)}</td>
+          <td class="p-3 text-right ${ltClass}">${item.lead_time_days || 0} gün</td>
+          <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
         </tr>`;
     }).join('');
 
     if (items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-white/40">Sonuç bulunamadı</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-gray-400">Sonuç bulunamadı</td></tr>';
     }
   },
 
@@ -292,20 +302,20 @@ const PaketAnaliz = {
   // ═══════════════════════════════════════════════════════════════════════════════
   renderImportTab(container) {
     container.innerHTML = `
-      <div class="glass-card p-6 mb-6">
-        <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-file-excel mr-2"></i>Excel Import</h2>
+      <div class="glass-card rounded-2xl p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-file-excel mr-2 text-green-600"></i>Excel Import</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Seç</label>
-            <select id="pa-import-pkg" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
+            <select id="pa-import-pkg" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
               <option value="">-- Paket seçin --</option>
               ${this.packages.map(p => `<option value="${p.id}" ${p.id == this.selectedPackageId ? 'selected' : ''}>${p.name} ${p.code ? '(' + p.code + ')' : ''}</option>`).join('')}
             </select>
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Import Türü</label>
-            <select id="pa-import-type" onchange="PaketAnaliz.onImportTypeChange()" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Import Türü</label>
+            <select id="pa-import-type" onchange="PaketAnaliz.onImportTypeChange()" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
               <option value="bom">BOM Import (Parça Kodu + Adı + Adet)</option>
               <option value="cost">Maliyet Import (Parça Kodu + Birim Fiyat)</option>
               <option value="leadtime">Lead Time Import (Parça Kodu + Süre)</option>
@@ -316,42 +326,42 @@ const PaketAnaliz = {
         </div>
 
         <!-- DOSYA YÜKLEME ALANI -->
-        <div id="pa-dropzone" class="border-2 border-dashed border-white/20 rounded-xl p-10 text-center cursor-pointer hover:border-blue-400/50 hover:bg-white/5 transition-all"
+        <div id="pa-dropzone" class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
           onclick="document.getElementById('pa-file-input').click()"
           ondrop="PaketAnaliz.handleDrop(event)" ondragover="PaketAnaliz.handleDragOver(event)" ondragleave="PaketAnaliz.handleDragLeave(event)">
           <input type="file" id="pa-file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="PaketAnaliz.handleFileSelect(event)">
-          <i class="fas fa-cloud-upload-alt text-4xl text-white/30 mb-3"></i>
-          <p class="text-white/60">Excel dosyasını sürükleyin veya tıklayarak seçin</p>
-          <p class="text-white/40 text-sm mt-1">.xlsx, .xls veya .csv</p>
+          <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 mb-3"></i>
+          <p class="text-gray-500">Excel dosyasını sürükleyin veya tıklayarak seçin</p>
+          <p class="text-gray-400 text-sm mt-1">.xlsx, .xls veya .csv</p>
         </div>
 
-        <div id="pa-file-info" class="hidden mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+        <div id="pa-file-info" class="hidden mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700">
           <i class="fas fa-file-excel mr-2"></i><span id="pa-file-name"></span>
         </div>
       </div>
 
       <!-- KOLON EŞLEME VE ÖNİZLEME -->
       <div id="pa-preview-section" class="hidden">
-        <div class="glass-card p-6 mb-6">
-          <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-columns mr-2"></i>Kolon Eşleme</h3>
-          <p class="text-white/60 text-sm mb-4">Excel dosyanızdaki kolon başlıklarını sistem alanlarıyla eşleştirin.</p>
+        <div class="glass-card rounded-2xl p-6 mb-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-columns mr-2 text-blue-500"></i>Kolon Eşleme</h3>
+          <p class="text-gray-500 text-sm mb-4">Excel dosyanızdaki kolon başlıklarını sistem alanlarıyla eşleştirin.</p>
           <div id="pa-mapping-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
-        <div class="glass-card p-6 mb-6">
-          <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-eye mr-2"></i>Önizleme (İlk 5 satır)</h3>
+        <div class="glass-card rounded-2xl p-6 mb-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-eye mr-2 text-blue-500"></i>Önizleme (İlk 5 satır)</h3>
           <div class="overflow-x-auto">
             <table class="w-full text-sm" id="pa-preview-table"></table>
           </div>
         </div>
 
-        <div class="glass-card p-6 mb-6 border border-yellow-500/30 bg-yellow-500/5">
-          <h3 class="text-yellow-400 font-bold mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Full Sync Uyarısı</h3>
-          <p class="text-white/70 text-sm">Bu dosyadaki veriler kaynak olarak kullanılacak. Dosyada OLMAYAN parça kodlarının ilgili alanları <strong class="text-yellow-300">sıfırlanacaktır</strong>. Bu sayede Excel her zaman tek gerçek kaynak (single source of truth) olur.</p>
+        <div class="rounded-2xl p-6 mb-6 border-2 border-yellow-300 bg-yellow-50">
+          <h3 class="text-yellow-700 font-bold mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Full Sync Uyarısı</h3>
+          <p class="text-yellow-800 text-sm">Bu dosyadaki veriler kaynak olarak kullanılacak. Dosyada OLMAYAN parça kodlarının ilgili alanları <strong>sıfırlanacaktır</strong>. Bu sayede Excel her zaman tek gerçek kaynak (single source of truth) olur.</p>
         </div>
 
         <button onclick="PaketAnaliz.executeImport()" id="pa-import-btn"
-          class="w-full p-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg transition-all">
+          class="w-full p-4 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-lg transition-all hover-lift shadow-lg">
           <i class="fas fa-upload mr-2"></i>Import Et
         </button>
       </div>
@@ -363,14 +373,14 @@ const PaketAnaliz = {
 
   handleDragOver(e) {
     e.preventDefault();
-    e.currentTarget.classList.add('border-blue-400', 'bg-blue-500/10');
+    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
   },
   handleDragLeave(e) {
-    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-500/10');
+    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
   },
   handleDrop(e) {
     e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-500/10');
+    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
     const file = e.dataTransfer.files[0];
     if (file) this.processFile(file);
   },
@@ -384,7 +394,6 @@ const PaketAnaliz = {
     document.getElementById('pa-file-info').classList.remove('hidden');
     document.getElementById('pa-file-name').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
 
-    // Sunucuya preview için gönder
     const formData = new FormData();
     formData.append('file', file);
 
@@ -409,7 +418,6 @@ const PaketAnaliz = {
     const importType = document.getElementById('pa-import-type')?.value || 'bom';
     const cols = this.previewData.columns;
 
-    // Import türüne göre eşlenecek alanlar
     let fields = [];
     switch (importType) {
       case 'bom':
@@ -451,7 +459,6 @@ const PaketAnaliz = {
         break;
     }
 
-    // Auto-match kolonu bul
     const autoMatch = (key) => {
       const hints = {
         part_code: ['parça kodu', 'part code', 'malzeme kodu', 'malzeme no', 'part no', 'pn', 'kod', 'code', 'material'],
@@ -470,26 +477,25 @@ const PaketAnaliz = {
     const mappingDiv = document.getElementById('pa-mapping-fields');
     mappingDiv.innerHTML = fields.map(f => `
       <div>
-        <label class="block text-white/70 text-sm mb-1">${f.label} ${f.required ? '<span class="text-red-400">*</span>' : ''}</label>
-        <select id="pa-map-${f.key}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20 text-sm">
+        <label class="block text-gray-600 text-sm mb-1 font-medium">${f.label} ${f.required ? '<span class="text-red-500">*</span>' : ''}</label>
+        <select id="pa-map-${f.key}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm focus:border-blue-400">
           ${f.required ? '' : '<option value="">-- Eşleme yok --</option>'}
           ${cols.map(c => `<option value="${c}" ${c === autoMatch(f.key) ? 'selected' : ''}>${c}</option>`).join('')}
         </select>
       </div>
     `).join('');
 
-    // Önizleme tablosu
     const pt = document.getElementById('pa-preview-table');
     pt.innerHTML = `
-      <thead>
-        <tr class="text-white/60 border-b border-white/10">
-          ${cols.map(c => `<th class="text-left p-2 text-xs">${c}</th>`).join('')}
+      <thead class="bg-gray-50">
+        <tr class="text-gray-500 border-b border-gray-200">
+          ${cols.map(c => `<th class="text-left p-2 text-xs font-semibold">${c}</th>`).join('')}
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-gray-100">
         ${this.previewData.preview.map(row => `
-          <tr class="border-b border-white/5">
-            ${cols.map(c => `<td class="p-2 text-white/80 text-xs">${row[c] ?? ''}</td>`).join('')}
+          <tr class="hover:bg-gray-50">
+            ${cols.map(c => `<td class="p-2 text-gray-700 text-xs">${row[c] ?? ''}</td>`).join('')}
           </tr>
         `).join('')}
       </tbody>
@@ -503,7 +509,6 @@ const PaketAnaliz = {
     if (!pkgId) return showToast('Lütfen bir paket seçin', 'warning');
     if (!this.uploadedFile) return showToast('Lütfen bir dosya seçin', 'warning');
 
-    // Eşleme topla
     const mapping = {};
     document.querySelectorAll('[id^="pa-map-"]').forEach(el => {
       const key = el.id.replace('pa-map-', '');
@@ -534,37 +539,37 @@ const PaketAnaliz = {
 
       const r = result.report;
       resultDiv.innerHTML = `
-        <div class="glass-card p-6 border border-emerald-500/30 bg-emerald-500/5">
-          <h3 class="text-emerald-400 font-bold text-lg mb-3"><i class="fas fa-check-circle mr-2"></i>${result.message}</h3>
+        <div class="rounded-2xl p-6 border-2 border-green-200 bg-green-50">
+          <h3 class="text-green-700 font-bold text-lg mb-3"><i class="fas fa-check-circle mr-2"></i>${result.message}</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="text-center">
-              <div class="text-2xl font-bold text-white">${r.total_rows || 0}</div>
-              <div class="text-white/50 text-sm">Toplam Satır</div>
+              <div class="text-2xl font-bold text-gray-800">${r.total_rows || 0}</div>
+              <div class="text-gray-500 text-sm">Toplam Satır</div>
             </div>
             ${r.inserted !== undefined ? `
               <div class="text-center">
-                <div class="text-2xl font-bold text-emerald-400">${r.inserted}</div>
-                <div class="text-white/50 text-sm">Yeni Eklenen</div>
+                <div class="text-2xl font-bold text-green-600">${r.inserted}</div>
+                <div class="text-gray-500 text-sm">Yeni Eklenen</div>
               </div>` : ''}
             <div class="text-center">
-              <div class="text-2xl font-bold text-blue-400">${r.updated || 0}</div>
-              <div class="text-white/50 text-sm">Güncellenen</div>
+              <div class="text-2xl font-bold text-blue-600">${r.updated || 0}</div>
+              <div class="text-gray-500 text-sm">Güncellenen</div>
             </div>
             ${r.zeroed !== undefined ? `
               <div class="text-center">
-                <div class="text-2xl font-bold text-yellow-400">${r.zeroed}</div>
-                <div class="text-white/50 text-sm">Sıfırlanan</div>
+                <div class="text-2xl font-bold text-yellow-600">${r.zeroed}</div>
+                <div class="text-gray-500 text-sm">Sıfırlanan</div>
               </div>` : ''}
             ${r.skipped !== undefined ? `
               <div class="text-center">
-                <div class="text-2xl font-bold text-white/40">${r.skipped}</div>
-                <div class="text-white/50 text-sm">Atlanan</div>
+                <div class="text-2xl font-bold text-gray-400">${r.skipped}</div>
+                <div class="text-gray-500 text-sm">Atlanan</div>
               </div>` : ''}
           </div>
           ${r.unmatched_count > 0 ? `
-            <div class="mt-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <p class="text-yellow-400 text-sm font-semibold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Eşleşmeyen kodlar (${r.unmatched_count}):</p>
-              <p class="text-white/60 text-xs">${(r.unmatched_codes || []).join(', ')}</p>
+            <div class="mt-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+              <p class="text-yellow-700 text-sm font-semibold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Eşleşmeyen kodlar (${r.unmatched_count}):</p>
+              <p class="text-yellow-600 text-xs">${(r.unmatched_codes || []).join(', ')}</p>
             </div>
           ` : ''}
         </div>
@@ -585,44 +590,44 @@ const PaketAnaliz = {
   // ═══════════════════════════════════════════════════════════════════════════════
   renderPackagesTab(container) {
     container.innerHTML = `
-      <div class="glass-card p-6 mb-6">
-        <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-plus-circle mr-2"></i>Yeni Paket Ekle</h2>
+      <div class="glass-card rounded-2xl p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Yeni Paket Ekle</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Adı *</label>
-            <input id="pa-pkg-name" type="text" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20" placeholder="ör: Paket A">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Adı *</label>
+            <input id="pa-pkg-name" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="ör: Paket A">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Kodu</label>
-            <input id="pa-pkg-code" type="text" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20" placeholder="ör: PKT-001">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Kodu</label>
+            <input id="pa-pkg-code" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="ör: PKT-001">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Açıklama</label>
-            <input id="pa-pkg-desc" type="text" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20" placeholder="Opsiyonel">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Açıklama</label>
+            <input id="pa-pkg-desc" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="Opsiyonel">
           </div>
         </div>
-        <button onclick="PaketAnaliz.createPackage()" class="mt-4 px-6 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all">
+        <button onclick="PaketAnaliz.createPackage()" class="mt-4 px-6 py-2 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
           <i class="fas fa-plus mr-1"></i>Oluştur
         </button>
       </div>
 
-      <div class="glass-card p-6">
-        <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-boxes mr-2"></i>Mevcut Paketler</h2>
+      <div class="glass-card rounded-2xl p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-boxes mr-2 text-purple-500"></i>Mevcut Paketler</h2>
         <div id="pa-packages-list" class="space-y-3">
-          ${this.packages.length === 0 ? '<p class="text-white/40 text-center py-6">Henüz paket oluşturulmadı</p>' : ''}
+          ${this.packages.length === 0 ? '<p class="text-gray-400 text-center py-6">Henüz paket oluşturulmadı</p>' : ''}
           ${this.packages.map(p => `
-            <div class="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+            <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200 hover:shadow-md transition-all">
               <div>
-                <span class="text-white font-semibold">${p.name}</span>
-                ${p.code ? `<span class="text-white/50 ml-2">(${p.code})</span>` : ''}
-                <span class="ml-3 px-2 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-300">${p.item_count || 0} kalem</span>
-                ${p.description ? `<p class="text-white/40 text-sm mt-1">${p.description}</p>` : ''}
+                <span class="text-gray-800 font-semibold">${p.name}</span>
+                ${p.code ? `<span class="text-gray-400 ml-2">(${p.code})</span>` : ''}
+                <span class="ml-3 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600 font-semibold">${p.item_count || 0} kalem</span>
+                ${p.description ? `<p class="text-gray-400 text-sm mt-1">${p.description}</p>` : ''}
               </div>
               <div class="flex gap-2">
                 <button onclick="PaketAnaliz.editPackage(${p.id}, '${(p.name || '').replace(/'/g, "\\'")}', '${(p.code || '').replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}')" 
-                  class="px-3 py-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-sm"><i class="fas fa-edit"></i></button>
+                  class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm transition-all"><i class="fas fa-edit"></i></button>
                 <button onclick="PaketAnaliz.deletePackage(${p.id}, '${(p.name || '').replace(/'/g, "\\'")}')" 
-                  class="px-3 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 text-sm"><i class="fas fa-trash"></i></button>
+                  class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-sm transition-all"><i class="fas fa-trash"></i></button>
               </div>
             </div>
           `).join('')}
@@ -653,29 +658,28 @@ const PaketAnaliz = {
   },
 
   async editPackage(id, name, code, desc) {
-    // Modal
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
     overlay.innerHTML = `
-      <div class="glass-card p-6 w-full max-w-md">
-        <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-edit mr-2"></i>Paket Düzenle</h3>
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-edit mr-2 text-blue-500"></i>Paket Düzenle</h3>
         <div class="space-y-3">
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Adı</label>
-            <input id="pa-edit-name" type="text" value="${name}" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Adı</label>
+            <input id="pa-edit-name" type="text" value="${name}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Paket Kodu</label>
-            <input id="pa-edit-code" type="text" value="${code}" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Kodu</label>
+            <input id="pa-edit-code" type="text" value="${code}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Açıklama</label>
-            <input id="pa-edit-desc" type="text" value="${desc}" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Açıklama</label>
+            <input id="pa-edit-desc" type="text" value="${desc}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
         </div>
-        <div class="flex gap-3 mt-4">
-          <button onclick="PaketAnaliz.saveEditPackage(${id})" class="flex-1 p-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-all">Kaydet</button>
-          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all">İptal</button>
+        <div class="flex gap-3 mt-5">
+          <button onclick="PaketAnaliz.saveEditPackage(${id})" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Kaydet</button>
+          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all">İptal</button>
         </div>
       </div>
     `;
@@ -722,17 +726,17 @@ const PaketAnaliz = {
   // ═══════════════════════════════════════════════════════════════════════════════
   renderItemsTab(container) {
     container.innerHTML = `
-      <div class="glass-card p-6 mb-6">
+      <div class="glass-card rounded-2xl p-6 mb-6">
         <div class="flex flex-wrap items-center gap-4 mb-4">
           <div class="flex-1 min-w-[200px]">
-            <label class="block text-white/70 text-sm mb-1">Paket Seç</label>
-            <select id="pa-items-pkg" onchange="PaketAnaliz.loadItemsList()" class="w-full p-3 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
+            <select id="pa-items-pkg" onchange="PaketAnaliz.loadItemsList()" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
               <option value="">-- Paket seçin --</option>
               ${this.packages.map(p => `<option value="${p.id}" ${p.id == this.selectedPackageId ? 'selected' : ''}>${p.name} ${p.code ? '(' + p.code + ')' : ''}</option>`).join('')}
             </select>
           </div>
           <div class="flex items-end">
-            <button onclick="PaketAnaliz.showAddItemModal()" class="p-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all">
+            <button onclick="PaketAnaliz.showAddItemModal()" class="p-3 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
               <i class="fas fa-plus mr-1"></i>Kalem Ekle
             </button>
           </div>
@@ -751,61 +755,61 @@ const PaketAnaliz = {
     const pkgId = document.getElementById('pa-items-pkg')?.value;
     const listDiv = document.getElementById('pa-items-list');
     if (!pkgId) {
-      listDiv.innerHTML = '<div class="glass-card p-6 text-center text-white/40">Paket seçin</div>';
+      listDiv.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center text-gray-400">Paket seçin</div>';
       return;
     }
 
     this.selectedPackageId = pkgId;
-    listDiv.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-2xl text-blue-400"></i></div>';
+    listDiv.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i></div>';
 
     try {
       const res = await API.fetch(`/api/paket-analiz/packages/${pkgId}/items`);
       const items = await res.json();
 
       if (items.length === 0) {
-        listDiv.innerHTML = '<div class="glass-card p-6 text-center text-white/40">Bu pakette henüz kalem yok. Excel ile import yapabilir veya manuel ekleyebilirsiniz.</div>';
+        listDiv.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center text-gray-400">Bu pakette henüz kalem yok. Excel ile import yapabilir veya manuel ekleyebilirsiniz.</div>';
         return;
       }
 
       const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 
       listDiv.innerHTML = `
-        <div class="glass-card p-6">
+        <div class="glass-card rounded-2xl p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-white font-bold">${items.length} Kalem</h3>
+            <h3 class="text-gray-800 font-bold">${items.length} Kalem</h3>
             <input id="pa-items-search" type="text" placeholder="Ara..." oninput="PaketAnaliz.filterItemsList()"
-              class="p-2 rounded-lg bg-white/10 text-white border border-white/20 text-sm w-48">
+              class="p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm w-48 focus:border-blue-400">
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead>
-                <tr class="text-white/60 border-b border-white/10">
-                  <th class="text-left p-2">Parça Kodu</th>
-                  <th class="text-left p-2">Parça Adı</th>
-                  <th class="text-right p-2">BOM</th>
-                  <th class="text-right p-2">Fiyat</th>
-                  <th class="text-right p-2">Lead Time</th>
-                  <th class="text-right p-2">Stok</th>
-                  <th class="text-left p-2">Tedarikçi</th>
-                  <th class="text-center p-2">İşlem</th>
+              <thead class="bg-gray-50">
+                <tr class="text-gray-500 border-b border-gray-200">
+                  <th class="text-left p-3 font-semibold">Parça Kodu</th>
+                  <th class="text-left p-3 font-semibold">Parça Adı</th>
+                  <th class="text-right p-3 font-semibold">BOM</th>
+                  <th class="text-right p-3 font-semibold">Fiyat</th>
+                  <th class="text-right p-3 font-semibold">Lead Time</th>
+                  <th class="text-right p-3 font-semibold">Stok</th>
+                  <th class="text-left p-3 font-semibold">Tedarikçi</th>
+                  <th class="text-center p-3 font-semibold">İşlem</th>
                 </tr>
               </thead>
-              <tbody id="pa-items-tbody">
+              <tbody class="divide-y divide-gray-100" id="pa-items-tbody">
                 ${items.map(item => `
-                  <tr class="border-b border-white/5 hover:bg-white/5 pa-item-row" 
+                  <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all pa-item-row" 
                     data-code="${(item.part_code || '').toLowerCase()}" data-name="${(item.part_name || '').toLowerCase()}">
-                    <td class="p-2 text-white font-mono text-xs">${item.part_code}</td>
-                    <td class="p-2 text-white/80">${item.part_name || '-'}</td>
-                    <td class="p-2 text-right text-white/80">${fmt(item.bom_quantity)}</td>
-                    <td class="p-2 text-right text-white/80">${fmt(item.unit_price)}</td>
-                    <td class="p-2 text-right text-white/80">${item.lead_time_days || 0} gün</td>
-                    <td class="p-2 text-right text-white/80">${fmt(item.temsa_stock)}</td>
-                    <td class="p-2 text-white/60">${item.supplier || '-'}</td>
-                    <td class="p-2 text-center">
+                    <td class="p-3 text-gray-800 font-mono text-xs font-semibold">${item.part_code}</td>
+                    <td class="p-3 text-gray-600">${item.part_name || '-'}</td>
+                    <td class="p-3 text-right text-gray-700">${fmt(item.bom_quantity)}</td>
+                    <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)}</td>
+                    <td class="p-3 text-right text-gray-700">${item.lead_time_days || 0} gün</td>
+                    <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
+                    <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
+                    <td class="p-3 text-center">
                       <button onclick="PaketAnaliz.showEditItemModal(${item.id}, ${JSON.stringify(item).replace(/"/g, '&quot;')})" 
-                        class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-xs mr-1"><i class="fas fa-edit"></i></button>
+                        class="px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs mr-1 transition-all"><i class="fas fa-edit"></i></button>
                       <button onclick="PaketAnaliz.deleteItem(${item.id})" 
-                        class="px-2 py-1 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 text-xs"><i class="fas fa-trash"></i></button>
+                        class="px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs transition-all"><i class="fas fa-trash"></i></button>
                     </td>
                   </tr>
                 `).join('')}
@@ -815,7 +819,7 @@ const PaketAnaliz = {
         </div>
       `;
     } catch (e) {
-      listDiv.innerHTML = `<div class="glass-card p-6 text-red-400">Kalemler yüklenemedi: ${e.message}</div>`;
+      listDiv.innerHTML = `<div class="glass-card rounded-2xl p-6 text-red-600">Kalemler yüklenemedi: ${e.message}</div>`;
     }
   },
 
@@ -833,43 +837,43 @@ const PaketAnaliz = {
     if (!pkgId) return showToast('Önce bir paket seçin', 'warning');
 
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
     overlay.innerHTML = `
-      <div class="glass-card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-plus-circle mr-2"></i>Yeni Kalem Ekle</h3>
+      <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Yeni Kalem Ekle</h3>
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2">
-            <label class="block text-white/70 text-sm mb-1">Parça Kodu *</label>
-            <input id="pa-add-code" type="text" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Kodu *</label>
+            <input id="pa-add-code" type="text" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div class="col-span-2">
-            <label class="block text-white/70 text-sm mb-1">Parça Adı</label>
-            <input id="pa-add-name" type="text" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Adı</label>
+            <input id="pa-add-name" type="text" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">BOM Adedi</label>
-            <input id="pa-add-bom" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">BOM Adedi</label>
+            <input id="pa-add-bom" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Birim Fiyat</label>
-            <input id="pa-add-price" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Birim Fiyat</label>
+            <input id="pa-add-price" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Lead Time (gün)</label>
-            <input id="pa-add-lt" type="number" value="0" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Lead Time (gün)</label>
+            <input id="pa-add-lt" type="number" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Stok</label>
-            <input id="pa-add-stock" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Stok</label>
+            <input id="pa-add-stock" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div class="col-span-2">
-            <label class="block text-white/70 text-sm mb-1">Tedarikçi</label>
-            <input id="pa-add-supplier" type="text" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Tedarikçi</label>
+            <input id="pa-add-supplier" type="text" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
         </div>
         <div class="flex gap-3 mt-4">
-          <button onclick="PaketAnaliz.saveNewItem()" class="flex-1 p-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all">Ekle</button>
-          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all">İptal</button>
+          <button onclick="PaketAnaliz.saveNewItem()" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Ekle</button>
+          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all">İptal</button>
         </div>
       </div>
     `;
@@ -906,47 +910,47 @@ const PaketAnaliz = {
 
   showEditItemModal(id, item) {
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4';
+    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
     overlay.innerHTML = `
-      <div class="glass-card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-edit mr-2"></i>Kalem Düzenle</h3>
+      <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-edit mr-2 text-blue-500"></i>Kalem Düzenle</h3>
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2">
-            <label class="block text-white/70 text-sm mb-1">Parça Kodu *</label>
-            <input id="pa-edit-code" type="text" value="${item.part_code || ''}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Kodu *</label>
+            <input id="pa-edit-code" type="text" value="${item.part_code || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div class="col-span-2">
-            <label class="block text-white/70 text-sm mb-1">Parça Adı</label>
-            <input id="pa-edit-name" type="text" value="${item.part_name || ''}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Adı</label>
+            <input id="pa-edit-name" type="text" value="${item.part_name || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">BOM Adedi</label>
-            <input id="pa-edit-bom" type="number" step="0.01" value="${item.bom_quantity || 0}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">BOM Adedi</label>
+            <input id="pa-edit-bom" type="number" step="0.01" value="${item.bom_quantity || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Birim Fiyat</label>
-            <input id="pa-edit-price" type="number" step="0.01" value="${item.unit_price || 0}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Birim Fiyat</label>
+            <input id="pa-edit-price" type="number" step="0.01" value="${item.unit_price || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Lead Time (gün)</label>
-            <input id="pa-edit-lt" type="number" value="${item.lead_time_days || 0}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Lead Time (gün)</label>
+            <input id="pa-edit-lt" type="number" value="${item.lead_time_days || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Stok</label>
-            <input id="pa-edit-stock" type="number" step="0.01" value="${item.temsa_stock || 0}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Stok</label>
+            <input id="pa-edit-stock" type="number" step="0.01" value="${item.temsa_stock || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Teslimat Tarihi</label>
-            <input id="pa-edit-delivery" type="text" value="${item.delivery_date || ''}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20" placeholder="ör: 2025-03-15">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Teslimat Tarihi</label>
+            <input id="pa-edit-delivery" type="text" value="${item.delivery_date || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="ör: 2025-03-15">
           </div>
           <div>
-            <label class="block text-white/70 text-sm mb-1">Tedarikçi</label>
-            <input id="pa-edit-supplier" type="text" value="${item.supplier || ''}" class="w-full p-2 rounded-lg bg-white/10 text-white border border-white/20">
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Tedarikçi</label>
+            <input id="pa-edit-supplier" type="text" value="${item.supplier || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
         </div>
         <div class="flex gap-3 mt-4">
-          <button onclick="PaketAnaliz.saveEditItem(${id})" class="flex-1 p-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-all">Kaydet</button>
-          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all">İptal</button>
+          <button onclick="PaketAnaliz.saveEditItem(${id})" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Kaydet</button>
+          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all">İptal</button>
         </div>
       </div>
     `;
