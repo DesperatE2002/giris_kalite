@@ -626,6 +626,228 @@ router.post('/import/preview', authenticateToken, authorizeRoles('admin'), uploa
   }
 });
 
+// ─── KOPYALA-YAPIŞTIR IMPORT (JSON tabanlı) ─────────────────────────────────────
+
+router.post('/import/paste/:type', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+  try {
+    const { package_id, mapping, rows } = req.body;
+    const importType = req.params.type;
+
+    if (!package_id) return res.status(400).json({ error: 'Paket seçilmelidir' });
+    if (!rows || !Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'Veri bulunamadı' });
+
+    const packageId = package_id;
+
+    if (importType === 'bom') {
+      const partCodeCol = mapping.part_code;
+      const partNameCol = mapping.part_name;
+      const bomQtyCol = mapping.bom_quantity;
+
+      let updated = 0, inserted = 0, skipped = 0;
+      const processedCodes = new Set();
+
+      for (const row of rows) {
+        const partCode = String(row[partCodeCol] || '').trim();
+        if (!partCode) { skipped++; continue; }
+
+        processedCodes.add(partCode);
+        const partName = partNameCol ? (String(row[partNameCol] || '').trim() || null) : null;
+        const bomQty = bomQtyCol ? (parseFloat(row[bomQtyCol]) || 0) : 0;
+
+        const existing = await pool.query(
+          'SELECT id FROM pa_items WHERE package_id = ? AND part_code = ?',
+          [packageId, partCode]
+        );
+
+        if (existing.rows.length > 0) {
+          await pool.query(
+            `UPDATE pa_items SET part_name = COALESCE(?, part_name), bom_quantity = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE package_id = ? AND part_code = ?`,
+            [partName, bomQty, packageId, partCode]
+          );
+          updated++;
+        } else {
+          await pool.query(
+            `INSERT INTO pa_items (package_id, part_code, part_name, bom_quantity) VALUES (?, ?, ?, ?)`,
+            [packageId, partCode, partName, bomQty]
+          );
+          inserted++;
+        }
+      }
+
+      const allItems = await pool.query('SELECT id, part_code FROM pa_items WHERE package_id = ?', [packageId]);
+      let zeroed = 0;
+      for (const item of allItems.rows) {
+        if (!processedCodes.has(item.part_code)) {
+          await pool.query('UPDATE pa_items SET bom_quantity = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [item.id]);
+          zeroed++;
+        }
+      }
+
+      return res.json({ message: 'BOM import tamamlandı', report: { total_rows: rows.length, updated, inserted, skipped, zeroed } });
+
+    } else if (importType === 'cost') {
+      const partCodeCol = mapping.part_code;
+      const priceCol = mapping.unit_price;
+
+      let updated = 0;
+      const unmatched = [];
+      const processedCodes = new Set();
+
+      for (const row of rows) {
+        const partCode = String(row[partCodeCol] || '').trim();
+        if (!partCode) continue;
+
+        processedCodes.add(partCode);
+        const price = parseFloat(row[priceCol]) || 0;
+
+        const result = await pool.query(
+          `UPDATE pa_items SET unit_price = ?, updated_at = CURRENT_TIMESTAMP WHERE package_id = ? AND part_code = ? RETURNING id`,
+          [price, packageId, partCode]
+        );
+        if (result.rows.length > 0) updated++;
+        else unmatched.push(partCode);
+      }
+
+      const allItems = await pool.query('SELECT id, part_code FROM pa_items WHERE package_id = ?', [packageId]);
+      let zeroed = 0;
+      for (const item of allItems.rows) {
+        if (!processedCodes.has(item.part_code)) {
+          await pool.query('UPDATE pa_items SET unit_price = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [item.id]);
+          zeroed++;
+        }
+      }
+
+      return res.json({ message: 'Maliyet import tamamlandı', report: { total_rows: rows.length, updated, zeroed, unmatched_count: unmatched.length, unmatched_codes: unmatched.slice(0, 50) } });
+
+    } else if (importType === 'leadtime') {
+      const partCodeCol = mapping.part_code;
+      const ltCol = mapping.lead_time_days;
+
+      let updated = 0;
+      const unmatched = [];
+      const processedCodes = new Set();
+
+      for (const row of rows) {
+        const partCode = String(row[partCodeCol] || '').trim();
+        if (!partCode) continue;
+
+        processedCodes.add(partCode);
+        const lt = parseInt(row[ltCol]) || 0;
+
+        const result = await pool.query(
+          `UPDATE pa_items SET lead_time_days = ?, updated_at = CURRENT_TIMESTAMP WHERE package_id = ? AND part_code = ? RETURNING id`,
+          [lt, packageId, partCode]
+        );
+        if (result.rows.length > 0) updated++;
+        else unmatched.push(partCode);
+      }
+
+      const allItems = await pool.query('SELECT id, part_code FROM pa_items WHERE package_id = ?', [packageId]);
+      let zeroed = 0;
+      for (const item of allItems.rows) {
+        if (!processedCodes.has(item.part_code)) {
+          await pool.query('UPDATE pa_items SET lead_time_days = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [item.id]);
+          zeroed++;
+        }
+      }
+
+      return res.json({ message: 'Lead time import tamamlandı', report: { total_rows: rows.length, updated, zeroed, unmatched_count: unmatched.length, unmatched_codes: unmatched.slice(0, 50) } });
+
+    } else if (importType === 'stock') {
+      const partCodeCol = mapping.part_code;
+      const stockCol = mapping.temsa_stock;
+
+      let updated = 0;
+      const unmatched = [];
+      const processedCodes = new Set();
+
+      for (const row of rows) {
+        const partCode = String(row[partCodeCol] || '').trim();
+        if (!partCode) continue;
+
+        processedCodes.add(partCode);
+        const stock = parseFloat(row[stockCol]) || 0;
+
+        const result = await pool.query(
+          `UPDATE pa_items SET temsa_stock = ?, updated_at = CURRENT_TIMESTAMP WHERE package_id = ? AND part_code = ? RETURNING id`,
+          [stock, packageId, partCode]
+        );
+        if (result.rows.length > 0) updated++;
+        else unmatched.push(partCode);
+      }
+
+      const allItems = await pool.query('SELECT id, part_code FROM pa_items WHERE package_id = ?', [packageId]);
+      let zeroed = 0;
+      for (const item of allItems.rows) {
+        if (!processedCodes.has(item.part_code)) {
+          await pool.query('UPDATE pa_items SET temsa_stock = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [item.id]);
+          zeroed++;
+        }
+      }
+
+      return res.json({ message: 'Stok import tamamlandı', report: { total_rows: rows.length, updated, zeroed, unmatched_count: unmatched.length, unmatched_codes: unmatched.slice(0, 50) } });
+
+    } else if (importType === 'full') {
+      let updated = 0, inserted = 0, skipped = 0;
+
+      for (const row of rows) {
+        const partCode = String(row[mapping.part_code] || '').trim();
+        if (!partCode) { skipped++; continue; }
+
+        const data = {
+          part_name: mapping.part_name ? String(row[mapping.part_name] || '').trim() || null : null,
+          bom_quantity: mapping.bom_quantity ? (parseFloat(row[mapping.bom_quantity]) || 0) : undefined,
+          unit_price: mapping.unit_price ? (parseFloat(row[mapping.unit_price]) || 0) : undefined,
+          lead_time_days: mapping.lead_time_days ? (parseInt(row[mapping.lead_time_days]) || 0) : undefined,
+          delivery_date: mapping.delivery_date ? String(row[mapping.delivery_date] || '').trim() || null : null,
+          temsa_stock: mapping.temsa_stock ? (parseFloat(row[mapping.temsa_stock]) || 0) : undefined,
+          supplier: mapping.supplier ? String(row[mapping.supplier] || '').trim() || null : null
+        };
+
+        const existing = await pool.query(
+          'SELECT id FROM pa_items WHERE package_id = ? AND part_code = ?',
+          [packageId, partCode]
+        );
+
+        if (existing.rows.length > 0) {
+          const sets = [];
+          const vals = [];
+          if (data.part_name !== null && data.part_name !== undefined) { sets.push('part_name = ?'); vals.push(data.part_name); }
+          if (data.bom_quantity !== undefined) { sets.push('bom_quantity = ?'); vals.push(data.bom_quantity); }
+          if (data.unit_price !== undefined) { sets.push('unit_price = ?'); vals.push(data.unit_price); }
+          if (data.lead_time_days !== undefined) { sets.push('lead_time_days = ?'); vals.push(data.lead_time_days); }
+          if (data.delivery_date !== undefined) { sets.push('delivery_date = ?'); vals.push(data.delivery_date); }
+          if (data.temsa_stock !== undefined) { sets.push('temsa_stock = ?'); vals.push(data.temsa_stock); }
+          if (data.supplier !== undefined) { sets.push('supplier = ?'); vals.push(data.supplier); }
+
+          if (sets.length > 0) {
+            sets.push('updated_at = CURRENT_TIMESTAMP');
+            vals.push(existing.rows[0].id);
+            await pool.query(`UPDATE pa_items SET ${sets.join(', ')} WHERE id = ?`, vals);
+          }
+          updated++;
+        } else {
+          await pool.query(
+            `INSERT INTO pa_items (package_id, part_code, part_name, bom_quantity, unit_price, lead_time_days, delivery_date, temsa_stock, supplier)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [packageId, partCode, data.part_name, data.bom_quantity || 0, data.unit_price || 0, data.lead_time_days || 0, data.delivery_date, data.temsa_stock || 0, data.supplier]
+          );
+          inserted++;
+        }
+      }
+
+      return res.json({ message: 'Full import tamamlandı', report: { total_rows: rows.length, updated, inserted, skipped } });
+
+    } else {
+      return res.status(400).json({ error: 'Geçersiz import türü' });
+    }
+  } catch (error) {
+    console.error('Paste import hatası:', error);
+    res.status(500).json({ error: 'Import hatası: ' + error.message });
+  }
+});
+
 // ─── EXPORT ─────────────────────────────────────────────────────────────────────
 
 // Eksik kalemler export

@@ -1,13 +1,29 @@
 // =====================================================
 // PAKET-ANALİZ MODÜLÜ — Admin-only
 // =====================================================
+
+// Toast helper — projede global showToast yok, burada tanımlayalım
+function paToast(msg, type = 'info') {
+  const colors = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    warning: 'bg-yellow-500',
+    info: 'bg-blue-500'
+  };
+  const el = document.createElement('div');
+  el.className = `fixed top-4 right-4 z-[9999] px-6 py-3 rounded-xl text-white font-semibold shadow-2xl ${colors[type] || colors.info} transition-all transform`;
+  el.style.animation = 'fadeIn 0.3s';
+  el.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>${msg}`;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
 const PaketAnaliz = {
   packages: [],
   selectedPackageId: null,
   analysisData: null,
   currentTab: 'analysis',
-  uploadedFile: null,
-  previewData: null,
+  pasteData: null,    // parsed paste data { columns, rows }
 
   async render() {
     const main = document.getElementById('content');
@@ -25,7 +41,7 @@ const PaketAnaliz = {
           </button>
           <button onclick="PaketAnaliz.switchTab('import')" id="pa-tab-import"
             class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
-            <i class="fas fa-file-excel mr-1"></i>Excel Import
+            <i class="fas fa-paste mr-1"></i>Veri Aktarım
           </button>
           <button onclick="PaketAnaliz.switchTab('packages')" id="pa-tab-packages"
             class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
@@ -47,8 +63,7 @@ const PaketAnaliz = {
 
   async loadPackages() {
     try {
-      const res = await API.fetch('/api/paket-analiz/packages');
-      this.packages = await res.json();
+      this.packages = await api.request('/paket-analiz/packages');
     } catch (e) {
       console.error('Paket yüklenemedi:', e);
       this.packages = [];
@@ -113,15 +128,14 @@ const PaketAnaliz = {
     const pkgId = document.getElementById('pa-analysis-pkg')?.value;
     const count = document.getElementById('pa-analysis-count')?.value || 1;
 
-    if (!pkgId) return showToast('Lütfen bir paket seçin', 'warning');
+    if (!pkgId) return paToast('Lütfen bir paket seçin', 'warning');
 
     this.selectedPackageId = pkgId;
     const results = document.getElementById('pa-analysis-results');
     results.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i><p class="text-gray-500 mt-2">Analiz hesaplanıyor...</p></div>';
 
     try {
-      const res = await API.fetch(`/api/paket-analiz/packages/${pkgId}/analysis?count=${count}`);
-      this.analysisData = await res.json();
+      this.analysisData = await api.request(`/paket-analiz/packages/${pkgId}/analysis?count=${count}`);
       this.renderAnalysisResults(results);
     } catch (e) {
       results.innerHTML = `<div class="glass-card rounded-2xl p-6 text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i>Analiz hatası: ${e.message}</div>`;
@@ -298,14 +312,16 @@ const PaketAnaliz = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // EXCEL IMPORT TAB
+  // VERİ AKTARIM TAB (Kopyala-Yapıştır)
   // ═══════════════════════════════════════════════════════════════════════════════
   renderImportTab(container) {
+    this.pasteData = null;
     container.innerHTML = `
       <div class="glass-card rounded-2xl p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-file-excel mr-2 text-green-600"></i>Excel Import</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-2"><i class="fas fa-paste mr-2 text-green-600"></i>Kopyala - Yapıştır ile Veri Aktarım</h2>
+        <p class="text-gray-500 text-sm mb-4">Excel'den verileri seçip kopyalayın (Ctrl+C), ardından aşağıdaki alana yapıştırın (Ctrl+V). İlk satır kolon başlığı olarak kullanılır.</p>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
             <select id="pa-import-pkg" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
@@ -325,26 +341,34 @@ const PaketAnaliz = {
           </div>
         </div>
 
-        <!-- DOSYA YÜKLEME ALANI -->
-        <div id="pa-dropzone" class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
-          onclick="document.getElementById('pa-file-input').click()"
-          ondrop="PaketAnaliz.handleDrop(event)" ondragover="PaketAnaliz.handleDragOver(event)" ondragleave="PaketAnaliz.handleDragLeave(event)">
-          <input type="file" id="pa-file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="PaketAnaliz.handleFileSelect(event)">
-          <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 mb-3"></i>
-          <p class="text-gray-500">Excel dosyasını sürükleyin veya tıklayarak seçin</p>
-          <p class="text-gray-400 text-sm mt-1">.xlsx, .xls veya .csv</p>
+        <!-- YAPIŞTIR ALANI -->
+        <div class="mb-4">
+          <label class="block text-gray-600 text-sm mb-1 font-medium">Excel Verisi (Kopyala-Yapıştır)</label>
+          <textarea id="pa-paste-area" rows="8"
+            class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400 font-mono text-xs"
+            placeholder="Excel'den kopyaladığınız veriyi buraya yapıştırın...&#10;&#10;Örnek (Tab ile ayrılmış):&#10;Parça Kodu&#9;Parça Adı&#9;Adet&#10;ABC-001&#9;Motor Parçası&#9;5&#10;DEF-002&#9;Conta&#9;10"
+            onpaste="setTimeout(() => PaketAnaliz.parsePaste(), 100)"></textarea>
         </div>
 
-        <div id="pa-file-info" class="hidden mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700">
-          <i class="fas fa-file-excel mr-2"></i><span id="pa-file-name"></span>
+        <div class="flex gap-3">
+          <button onclick="PaketAnaliz.parsePaste()" class="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm transition-all">
+            <i class="fas fa-table mr-1"></i>Veriyi Ayrıştır
+          </button>
+          <button onclick="document.getElementById('pa-paste-area').value=''; PaketAnaliz.pasteData=null; document.getElementById('pa-preview-section').classList.add('hidden'); document.getElementById('pa-import-result').classList.add('hidden');" 
+            class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm transition-all">
+            <i class="fas fa-eraser mr-1"></i>Temizle
+          </button>
         </div>
       </div>
 
       <!-- KOLON EŞLEME VE ÖNİZLEME -->
       <div id="pa-preview-section" class="hidden">
         <div class="glass-card rounded-2xl p-6 mb-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-columns mr-2 text-blue-500"></i>Kolon Eşleme</h3>
-          <p class="text-gray-500 text-sm mb-4">Excel dosyanızdaki kolon başlıklarını sistem alanlarıyla eşleştirin.</p>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-columns mr-2 text-blue-500"></i>Kolon Eşleme</h3>
+            <span id="pa-row-count" class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold"></span>
+          </div>
+          <p class="text-gray-500 text-sm mb-4">Yapıştırdığınız verideki kolon başlıklarını sistem alanlarıyla eşleştirin.</p>
           <div id="pa-mapping-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
@@ -355,12 +379,11 @@ const PaketAnaliz = {
           </div>
         </div>
 
-        <div class="rounded-2xl p-6 mb-6 border-2 border-yellow-300 bg-yellow-50">
-          <h3 class="text-yellow-700 font-bold mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Full Sync Uyarısı</h3>
-          <p class="text-yellow-800 text-sm">Bu dosyadaki veriler kaynak olarak kullanılacak. Dosyada OLMAYAN parça kodlarının ilgili alanları <strong>sıfırlanacaktır</strong>. Bu sayede Excel her zaman tek gerçek kaynak (single source of truth) olur.</p>
+        <div class="rounded-2xl p-4 mb-6 border-2 border-yellow-300 bg-yellow-50">
+          <p class="text-yellow-700 text-sm"><i class="fas fa-info-circle mr-1"></i><strong>Not:</strong> Veride OLMAYAN parça kodlarının ilgili alanları <strong>sıfırlanacaktır</strong> (Full Sync mantığı).</p>
         </div>
 
-        <button onclick="PaketAnaliz.executeImport()" id="pa-import-btn"
+        <button onclick="PaketAnaliz.executePasteImport()" id="pa-import-btn"
           class="w-full p-4 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-lg transition-all hover-lift shadow-lg">
           <i class="fas fa-upload mr-2"></i>Import Et
         </button>
@@ -371,52 +394,53 @@ const PaketAnaliz = {
     `;
   },
 
-  handleDragOver(e) {
-    e.preventDefault();
-    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-  },
-  handleDragLeave(e) {
-    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-  },
-  handleDrop(e) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-    const file = e.dataTransfer.files[0];
-    if (file) this.processFile(file);
-  },
-  handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (file) this.processFile(file);
-  },
+  parsePaste() {
+    const raw = document.getElementById('pa-paste-area')?.value?.trim();
+    if (!raw) return paToast('Yapıştırılacak veri bulunamadı', 'warning');
 
-  async processFile(file) {
-    this.uploadedFile = file;
-    document.getElementById('pa-file-info').classList.remove('hidden');
-    document.getElementById('pa-file-name').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    // Satırlara ayır
+    const lines = raw.split('\n').map(l => l.trimEnd());
+    if (lines.length < 2) return paToast('En az 2 satır gerekli (1 başlık + 1 veri)', 'warning');
 
-    const formData = new FormData();
-    formData.append('file', file);
+    // Tab veya ; veya , ile ayır - hangisi daha çok varsa onu kullan
+    const firstLine = lines[0];
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const semiCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
 
-    try {
-      const res = await fetch('/api/paket-analiz/import/preview', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${Auth.token}` },
-        body: formData
+    let delimiter = '\t';
+    if (semiCount > tabCount && semiCount >= commaCount) delimiter = ';';
+    else if (commaCount > tabCount && commaCount > semiCount) delimiter = ',';
+
+    const columns = lines[0].split(delimiter).map(c => c.trim());
+    const rows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const cells = lines[i].split(delimiter);
+      const row = {};
+      columns.forEach((col, j) => {
+        row[col] = (cells[j] || '').trim();
       });
-      this.previewData = await res.json();
-      this.renderMappingAndPreview();
-    } catch (e) {
-      showToast('Dosya okunamadı: ' + e.message, 'error');
+      rows.push(row);
     }
-  },
 
-  renderMappingAndPreview() {
-    if (!this.previewData) return;
+    if (rows.length === 0) return paToast('Veri satırları bulunamadı', 'warning');
+
+    this.pasteData = { columns, rows };
 
     document.getElementById('pa-preview-section').classList.remove('hidden');
+    document.getElementById('pa-row-count').textContent = `${rows.length} satır algılandı`;
+    paToast(`${rows.length} satır başarıyla ayrıştırıldı`, 'success');
+
+    this.renderPasteMapping();
+  },
+
+  renderPasteMapping() {
+    if (!this.pasteData) return;
 
     const importType = document.getElementById('pa-import-type')?.value || 'bom';
-    const cols = this.previewData.columns;
+    const cols = this.pasteData.columns;
 
     let fields = [];
     switch (importType) {
@@ -461,8 +485,8 @@ const PaketAnaliz = {
 
     const autoMatch = (key) => {
       const hints = {
-        part_code: ['parça kodu', 'part code', 'malzeme kodu', 'malzeme no', 'part no', 'pn', 'kod', 'code', 'material'],
-        part_name: ['parça adı', 'part name', 'malzeme adı', 'açıklama', 'description', 'tanim', 'tanım', 'ad'],
+        part_code: ['parça kodu', 'part code', 'malzeme kodu', 'malzeme no', 'part no', 'pn', 'kod', 'code', 'material', 'parça no'],
+        part_name: ['parça adı', 'part name', 'malzeme adı', 'açıklama', 'description', 'tanim', 'tanım', 'ad', 'isim'],
         bom_quantity: ['bom', 'adet', 'miktar', 'quantity', 'qty', 'amount', 'bom adedi'],
         unit_price: ['fiyat', 'price', 'birim fiyat', 'unit price', 'maliyet', 'cost', 'tutar'],
         lead_time_days: ['lead time', 'temin süresi', 'süre', 'gün', 'days', 'lt'],
@@ -485,7 +509,9 @@ const PaketAnaliz = {
       </div>
     `).join('');
 
+    // Önizleme tablosu
     const pt = document.getElementById('pa-preview-table');
+    const previewRows = this.pasteData.rows.slice(0, 5);
     pt.innerHTML = `
       <thead class="bg-gray-50">
         <tr class="text-gray-500 border-b border-gray-200">
@@ -493,7 +519,7 @@ const PaketAnaliz = {
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
-        ${this.previewData.preview.map(row => `
+        ${previewRows.map(row => `
           <tr class="hover:bg-gray-50">
             ${cols.map(c => `<td class="p-2 text-gray-700 text-xs">${row[c] ?? ''}</td>`).join('')}
           </tr>
@@ -502,12 +528,12 @@ const PaketAnaliz = {
     `;
   },
 
-  async executeImport() {
+  async executePasteImport() {
     const pkgId = document.getElementById('pa-import-pkg')?.value;
     const importType = document.getElementById('pa-import-type')?.value || 'bom';
 
-    if (!pkgId) return showToast('Lütfen bir paket seçin', 'warning');
-    if (!this.uploadedFile) return showToast('Lütfen bir dosya seçin', 'warning');
+    if (!pkgId) return paToast('Lütfen bir paket seçin', 'warning');
+    if (!this.pasteData || this.pasteData.rows.length === 0) return paToast('Önce veri yapıştırıp ayrıştırın', 'warning');
 
     const mapping = {};
     document.querySelectorAll('[id^="pa-map-"]').forEach(el => {
@@ -519,20 +545,15 @@ const PaketAnaliz = {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>İçe aktarılıyor...';
 
-    const formData = new FormData();
-    formData.append('file', this.uploadedFile);
-    formData.append('package_id', pkgId);
-    formData.append('mapping', JSON.stringify(mapping));
-
     try {
-      const res = await fetch(`/api/paket-analiz/import/${importType}`, {
+      const result = await api.request(`/paket-analiz/import/paste/${importType}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${Auth.token}` },
-        body: formData
+        body: JSON.stringify({
+          package_id: pkgId,
+          mapping: mapping,
+          rows: this.pasteData.rows
+        })
       });
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.error || 'Import hatası');
 
       const resultDiv = document.getElementById('pa-import-result');
       resultDiv.classList.remove('hidden');
@@ -575,10 +596,10 @@ const PaketAnaliz = {
         </div>
       `;
 
-      showToast(result.message, 'success');
+      paToast(result.message, 'success');
       await this.loadPackages();
     } catch (e) {
-      showToast('Import hatası: ' + e.message, 'error');
+      paToast('Import hatası: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="fas fa-upload mr-2"></i>Import Et';
@@ -641,19 +662,18 @@ const PaketAnaliz = {
     const code = document.getElementById('pa-pkg-code')?.value?.trim();
     const desc = document.getElementById('pa-pkg-desc')?.value?.trim();
 
-    if (!name) return showToast('Paket adı gereklidir', 'warning');
+    if (!name) return paToast('Paket adı gereklidir', 'warning');
 
     try {
-      await API.fetch('/api/paket-analiz/packages', {
+      await api.request('/paket-analiz/packages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, code, description: desc })
       });
-      showToast('Paket oluşturuldu', 'success');
+      paToast('Paket oluşturuldu', 'success');
       await this.loadPackages();
       this.renderPackagesTab(document.getElementById('pa-content'));
     } catch (e) {
-      showToast('Paket oluşturulamadı: ' + e.message, 'error');
+      paToast('Paket oluşturulamadı: ' + e.message, 'error');
     }
   },
 
@@ -691,20 +711,19 @@ const PaketAnaliz = {
     const code = document.getElementById('pa-edit-code')?.value?.trim();
     const desc = document.getElementById('pa-edit-desc')?.value?.trim();
 
-    if (!name) return showToast('Paket adı gereklidir', 'warning');
+    if (!name) return paToast('Paket adı gereklidir', 'warning');
 
     try {
-      await API.fetch(`/api/paket-analiz/packages/${id}`, {
+      await api.request(`/paket-analiz/packages/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, code, description: desc })
       });
       document.querySelector('.fixed.inset-0')?.remove();
-      showToast('Paket güncellendi', 'success');
+      paToast('Paket güncellendi', 'success');
       await this.loadPackages();
       this.renderPackagesTab(document.getElementById('pa-content'));
     } catch (e) {
-      showToast('Güncelleme hatası: ' + e.message, 'error');
+      paToast('Güncelleme hatası: ' + e.message, 'error');
     }
   },
 
@@ -712,12 +731,12 @@ const PaketAnaliz = {
     if (!confirm(`"${name}" paketini ve tüm kalemlerini silmek istediğinize emin misiniz?`)) return;
 
     try {
-      await API.fetch(`/api/paket-analiz/packages/${id}`, { method: 'DELETE' });
-      showToast('Paket silindi', 'success');
+      await api.request(`/paket-analiz/packages/${id}`, { method: 'DELETE' });
+      paToast('Paket silindi', 'success');
       await this.loadPackages();
       this.renderPackagesTab(document.getElementById('pa-content'));
     } catch (e) {
-      showToast('Silme hatası: ' + e.message, 'error');
+      paToast('Silme hatası: ' + e.message, 'error');
     }
   },
 
@@ -763,11 +782,10 @@ const PaketAnaliz = {
     listDiv.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i></div>';
 
     try {
-      const res = await API.fetch(`/api/paket-analiz/packages/${pkgId}/items`);
-      const items = await res.json();
+      const items = await api.request(`/paket-analiz/packages/${pkgId}/items`);
 
       if (items.length === 0) {
-        listDiv.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center text-gray-400">Bu pakette henüz kalem yok. Excel ile import yapabilir veya manuel ekleyebilirsiniz.</div>';
+        listDiv.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center text-gray-400">Bu pakette henüz kalem yok. Veri Aktarım sekmesinden yapıştırarak veya manuel ekleyebilirsiniz.</div>';
         return;
       }
 
@@ -806,7 +824,7 @@ const PaketAnaliz = {
                     <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
                     <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
                     <td class="p-3 text-center">
-                      <button onclick="PaketAnaliz.showEditItemModal(${item.id}, ${JSON.stringify(item).replace(/"/g, '&quot;')})" 
+                      <button onclick='PaketAnaliz.showEditItemModal(${item.id}, ${JSON.stringify(item).replace(/'/g, "&#39;")})' 
                         class="px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs mr-1 transition-all"><i class="fas fa-edit"></i></button>
                       <button onclick="PaketAnaliz.deleteItem(${item.id})" 
                         class="px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs transition-all"><i class="fas fa-trash"></i></button>
@@ -834,7 +852,7 @@ const PaketAnaliz = {
 
   showAddItemModal() {
     const pkgId = document.getElementById('pa-items-pkg')?.value;
-    if (!pkgId) return showToast('Önce bir paket seçin', 'warning');
+    if (!pkgId) return paToast('Önce bir paket seçin', 'warning');
 
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
@@ -892,19 +910,18 @@ const PaketAnaliz = {
       supplier: document.getElementById('pa-add-supplier')?.value?.trim()
     };
 
-    if (!data.part_code) return showToast('Parça kodu gereklidir', 'warning');
+    if (!data.part_code) return paToast('Parça kodu gereklidir', 'warning');
 
     try {
-      await API.fetch(`/api/paket-analiz/packages/${pkgId}/items`, {
+      await api.request(`/paket-analiz/packages/${pkgId}/items`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       document.querySelector('.fixed.inset-0')?.remove();
-      showToast('Kalem eklendi', 'success');
+      paToast('Kalem eklendi', 'success');
       this.loadItemsList();
     } catch (e) {
-      showToast('Ekleme hatası: ' + e.message, 'error');
+      paToast('Ekleme hatası: ' + e.message, 'error');
     }
   },
 
@@ -969,30 +986,29 @@ const PaketAnaliz = {
       supplier: document.getElementById('pa-edit-supplier')?.value?.trim()
     };
 
-    if (!data.part_code) return showToast('Parça kodu gereklidir', 'warning');
+    if (!data.part_code) return paToast('Parça kodu gereklidir', 'warning');
 
     try {
-      await API.fetch(`/api/paket-analiz/items/${id}`, {
+      await api.request(`/paket-analiz/items/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       document.querySelector('.fixed.inset-0')?.remove();
-      showToast('Kalem güncellendi', 'success');
+      paToast('Kalem güncellendi', 'success');
       this.loadItemsList();
     } catch (e) {
-      showToast('Güncelleme hatası: ' + e.message, 'error');
+      paToast('Güncelleme hatası: ' + e.message, 'error');
     }
   },
 
   async deleteItem(id) {
     if (!confirm('Bu kalemi silmek istediğinize emin misiniz?')) return;
     try {
-      await API.fetch(`/api/paket-analiz/items/${id}`, { method: 'DELETE' });
-      showToast('Kalem silindi', 'success');
+      await api.request(`/paket-analiz/items/${id}`, { method: 'DELETE' });
+      paToast('Kalem silindi', 'success');
       this.loadItemsList();
     } catch (e) {
-      showToast('Silme hatası: ' + e.message, 'error');
+      paToast('Silme hatası: ' + e.message, 'error');
     }
   },
 
@@ -1015,6 +1031,6 @@ const PaketAnaliz = {
   },
 
   onImportTypeChange() {
-    if (this.previewData) this.renderMappingAndPreview();
+    if (this.pasteData) this.renderPasteMapping();
   }
 };
