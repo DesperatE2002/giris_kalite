@@ -147,6 +147,15 @@ const PaketAnaliz = {
     if (!d) return;
 
     const s = d.summary;
+    const currency = d.package?.currency || 'EUR';
+    const timeUnit = d.package?.time_unit || 'gun';
+    const currSymbols = { EUR: '€', USD: '$', TL: '₺', GBP: '£' };
+    const timeLabels = { gun: 'gün', hafta: 'hafta', ay: 'ay' };
+    const cs = currSymbols[currency] || currency;
+    const tl = timeLabels[timeUnit] || timeUnit;
+    this._cs = cs;
+    this._tl = tl;
+
     const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
     const fmtInt = (n) => new Intl.NumberFormat('tr-TR').format(n || 0);
 
@@ -178,7 +187,7 @@ const PaketAnaliz = {
           <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
             <i class="fas fa-dollar-sign text-white text-lg"></i>
           </div>
-          <div class="text-2xl font-bold text-green-600">${fmt(s.total_missing_cost)}</div>
+          <div class="text-2xl font-bold text-green-600">${fmt(s.total_missing_cost)} ${cs}</div>
           <div class="text-gray-500 text-sm">Eksik Maliyet</div>
         </div>
       </div>
@@ -190,7 +199,7 @@ const PaketAnaliz = {
           ${d.scenarios.map(sc => `
             <div class="rounded-xl p-4 text-center border-2 transition-all ${sc.count == d.package_count ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}">
               <div class="text-lg font-bold text-gray-800">${sc.count} Paket</div>
-              <div class="text-sm text-orange-600 font-semibold mt-1">${fmt(sc.total_missing_cost)}</div>
+              <div class="text-sm text-orange-600 font-semibold mt-1">${fmt(sc.total_missing_cost)} ${cs}</div>
               <div class="text-xs text-gray-400">eksik maliyet</div>
             </div>
           `).join('')}
@@ -199,6 +208,12 @@ const PaketAnaliz = {
 
       <!-- EXPORT BUTONLARI -->
       <div class="flex gap-3 mb-6 flex-wrap">
+        <button onclick="PaketAnaliz.exportDetailExcel()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-all hover-lift shadow">
+          <i class="fas fa-file-excel mr-1"></i>Detay Rapor (Excel)
+        </button>
+        <button onclick="PaketAnaliz.exportDetailWord()" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold transition-all hover-lift shadow">
+          <i class="fas fa-file-word mr-1"></i>Detay Rapor (Word)
+        </button>
         <button onclick="PaketAnaliz.exportMissing()" class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-all hover-lift shadow">
           <i class="fas fa-file-excel mr-1"></i>Eksik Kalemleri İndir
         </button>
@@ -239,9 +254,9 @@ const PaketAnaliz = {
                 <th class="text-right p-3 font-semibold">İhtiyaç</th>
                 <th class="text-right p-3 font-semibold">Stok</th>
                 <th class="text-right p-3 font-semibold">Eksik</th>
-                <th class="text-right p-3 font-semibold">Fiyat</th>
-                <th class="text-right p-3 font-semibold">Eksik Maliyet</th>
-                <th class="text-right p-3 font-semibold">Lead Time</th>
+                <th class="text-right p-3 font-semibold">Fiyat (${cs})</th>
+                <th class="text-right p-3 font-semibold">Eksik Maliyet (${cs})</th>
+                <th class="text-right p-3 font-semibold">Lead Time (${tl})</th>
                 <th class="text-left p-3 font-semibold">Tedarikçi</th>
               </tr>
             </thead>
@@ -286,6 +301,9 @@ const PaketAnaliz = {
     const tbody = document.getElementById('pa-analysis-tbody');
     if (!tbody) return;
 
+    const cs = this._cs || '€';
+    const tl = this._tl || 'gün';
+
     tbody.innerHTML = items.map(item => {
       const rowClass = item.missing_quantity > 0 ? 'bg-red-50' : '';
       const missingClass = item.missing_quantity > 0 ? 'text-red-600 font-bold' : 'text-green-600';
@@ -299,9 +317,9 @@ const PaketAnaliz = {
           <td class="p-3 text-right text-gray-700">${fmt(item.total_need)}</td>
           <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
           <td class="p-3 text-right ${missingClass}">${fmt(item.missing_quantity)}</td>
-          <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)}</td>
-          <td class="p-3 text-right ${item.missing_cost > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400'}">${fmt(item.missing_cost)}</td>
-          <td class="p-3 text-right ${ltClass}">${item.lead_time_days || 0} gün</td>
+          <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)} ${cs}</td>
+          <td class="p-3 text-right ${item.missing_cost > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400'}">${fmt(item.missing_cost)} ${cs}</td>
+          <td class="p-3 text-right ${ltClass}">${item.lead_time_days || 0} ${tl}</td>
           <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
         </tr>`;
     }).join('');
@@ -454,7 +472,8 @@ const PaketAnaliz = {
       case 'cost':
         fields = [
           { key: 'part_code', label: 'Parça Kodu', required: true },
-          { key: 'unit_price', label: 'Birim Fiyat', required: true }
+          { key: 'unit_price', label: 'Birim Fiyat', required: true },
+          { key: 'supplier', label: 'Tedarikçi' }
         ];
         break;
       case 'leadtime':
@@ -626,6 +645,23 @@ const PaketAnaliz = {
             <label class="block text-gray-600 text-sm mb-1 font-medium">Açıklama</label>
             <input id="pa-pkg-desc" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="Opsiyonel">
           </div>
+          <div>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Para Birimi</label>
+            <select id="pa-pkg-currency" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
+              <option value="EUR" selected>EUR (€)</option>
+              <option value="USD">USD ($)</option>
+              <option value="TL">TL (₺)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-600 text-sm mb-1 font-medium">Süre Birimi</label>
+            <select id="pa-pkg-timeunit" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
+              <option value="gun" selected>Gün</option>
+              <option value="hafta">Hafta</option>
+              <option value="ay">Ay</option>
+            </select>
+          </div>
         </div>
         <button onclick="PaketAnaliz.createPackage()" class="mt-4 px-6 py-2 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
           <i class="fas fa-plus mr-1"></i>Oluştur
@@ -636,22 +672,29 @@ const PaketAnaliz = {
         <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-boxes mr-2 text-purple-500"></i>Mevcut Paketler</h2>
         <div id="pa-packages-list" class="space-y-3">
           ${this.packages.length === 0 ? '<p class="text-gray-400 text-center py-6">Henüz paket oluşturulmadı</p>' : ''}
-          ${this.packages.map(p => `
+          ${this.packages.map(p => {
+            const currSymbols = { EUR: '€', USD: '$', TL: '₺', GBP: '£' };
+            const timeLabels = { gun: 'Gün', hafta: 'Hafta', ay: 'Ay' };
+            const curr = p.currency || 'EUR';
+            const tu = p.time_unit || 'gun';
+            return `
             <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200 hover:shadow-md transition-all">
               <div>
                 <span class="text-gray-800 font-semibold">${p.name}</span>
                 ${p.code ? `<span class="text-gray-400 ml-2">(${p.code})</span>` : ''}
                 <span class="ml-3 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600 font-semibold">${p.item_count || 0} kalem</span>
+                <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600 font-semibold">${currSymbols[curr] || curr}</span>
+                <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-600 font-semibold">${timeLabels[tu] || tu}</span>
                 ${p.description ? `<p class="text-gray-400 text-sm mt-1">${p.description}</p>` : ''}
               </div>
               <div class="flex gap-2">
-                <button onclick="PaketAnaliz.editPackage(${p.id}, '${(p.name || '').replace(/'/g, "\\'")}', '${(p.code || '').replace(/'/g, "\\'")}', '${(p.description || '').replace(/'/g, "\\'")}')" 
+                <button onclick="PaketAnaliz.editPackage(${p.id})" 
                   class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm transition-all"><i class="fas fa-edit"></i></button>
                 <button onclick="PaketAnaliz.deletePackage(${p.id}, '${(p.name || '').replace(/'/g, "\\'")}')" 
                   class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-sm transition-all"><i class="fas fa-trash"></i></button>
               </div>
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
       </div>
     `;
@@ -661,13 +704,15 @@ const PaketAnaliz = {
     const name = document.getElementById('pa-pkg-name')?.value?.trim();
     const code = document.getElementById('pa-pkg-code')?.value?.trim();
     const desc = document.getElementById('pa-pkg-desc')?.value?.trim();
+    const currency = document.getElementById('pa-pkg-currency')?.value || 'EUR';
+    const time_unit = document.getElementById('pa-pkg-timeunit')?.value || 'gun';
 
     if (!name) return paToast('Paket adı gereklidir', 'warning');
 
     try {
       await api.request('/paket-analiz/packages', {
         method: 'POST',
-        body: JSON.stringify({ name, code, description: desc })
+        body: JSON.stringify({ name, code, description: desc, currency, time_unit })
       });
       paToast('Paket oluşturuldu', 'success');
       await this.loadPackages();
@@ -677,7 +722,15 @@ const PaketAnaliz = {
     }
   },
 
-  async editPackage(id, name, code, desc) {
+  async editPackage(id) {
+    const pkg = this.packages.find(p => p.id === id);
+    if (!pkg) return paToast('Paket bulunamadı', 'error');
+    const name = pkg.name || '';
+    const code = pkg.code || '';
+    const desc = pkg.description || '';
+    const currency = pkg.currency || 'EUR';
+    const time_unit = pkg.time_unit || 'gun';
+
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
     overlay.innerHTML = `
@@ -696,6 +749,25 @@ const PaketAnaliz = {
             <label class="block text-gray-600 text-sm mb-1 font-medium">Açıklama</label>
             <input id="pa-edit-desc" type="text" value="${desc}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
           </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-600 text-sm mb-1 font-medium">Para Birimi</label>
+              <select id="pa-edit-currency" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
+                <option value="EUR" ${currency === 'EUR' ? 'selected' : ''}>EUR (€)</option>
+                <option value="USD" ${currency === 'USD' ? 'selected' : ''}>USD ($)</option>
+                <option value="TL" ${currency === 'TL' ? 'selected' : ''}>TL (₺)</option>
+                <option value="GBP" ${currency === 'GBP' ? 'selected' : ''}>GBP (£)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-600 text-sm mb-1 font-medium">Süre Birimi</label>
+              <select id="pa-edit-timeunit" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
+                <option value="gun" ${time_unit === 'gun' ? 'selected' : ''}>Gün</option>
+                <option value="hafta" ${time_unit === 'hafta' ? 'selected' : ''}>Hafta</option>
+                <option value="ay" ${time_unit === 'ay' ? 'selected' : ''}>Ay</option>
+              </select>
+            </div>
+          </div>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="PaketAnaliz.saveEditPackage(${id})" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Kaydet</button>
@@ -710,13 +782,15 @@ const PaketAnaliz = {
     const name = document.getElementById('pa-edit-name')?.value?.trim();
     const code = document.getElementById('pa-edit-code')?.value?.trim();
     const desc = document.getElementById('pa-edit-desc')?.value?.trim();
+    const currency = document.getElementById('pa-edit-currency')?.value || 'EUR';
+    const time_unit = document.getElementById('pa-edit-timeunit')?.value || 'gun';
 
     if (!name) return paToast('Paket adı gereklidir', 'warning');
 
     try {
       await api.request(`/paket-analiz/packages/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ name, code, description: desc })
+        body: JSON.stringify({ name, code, description: desc, currency, time_unit })
       });
       document.querySelector('.fixed.inset-0')?.remove();
       paToast('Paket güncellendi', 'success');
@@ -790,6 +864,11 @@ const PaketAnaliz = {
       }
 
       const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+      const selPkg = this.packages.find(p => p.id == pkgId);
+      const currSymbols = { EUR: '€', USD: '$', TL: '₺', GBP: '£' };
+      const timeLabelsMap = { gun: 'gün', hafta: 'hafta', ay: 'ay' };
+      const cs = currSymbols[selPkg?.currency] || '€';
+      const tl = timeLabelsMap[selPkg?.time_unit] || 'gün';
 
       listDiv.innerHTML = `
         <div class="glass-card rounded-2xl p-6">
@@ -805,8 +884,8 @@ const PaketAnaliz = {
                   <th class="text-left p-3 font-semibold">Parça Kodu</th>
                   <th class="text-left p-3 font-semibold">Parça Adı</th>
                   <th class="text-right p-3 font-semibold">BOM</th>
-                  <th class="text-right p-3 font-semibold">Fiyat</th>
-                  <th class="text-right p-3 font-semibold">Lead Time</th>
+                  <th class="text-right p-3 font-semibold">Fiyat (${cs})</th>
+                  <th class="text-right p-3 font-semibold">Lead Time (${tl})</th>
                   <th class="text-right p-3 font-semibold">Stok</th>
                   <th class="text-left p-3 font-semibold">Tedarikçi</th>
                   <th class="text-center p-3 font-semibold">İşlem</th>
@@ -819,8 +898,8 @@ const PaketAnaliz = {
                     <td class="p-3 text-gray-800 font-mono text-xs font-semibold">${item.part_code}</td>
                     <td class="p-3 text-gray-600">${item.part_name || '-'}</td>
                     <td class="p-3 text-right text-gray-700">${fmt(item.bom_quantity)}</td>
-                    <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)}</td>
-                    <td class="p-3 text-right text-gray-700">${item.lead_time_days || 0} gün</td>
+                    <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)} ${cs}</td>
+                    <td class="p-3 text-right text-gray-700">${item.lead_time_days || 0} ${tl}</td>
                     <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
                     <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
                     <td class="p-3 text-center">
@@ -1028,6 +1107,16 @@ const PaketAnaliz = {
   exportScenarios() {
     if (!this.selectedPackageId) return;
     window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/scenarios`, '_blank');
+  },
+  exportDetailExcel() {
+    if (!this.selectedPackageId || !this.analysisData) return;
+    const count = document.getElementById('pa-analysis-count')?.value || 1;
+    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/detail-excel?count=${count}`, '_blank');
+  },
+  exportDetailWord() {
+    if (!this.selectedPackageId || !this.analysisData) return;
+    const count = document.getElementById('pa-analysis-count')?.value || 1;
+    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/detail-word?count=${count}`, '_blank');
   },
 
   onImportTypeChange() {
