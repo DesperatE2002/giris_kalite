@@ -295,12 +295,48 @@ const ReturnsPage = {
       showLoading(true);
       const returns = await api.reports.rejections({});
       
+      // Sayaçlar
+      const countAll = returns.length;
+      const countWaiting = returns.filter(item => {
+        const totalReturned = parseFloat(item.total_returned_quantity || item.rejected_quantity || 0);
+        const currentRej = parseFloat(item.rejected_quantity || 0);
+        return totalReturned > 0 && currentRej > 0 && totalReturned <= currentRej;
+      }).length;
+      const countPartial = returns.filter(item => {
+        const totalReturned = parseFloat(item.total_returned_quantity || item.rejected_quantity || 0);
+        const currentRej = parseFloat(item.rejected_quantity || 0);
+        return totalReturned > currentRej && currentRej > 0;
+      }).length;
+      const countDone = returns.filter(item => {
+        const totalReturned = parseFloat(item.total_returned_quantity || item.rejected_quantity || 0);
+        const currentRej = parseFloat(item.rejected_quantity || 0);
+        return totalReturned > 0 && currentRej <= 0;
+      }).length;
+      
       container.innerHTML = `
         <div class="bg-white rounded-lg shadow">
-          <div class="px-6 py-4 border-b">
+          <div class="px-6 py-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 class="text-lg font-semibold flex items-center">
               <i class="fas fa-history mr-2"></i>İade Geçmişi
             </h3>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="ReturnsPage.filterHistory('all')" data-filter="all"
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white">
+                Tümü (${countAll})
+              </button>
+              <button onclick="ReturnsPage.filterHistory('waiting')" data-filter="waiting"
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+                <i class="fas fa-clock mr-1 text-red-500"></i>İade Bekliyor (${countWaiting})
+              </button>
+              <button onclick="ReturnsPage.filterHistory('partial')" data-filter="partial"
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+                <i class="fas fa-adjust mr-1 text-yellow-500"></i>Kısmi Geldi (${countPartial})
+              </button>
+              <button onclick="ReturnsPage.filterHistory('done')" data-filter="done"
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+                <i class="fas fa-check mr-1 text-green-500"></i>İade Geldi (${countDone})
+              </button>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -310,6 +346,7 @@ const ReturnsPage = {
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Miktarı</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Havuzda Kalan</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sebep</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İade Kesen</th>
@@ -318,28 +355,32 @@ const ReturnsPage = {
               <tbody class="divide-y divide-gray-200">
                 ${returns.length === 0 ? `
                   <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                       <i class="fas fa-inbox text-4xl mb-2"></i>
                       <p>Henüz iade kaydı bulunmuyor</p>
                     </td>
                   </tr>
                 ` : returns.map(item => {
-                  const totalReturned = item.total_returned_quantity || item.rejected_quantity || 0;
-                  const currentRejected = item.rejected_quantity || 0;
-                  const isReplaced = totalReturned > 0 && currentRejected === 0;
+                  const totalReturned = parseFloat(item.total_returned_quantity || item.rejected_quantity || 0);
+                  const currentRejected = parseFloat(item.rejected_quantity || 0);
+                  const isReplaced = totalReturned > 0 && currentRejected <= 0;
                   const isPartiallyReplaced = totalReturned > currentRejected && currentRejected > 0;
                   
                   let statusBadge = '';
+                  let filterClass = '';
                   if (isReplaced) {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check mr-1"></i>Yenisi Geldi</span>';
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>İade Geldi</span>';
+                    filterClass = 'filter-done';
                   } else if (isPartiallyReplaced) {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Kısmi Geldi</span>';
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-adjust mr-1"></i>Kısmi Geldi</span>';
+                    filterClass = 'filter-partial';
                   } else {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-undo mr-1"></i>İade Bekliyor</span>';
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-clock mr-1"></i>İade Bekliyor</span>';
+                    filterClass = 'filter-waiting';
                   }
                   
                   return `
-                  <tr class="hover:bg-gray-50">
+                  <tr class="hover:bg-gray-50 return-history-row ${filterClass}">
                     <td class="px-6 py-4 whitespace-nowrap text-sm">${item.decision_date ? new Date(item.decision_date).toLocaleString('tr-TR') : '-'}</td>
                     <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                     <td class="px-6 py-4">
@@ -347,6 +388,7 @@ const ReturnsPage = {
                       <div class="text-xs text-gray-500">${item.material_name || '-'}</div>
                     </td>
                     <td class="px-6 py-4 text-right font-bold text-red-600">${Math.round(totalReturned)}</td>
+                    <td class="px-6 py-4 text-right font-bold ${currentRejected > 0 ? 'text-orange-600' : 'text-green-600'}">${Math.round(currentRejected)}</td>
                     <td class="px-6 py-4 text-sm">${statusBadge}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${item.reason || '-'}</td>
                     <td class="px-6 py-4 text-sm">
@@ -370,6 +412,30 @@ const ReturnsPage = {
     } finally {
       showLoading(false);
     }
+  },
+  
+  filterHistory(type) {
+    // Buton stillerini güncelle
+    document.querySelectorAll('.return-filter-btn').forEach(btn => {
+      if (btn.dataset.filter === type) {
+        btn.className = 'return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white';
+      } else {
+        btn.className = 'return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200';
+      }
+    });
+    
+    // Satırları filtrele
+    document.querySelectorAll('.return-history-row').forEach(row => {
+      if (type === 'all') {
+        row.style.display = '';
+      } else if (type === 'waiting') {
+        row.style.display = row.classList.contains('filter-waiting') ? '' : 'none';
+      } else if (type === 'partial') {
+        row.style.display = row.classList.contains('filter-partial') ? '' : 'none';
+      } else if (type === 'done') {
+        row.style.display = row.classList.contains('filter-done') ? '' : 'none';
+      }
+    });
   },
 
   setupCreateReturnListeners() {
