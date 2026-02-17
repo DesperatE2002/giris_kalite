@@ -131,7 +131,7 @@ import pool from './db/database.js';
         assigned_to INTEGER NOT NULL REFERENCES users(id),
         assigned_by INTEGER REFERENCES users(id),
         difficulty INTEGER DEFAULT 3 CHECK (difficulty >= 1 AND difficulty <= 5),
-        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'blocked', 'completed')),
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'paused', 'blocked', 'completed')),
         notes TEXT,
         blocked_reason TEXT,
         started_at TIMESTAMP,
@@ -150,12 +150,25 @@ import pool from './db/database.js';
         id SERIAL PRIMARY KEY,
         assignment_id INTEGER NOT NULL REFERENCES tech_assignments(id) ON DELETE CASCADE,
         user_id INTEGER REFERENCES users(id),
-        action TEXT NOT NULL CHECK (action IN ('start', 'complete', 'block', 'note')),
+        action TEXT NOT NULL CHECK (action IN ('start', 'complete', 'block', 'pause', 'note')),
         note TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Auto-migration: tech_assignments ve tech_activity_logs tabloları hazır');
+
+    // paused status ve pause action constraint güncellemesi
+    try {
+      await pool.query(`ALTER TABLE tech_assignments DROP CONSTRAINT IF EXISTS tech_assignments_status_check`);
+      await pool.query(`ALTER TABLE tech_assignments ADD CONSTRAINT tech_assignments_status_check CHECK (status IN ('pending', 'active', 'paused', 'blocked', 'completed'))`);
+      await pool.query(`ALTER TABLE tech_activity_logs DROP CONSTRAINT IF EXISTS tech_activity_logs_action_check`);
+      await pool.query(`ALTER TABLE tech_activity_logs ADD CONSTRAINT tech_activity_logs_action_check CHECK (action IN ('start', 'complete', 'block', 'pause', 'note'))`);
+      console.log('✅ Auto-migration: paused status constraint güncellendi');
+    } catch(e) {
+      if (!e.message.includes('already exists')) {
+        console.error('⚠️ Constraint güncelleme uyarısı:', e.message);
+      }
+    }
   } catch (e) {
     if (!e.message.includes('already exists')) {
       console.error('⚠️ Technicians auto-migration uyarısı:', e.message);

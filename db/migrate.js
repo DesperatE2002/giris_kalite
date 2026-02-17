@@ -145,7 +145,7 @@ const migrate = async () => {
         assigned_to INTEGER NOT NULL REFERENCES users(id),
         assigned_by INTEGER REFERENCES users(id),
         difficulty INTEGER DEFAULT 3 CHECK (difficulty >= 1 AND difficulty <= 5),
-        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'blocked', 'completed')),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'paused', 'blocked', 'completed')),
         notes TEXT,
         blocked_reason TEXT,
         started_at TIMESTAMP,
@@ -167,7 +167,7 @@ const migrate = async () => {
         id SERIAL PRIMARY KEY,
         assignment_id INTEGER NOT NULL REFERENCES tech_assignments(id) ON DELETE CASCADE,
         user_id INTEGER REFERENCES users(id),
-        action VARCHAR(20) NOT NULL CHECK (action IN ('start', 'complete', 'block', 'note')),
+        action VARCHAR(20) NOT NULL CHECK (action IN ('start', 'complete', 'block', 'pause', 'note')),
         note TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
