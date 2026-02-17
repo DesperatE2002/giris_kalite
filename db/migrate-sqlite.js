@@ -18,7 +18,7 @@ try {
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       full_name TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('tekniker', 'kalite', 'admin')),
+      role TEXT NOT NULL CHECK (role IN ('viewer', 'tekniker', 'kalite', 'proje_yonetici', 'admin')),
       is_active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP

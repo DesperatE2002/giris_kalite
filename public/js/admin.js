@@ -1250,8 +1250,10 @@ MAT-003	Nikel Şerit	500	gr"
               <label class="block text-sm font-medium mb-2">Rol *</label>
               <select id="role" required 
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="viewer">Yeni Kullanıcı (Viewer)</option>
                 <option value="tekniker">Tekniker</option>
                 <option value="kalite">Kalite</option>
+                <option value="proje_yonetici">Proje Yöneticisi</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
@@ -1317,8 +1319,10 @@ MAT-003	Nikel Şerit	500	gr"
               <label class="block text-sm font-medium mb-2">Rol *</label>
               <select id="editRole" required 
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="viewer" ${role === 'viewer' ? 'selected' : ''}>Yeni Kullanıcı (Viewer)</option>
                 <option value="tekniker" ${role === 'tekniker' ? 'selected' : ''}>Tekniker</option>
                 <option value="kalite" ${role === 'kalite' ? 'selected' : ''}>Kalite</option>
+                <option value="proje_yonetici" ${role === 'proje_yonetici' ? 'selected' : ''}>Proje Yöneticisi</option>
                 <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
               </select>
             </div>
@@ -1482,11 +1486,13 @@ MAT-003	Nikel Şerit	500	gr"
 
   getRoleBadge(role) {
     const map = {
+      'viewer': { class: 'bg-gray-100 text-gray-800', text: 'Yeni Kullanıcı' },
       'tekniker': { class: 'bg-blue-100 text-blue-800', text: 'Tekniker' },
       'kalite': { class: 'bg-green-100 text-green-800', text: 'Kalite' },
+      'proje_yonetici': { class: 'bg-orange-100 text-orange-800', text: 'Proje Yöneticisi' },
       'admin': { class: 'bg-purple-100 text-purple-800', text: 'Admin' }
     };
-    const r = map[role] || map.tekniker;
+    const r = map[role] || map.viewer;
     return `<span class="px-2 py-1 text-xs rounded-full ${r.class}">${r.text}</span>`;
   },
 

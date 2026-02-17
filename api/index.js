@@ -114,6 +114,17 @@ import pool from '../db/database.js';
     }
   }
 
+  // Auto-migration: users role constraint güncellemesi (viewer + proje_yonetici ekleme)
+  try {
+    await pool.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+    await pool.query(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('viewer', 'tekniker', 'kalite', 'proje_yonetici', 'admin'))`);
+    console.log('✅ Auto-migration: users role constraint güncellendi (viewer + proje_yonetici)');
+  } catch(e) {
+    if (!e.message.includes('already exists')) {
+      console.error('⚠️ Users role constraint uyarısı:', e.message);
+    }
+  }
+
   // Auto-migration: project_tasks notes sütunu
   try {
     await pool.query(`ALTER TABLE project_tasks ADD COLUMN IF NOT EXISTS notes TEXT`);

@@ -32,11 +32,11 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with 'kalite' role
+    // Create user with 'viewer' role (admin will assign proper role later)
     const result = await pool.query(
       `INSERT INTO users (username, password, full_name, role, is_active)
        VALUES (?, ?, ?, ?, TRUE) RETURNING *`,
-      [username, hashedPassword, full_name, 'kalite']
+      [username, hashedPassword, full_name, 'viewer']
     );
 
     res.status(201).json({

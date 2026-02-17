@@ -61,6 +61,14 @@ const authManager = {
 
   isKalite() {
     return this.hasRole('kalite', 'admin');
+  },
+
+  isProjeYonetici() {
+    return this.hasRole('proje_yonetici', 'admin');
+  },
+
+  isViewer() {
+    return this.hasRole('viewer');
   }
 };
 
@@ -91,10 +99,17 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('mainApp').classList.remove('hidden');
     
-    // Setup app navigation and render dashboard
+    // Setup app navigation and render appropriate page
     app.setupNavigation();
     app.updateUserInfo();
-    app.navigate('dashboard');
+    const user = authManager.currentUser;
+    if (user && user.role === 'viewer') {
+      app.navigate('welcome');
+    } else if (user && user.role === 'proje_yonetici') {
+      app.navigate('projects');
+    } else {
+      app.navigate('dashboard');
+    }
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.classList.remove('hidden');
