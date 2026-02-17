@@ -101,6 +101,7 @@ const TechPage = {
     const statuses = [
       { id: 'pending', label: 'Bekliyor', icon: 'fas fa-clock', color: 'gray', bgColor: 'bg-gray-50' },
       { id: 'active', label: 'Çalışılıyor', icon: 'fas fa-play', color: 'blue', bgColor: 'bg-blue-50' },
+      { id: 'paused', label: 'Yarına Kaldı', icon: 'fas fa-pause-circle', color: 'purple', bgColor: 'bg-purple-50' },
       { id: 'blocked', label: 'Bloke', icon: 'fas fa-ban', color: 'orange', bgColor: 'bg-orange-50' },
       { id: 'completed', label: 'Tamamlandı', icon: 'fas fa-check', color: 'green', bgColor: 'bg-green-50' }
     ];
@@ -125,7 +126,7 @@ const TechPage = {
       </div>
 
       <!-- Kanban Board -->
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         ${statuses.map(s => `
           <div class="rounded-xl ${s.bgColor} p-3">
             <h3 class="font-bold text-${s.color}-700 mb-3 flex items-center gap-2 text-sm">
@@ -163,9 +164,12 @@ const TechPage = {
       actions = `
         <div class="flex gap-1">
           <button onclick="TechPage.completeTask(${a.id})" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1.5 rounded-lg transition-all"><i class="fas fa-check mr-1"></i>Tamamla</button>
+          <button onclick="TechPage.pauseTask(${a.id})" class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-1.5 px-2 rounded-lg transition-all" title="Yarına Kaldı"><i class="fas fa-pause"></i></button>
           <button onclick="TechPage.blockTask(${a.id})" class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-1.5 px-2 rounded-lg transition-all"><i class="fas fa-ban"></i></button>
         </div>
       `;
+    } else if (a.status === 'paused') {
+      actions = `<button onclick="TechPage.startTask(${a.id})" class="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1.5 rounded-lg transition-all"><i class="fas fa-play mr-1"></i>Devam Et</button>`;
     } else if (a.status === 'blocked') {
       actions = `<button onclick="TechPage.startTask(${a.id})" class="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-1.5 rounded-lg transition-all"><i class="fas fa-play mr-1"></i>Devam Et</button>`;
     }
@@ -304,7 +308,7 @@ const TechPage = {
     try {
       report = await api.request(`/technicians/daily-report?date=${date}`);
     } catch(e) {
-      report = { completed: [], active: [], blocked: [], person_summary: [], activity_logs: [], summary: {} };
+      report = { completed: [], active: [], blocked: [], paused: [], task_grouped: [], person_summary: [], activity_logs: [], summary: {} };
     }
 
     const s = report.summary;
@@ -326,7 +330,7 @@ const TechPage = {
         </div>
 
         <!-- Özet -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div class="bg-green-50 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-green-600">${s.total_completed || 0}</p>
             <p class="text-xs text-gray-500 mt-1">Tamamlanan</p>
@@ -334,6 +338,10 @@ const TechPage = {
           <div class="bg-blue-50 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-blue-600">${s.total_active || 0}</p>
             <p class="text-xs text-gray-500 mt-1">Aktif</p>
+          </div>
+          <div class="bg-purple-50 rounded-xl p-4 text-center">
+            <p class="text-3xl font-bold text-purple-600">${s.total_paused || 0}</p>
+            <p class="text-xs text-gray-500 mt-1">Yarına Kaldı</p>
           </div>
           <div class="bg-orange-50 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-orange-600">${s.total_blocked || 0}</p>
@@ -344,6 +352,32 @@ const TechPage = {
             <p class="text-xs text-gray-500 mt-1">Toplam Çalışma</p>
           </div>
         </div>
+
+        <!-- İş Bazlı Özet -->
+        ${(report.task_grouped || []).length > 0 ? `
+          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-tasks mr-2 text-indigo-500"></i>İş Bazlı Özet</h4>
+          <div class="space-y-2 mb-6">
+            ${report.task_grouped.map(g => {
+              const durText = g.total_minutes < 60 ? `${g.total_minutes} dk` : `${Math.floor(g.total_minutes/60)}s ${g.total_minutes%60}dk`;
+              const names = g.people.map(p => p.name).join(', ');
+              const statusIcons = { completed: 'fa-check-circle text-green-500', active: 'fa-play-circle text-blue-500', paused: 'fa-pause-circle text-purple-500', blocked: 'fa-ban text-orange-500', pending: 'fa-clock text-gray-400' };
+              const mainStatus = g.people.some(p => p.status === 'active') ? 'active' : g.people.some(p => p.status === 'paused') ? 'paused' : g.people.every(p => p.status === 'completed') ? 'completed' : g.status;
+              return `
+                <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg text-sm">
+                  <div class="flex items-center gap-2">
+                    <i class="fas ${statusIcons[mainStatus] || 'fa-circle text-gray-400'}"></i>
+                    <span class="font-semibold">${g.title}</span>
+                    <span class="text-gray-500">— ${durText}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full text-xs font-bold">${g.people.length} kişi</span>
+                    <span class="text-gray-600 text-xs">(${names})</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
 
         <!-- Kişi Bazlı Özet -->
         ${report.person_summary.length > 0 ? `
@@ -396,6 +430,22 @@ const TechPage = {
                 </div>
               `;
             }).join('')}
+          </div>
+        ` : ''}
+
+        <!-- Yarına Kalan İşler -->
+        ${(report.paused || []).length > 0 ? `
+          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-pause-circle text-purple-500 mr-2"></i>Yarına Kalan İşler</h4>
+          <div class="space-y-2 mb-6">
+            ${report.paused.map(a => `
+              <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg text-sm">
+                <div>
+                  <span class="font-semibold">${a.title}</span>
+                  <span class="text-gray-500 ml-2">— ${a.assigned_to_name}</span>
+                </div>
+                <span class="text-purple-600 text-xs"><i class="fas fa-redo mr-1"></i>Yarın devam edilecek</span>
+              </div>
+            `).join('')}
           </div>
         ` : ''}
 
@@ -724,6 +774,17 @@ const TechPage = {
     });
   },
 
+  async pauseTask(id) {
+    if (!confirm('Görevi duraklatmak istiyor musunuz? (Yarına kaldı)')) return;
+    try {
+      showLoading(true);
+      await api.request(`/technicians/assignments/${id}/pause`, { method: 'POST', body: JSON.stringify({ note: 'Yarına kaldı' }) });
+      await this.render();
+    } catch (e) {
+      alert('Hata: ' + e.message);
+    } finally { showLoading(false); }
+  },
+
   async deleteAssignment(id) {
     if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
     try {
@@ -925,12 +986,48 @@ const TechPage = {
         <p class="summary-value" style="color:#ea580c;">${s.total_blocked || 0}</p>
         <p class="summary-label">Bloke</p>
       </td>
+      <td style="background-color:#faf5ff;">
+        <p class="summary-value" style="color:#7c3aed;">${s.total_paused || 0}</p>
+        <p class="summary-label">Yarına Kaldı</p>
+      </td>
       <td style="background-color:#eef2ff;">
         <p class="summary-value" style="color:#4338ca;">${totalHours}s ${totalMins}dk</p>
         <p class="summary-label">Toplam Çalışma</p>
       </td>
     </tr>
   </table>`;
+
+    // İŞ BAZLI ÖZET
+    if ((report.task_grouped || []).length > 0) {
+      html += `
+  <p class="section-title">İş Bazlı Özet</p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:35%;">Görev</th>
+        <th style="width:15%; text-align:center;">Süre</th>
+        <th style="width:15%; text-align:center;">Kişi Sayısı</th>
+        <th style="width:30%;">Personel</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      report.task_grouped.forEach((g, idx) => {
+        const durText = g.total_minutes < 60 ? `${g.total_minutes} dk` : `${Math.floor(g.total_minutes/60)}s ${g.total_minutes%60}dk`;
+        const names = g.people.map(p => p.name).join(', ');
+        html += `
+      <tr>
+        <td style="text-align:center; color:#9ca3af;">${idx + 1}</td>
+        <td><b>${g.title}</b></td>
+        <td style="text-align:center;">${durText}</td>
+        <td style="text-align:center;"><span class="tag tag-purple">${g.people.length} kişi</span></td>
+        <td style="font-size:9pt;">${names}</td>
+      </tr>`;
+      });
+      html += `
+    </tbody>
+  </table>`;
+    }
 
     // KİŞİ BAZLI ÖZET
     if (report.person_summary.length > 0) {
@@ -1054,6 +1151,37 @@ const TechPage = {
   </table>`;
     }
 
+    // YARINA KALAN İŞLER
+    if ((report.paused || []).length > 0) {
+      html += `
+  <p class="section-title">Yarına Kalan İşler</p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:5%;">#</th>
+        <th style="width:35%;">Görev</th>
+        <th style="width:25%;">Personel</th>
+        <th style="width:15%; text-align:center;">Zorluk</th>
+        <th style="width:20%;">Durum</th>
+      </tr>
+    </thead>
+    <tbody>`;
+      report.paused.forEach((a, idx) => {
+        const stars = '\u2605'.repeat(a.difficulty || 3) + '\u2606'.repeat(5 - (a.difficulty || 3));
+        html += `
+      <tr>
+        <td style="text-align:center; color:#9ca3af;">${idx + 1}</td>
+        <td><b>${a.title}</b></td>
+        <td>${a.assigned_to_name || '-'}</td>
+        <td style="text-align:center;"><span class="stars">${stars}</span></td>
+        <td><span class="tag tag-purple">Yarın devam edilecek</span></td>
+      </tr>`;
+      });
+      html += `
+    </tbody>
+  </table>`;
+    }
+
     // BLOKE İŞLER
     if (report.blocked.length > 0) {
       html += `
@@ -1097,8 +1225,8 @@ const TechPage = {
       </tr>
     </thead>
     <tbody>`;
-      const actionLabels = { start: 'Başlatıldı', complete: 'Tamamlandı', block: 'Bloke Edildi' };
-      const actionClasses = { start: 'tag-blue', complete: 'tag-green', block: 'tag-orange' };
+      const actionLabels = { start: 'Başlatıldı', complete: 'Tamamlandı', block: 'Bloke Edildi', pause: 'Duraklatıldı' };
+      const actionClasses = { start: 'tag-blue', complete: 'tag-green', block: 'tag-orange', pause: 'tag-purple' };
       report.activity_logs.forEach(log => {
         const time = new Date(log.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
         html += `

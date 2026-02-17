@@ -22,7 +22,7 @@ const TaskBoard = {
     });
 
     // Aktif görevler önce gelen sırala
-    const sortOrder = { active: 0, pending: 1, blocked: 2, completed: 3 };
+    const sortOrder = { active: 0, pending: 1, paused: 2, blocked: 3, completed: 4 };
     Object.values(grouped).forEach(arr => {
       arr.sort((a, b) => (sortOrder[a.status] ?? 9) - (sortOrder[b.status] ?? 9));
     });
@@ -30,6 +30,7 @@ const TaskBoard = {
     // İstatistikler
     const totalPending = this.assignments.filter(a => a.status === 'pending').length;
     const totalActive = this.assignments.filter(a => a.status === 'active').length;
+    const totalPaused = this.assignments.filter(a => a.status === 'paused').length;
     const totalBlocked = this.assignments.filter(a => a.status === 'blocked').length;
     const totalDone = this.assignments.filter(a => a.status === 'completed').length;
 
@@ -65,6 +66,10 @@ const TaskBoard = {
               <div class="text-xl font-bold text-orange-600">${totalBlocked}</div>
               <div class="text-[10px] text-orange-700 font-medium uppercase">Bloke</div>
             </div>
+            <div class="bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-center min-w-[80px]">
+              <div class="text-xl font-bold text-purple-600">${totalPaused}</div>
+              <div class="text-[10px] text-purple-700 font-medium uppercase">Yarına</div>
+            </div>
             <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-center min-w-[80px]">
               <div class="text-xl font-bold text-green-600">${totalDone}</div>
               <div class="text-[10px] text-green-700 font-medium uppercase">Bitti</div>
@@ -82,6 +87,7 @@ const TaskBoard = {
           ` : Object.entries(grouped).map(([name, tasks]) => {
             const activeTasks = tasks.filter(t => t.status === 'active');
             const pendingTasks = tasks.filter(t => t.status === 'pending');
+            const pausedTasks = tasks.filter(t => t.status === 'paused');
             const blockedTasks = tasks.filter(t => t.status === 'blocked');
             const doneTasks = tasks.filter(t => t.status === 'completed');
             const visibleTasks = tasks.filter(t => t.status !== 'completed');
@@ -101,7 +107,7 @@ const TaskBoard = {
               personBg = 'from-red-500 to-red-700';
               personTag = 'Yoğun';
             }
-            if (activeTasks.length === 0 && pendingTasks.length === 0 && blockedTasks.length === 0) {
+            if (activeTasks.length === 0 && pendingTasks.length === 0 && blockedTasks.length === 0 && pausedTasks.length === 0) {
               personBg = 'from-green-500 to-green-600';
               personTag = 'Tamamladı ✓';
             }
@@ -114,7 +120,7 @@ const TaskBoard = {
                     <div class="w-11 h-11 bg-white bg-opacity-25 rounded-full flex items-center justify-center text-white text-lg font-bold">${initial}</div>
                     <div>
                       <h3 class="text-white font-bold text-lg">${name}</h3>
-                      <p class="text-white text-opacity-80 text-xs">${personTag} — ${activeTasks.length} aktif, ${pendingTasks.length} bekliyor${doneTasks.length > 0 ? `, ${doneTasks.length} bitti` : ''}</p>
+                      <p class="text-white text-opacity-80 text-xs">${personTag} — ${activeTasks.length} aktif, ${pendingTasks.length} bekliyor${pausedTasks.length > 0 ? `, ${pausedTasks.length} yarına` : ''}${doneTasks.length > 0 ? `, ${doneTasks.length} bitti` : ''}</p>
                     </div>
                   </div>
                 </div>
@@ -178,6 +184,7 @@ const TaskBoard = {
     const statusCfg = {
       pending:   { bg: 'bg-yellow-50 border-yellow-200', dot: 'bg-yellow-400', label: 'Bekliyor' },
       active:    { bg: 'bg-blue-50 border-blue-300 ring-2 ring-blue-200', dot: 'bg-blue-500 animate-pulse', label: 'Çalışılıyor' },
+      paused:    { bg: 'bg-purple-50 border-purple-300', dot: 'bg-purple-500', label: 'Yarına Kaldı' },
       blocked:   { bg: 'bg-orange-50 border-orange-300', dot: 'bg-orange-500', label: 'Bloke' },
       completed: { bg: 'bg-green-50 border-green-200', dot: 'bg-green-500', label: 'Tamamlandı' }
     };
@@ -199,11 +206,22 @@ const TaskBoard = {
             class="bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-3 px-6 rounded-xl text-base transition-all shadow-md hover:shadow-lg flex items-center gap-2">
             <i class="fas fa-check"></i>Tamamla
           </button>
+          <button onclick="TaskBoard.pauseTask(${a.id})" 
+            class="bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl text-base transition-all shadow-md" title="Yarına Kaldı">
+            <i class="fas fa-pause"></i>
+          </button>
           <button onclick="TaskBoard.blockTask(${a.id})" 
             class="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3 px-4 rounded-xl text-base transition-all shadow-md">
             <i class="fas fa-ban"></i>
           </button>
         </div>
+      `;
+    } else if (a.status === 'paused') {
+      buttons = `
+        <button onclick="TaskBoard.startTask(${a.id})" 
+          class="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl text-base transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+          <i class="fas fa-play"></i>Devam Et
+        </button>
       `;
     } else if (a.status === 'blocked') {
       buttons = `
@@ -335,6 +353,17 @@ const TaskBoard = {
         alert('Hata: ' + e.message);
       } finally { showLoading(false); }
     });
+  },
+
+  async pauseTask(id) {
+    if (!confirm('Görevi duraklatmak istiyor musunuz? (Yarına kaldı)')) return;
+    try {
+      showLoading(true);
+      await api.request(`/technicians/assignments/${id}/pause`, { method: 'POST', body: JSON.stringify({ note: 'Yarına kaldı' }) });
+      await this.render();
+    } catch (e) {
+      alert('Hata: ' + e.message);
+    } finally { showLoading(false); }
   },
 
   async refresh() {

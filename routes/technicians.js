@@ -51,7 +51,7 @@ router.get('/workforce', authenticateToken, async (req, res) => {
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_count,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_today
        FROM tech_assignments 
-       WHERE status IN ('active', 'pending') 
+       WHERE status IN ('active', 'pending', 'paused') 
          OR (status = 'completed' AND DATE(completed_at) = ?)
        GROUP BY assigned_to`,
       [today]
@@ -136,8 +136,9 @@ router.get('/assignments', authenticateToken, async (req, res) => {
       CASE a.status 
         WHEN 'active' THEN 1 
         WHEN 'pending' THEN 2 
-        WHEN 'blocked' THEN 3 
-        WHEN 'completed' THEN 4 
+        WHEN 'paused' THEN 3 
+        WHEN 'blocked' THEN 4 
+        WHEN 'completed' THEN 5 
       END, a.created_at DESC`;
 
     const result = await pool.query(query, params);
@@ -332,6 +333,42 @@ router.post('/assignments/:id/block', authenticateToken, async (req, res) => {
   }
 });
 
+// Görevi duraklat (yarına kaldı)
+router.post('/assignments/:id/pause', authenticateToken, async (req, res) => {
+  try {
+    const check = await pool.query('SELECT * FROM tech_assignments WHERE id = ?', [req.params.id]);
+    if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
+    
+    const assignment = check.rows[0];
+    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
+      return res.status(403).json({ error: 'Bu görev size atanmamış' });
+    }
+
+    if (assignment.status === 'completed') {
+      return res.status(400).json({ error: 'Tamamlanmış görev duraklatılamaz' });
+    }
+
+    await pool.query(
+      `UPDATE tech_assignments SET status = 'paused', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [req.params.id]
+    );
+
+    await pool.query(
+      `INSERT INTO tech_activity_logs (assignment_id, user_id, action, note) VALUES (?, ?, 'pause', ?)`,
+      [req.params.id, req.user.id, req.body.note || 'Görev duraklatıldı — yarın devam edilecek']
+    );
+
+    const updated = await pool.query(
+      `SELECT a.*, u1.full_name as assigned_to_name FROM tech_assignments a LEFT JOIN users u1 ON a.assigned_to = u1.id WHERE a.id = ?`,
+      [req.params.id]
+    );
+    res.json(updated.rows[0]);
+  } catch (error) {
+    console.error('Görev duraklatma hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 // ─── GÜNLÜK RAPOR ────────────────────────────────────────────────────────────
 
 router.get('/daily-report', authenticateToken, async (req, res) => {
@@ -368,6 +405,16 @@ router.get('/daily-report', authenticateToken, async (req, res) => {
       [date]
     );
 
+    // Duraklatılmış görevler (yarına kaldı)
+    const paused = await pool.query(
+      `SELECT a.*, u.full_name as assigned_to_name
+       FROM tech_assignments a
+       LEFT JOIN users u ON a.assigned_to = u.id
+       WHERE a.status = 'paused' AND DATE(a.updated_at) = ?
+       ORDER BY a.updated_at DESC`,
+      [date]
+    );
+
     // Kişi bazlı süre özet
     const personSummary = await pool.query(
       `SELECT u.full_name, 
@@ -394,17 +441,47 @@ router.get('/daily-report', authenticateToken, async (req, res) => {
       [date]
     );
 
+    // İŞ BAZLI GRUPLAMA — aynı başlıklı görevleri birleştir
+    // Tamamlanan + aktif + paused hepsini birleştir
+    const allDayTasks = [...completed.rows, ...active.rows, ...paused.rows];
+    const taskGroups = {};
+    allDayTasks.forEach(a => {
+      const key = (a.title || '').trim().toLowerCase();
+      if (!taskGroups[key]) {
+        taskGroups[key] = {
+          title: a.title,
+          people: [],
+          total_minutes: 0,
+          status: a.status,
+          difficulty: a.difficulty
+        };
+      }
+      if (!taskGroups[key].people.find(p => p.name === a.assigned_to_name)) {
+        const mins = a.actual_duration_minutes || (a.started_at ? Math.round((new Date() - new Date(a.started_at)) / 60000) : 0);
+        taskGroups[key].people.push({
+          name: a.assigned_to_name || 'Bilinmiyor',
+          minutes: mins,
+          status: a.status
+        });
+        taskGroups[key].total_minutes = Math.max(taskGroups[key].total_minutes, mins);
+      }
+    });
+    const task_grouped = Object.values(taskGroups).filter(g => g.people.length > 0).sort((a, b) => b.people.length - a.people.length);
+
     res.json({
       date,
       completed: completed.rows,
       active: active.rows,
       blocked: blocked.rows,
+      paused: paused.rows,
+      task_grouped,
       person_summary: personSummary.rows,
       activity_logs: logs.rows,
       summary: {
         total_completed: completed.rows.length,
         total_active: active.rows.length,
         total_blocked: blocked.rows.length,
+        total_paused: paused.rows.length,
         total_minutes: completed.rows.reduce((s, r) => s + (parseInt(r.actual_duration_minutes) || 0), 0)
       }
     });
