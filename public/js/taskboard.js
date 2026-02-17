@@ -68,7 +68,7 @@ const TaskBoard = {
             </div>
             <div class="bg-purple-50 border border-purple-200 rounded-xl px-4 py-2 text-center min-w-[80px]">
               <div class="text-xl font-bold text-purple-600">${totalPaused}</div>
-              <div class="text-[10px] text-purple-700 font-medium uppercase">Yarına</div>
+              <div class="text-[10px] text-purple-700 font-medium uppercase">Pause</div>
             </div>
             <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-center min-w-[80px]">
               <div class="text-xl font-bold text-green-600">${totalDone}</div>
@@ -120,7 +120,7 @@ const TaskBoard = {
                     <div class="w-11 h-11 bg-white bg-opacity-25 rounded-full flex items-center justify-center text-white text-lg font-bold">${initial}</div>
                     <div>
                       <h3 class="text-white font-bold text-lg">${name}</h3>
-                      <p class="text-white text-opacity-80 text-xs">${personTag} — ${activeTasks.length} aktif, ${pendingTasks.length} bekliyor${pausedTasks.length > 0 ? `, ${pausedTasks.length} yarına` : ''}${doneTasks.length > 0 ? `, ${doneTasks.length} bitti` : ''}</p>
+                      <p class="text-white text-opacity-80 text-xs">${personTag} — ${activeTasks.length} aktif, ${pendingTasks.length} bekliyor${pausedTasks.length > 0 ? `, ${pausedTasks.length} pause` : ''}${doneTasks.length > 0 ? `, ${doneTasks.length} bitti` : ''}</p>
                     </div>
                   </div>
                 </div>
@@ -184,7 +184,7 @@ const TaskBoard = {
     const statusCfg = {
       pending:   { bg: 'bg-yellow-50 border-yellow-200', dot: 'bg-yellow-400', label: 'Bekliyor' },
       active:    { bg: 'bg-blue-50 border-blue-300 ring-2 ring-blue-200', dot: 'bg-blue-500 animate-pulse', label: 'Çalışılıyor' },
-      paused:    { bg: 'bg-purple-50 border-purple-300', dot: 'bg-purple-500', label: 'Yarına Kaldı' },
+      paused:    { bg: 'bg-purple-50 border-purple-300', dot: 'bg-purple-500', label: 'Pause' },
       blocked:   { bg: 'bg-orange-50 border-orange-300', dot: 'bg-orange-500', label: 'Bloke' },
       completed: { bg: 'bg-green-50 border-green-200', dot: 'bg-green-500', label: 'Tamamlandı' }
     };
@@ -207,7 +207,7 @@ const TaskBoard = {
             <i class="fas fa-check"></i>Tamamla
           </button>
           <button onclick="TaskBoard.pauseTask(${a.id})" 
-            class="bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl text-base transition-all shadow-md" title="Yarına Kaldı">
+            class="bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl text-base transition-all shadow-md" title="Pause">
             <i class="fas fa-pause"></i>
           </button>
           <button onclick="TaskBoard.blockTask(${a.id})" 
@@ -356,10 +356,10 @@ const TaskBoard = {
   },
 
   async pauseTask(id) {
-    if (!confirm('Görevi duraklatmak istiyor musunuz? (Yarına kaldı)')) return;
+    if (!confirm('Görevi duraklatmak istiyor musunuz?')) return;
     try {
       showLoading(true);
-      await api.request(`/technicians/assignments/${id}/pause`, { method: 'POST', body: JSON.stringify({ note: 'Yarına kaldı' }) });
+      await api.request(`/technicians/assignments/${id}/pause`, { method: 'POST', body: JSON.stringify({ note: 'Pause' }) });
       await this.render();
     } catch (e) {
       alert('Hata: ' + e.message);

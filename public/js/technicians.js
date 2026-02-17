@@ -101,7 +101,7 @@ const TechPage = {
     const statuses = [
       { id: 'pending', label: 'Bekliyor', icon: 'fas fa-clock', color: 'gray', bgColor: 'bg-gray-50' },
       { id: 'active', label: 'Çalışılıyor', icon: 'fas fa-play', color: 'blue', bgColor: 'bg-blue-50' },
-      { id: 'paused', label: 'Yarına Kaldı', icon: 'fas fa-pause-circle', color: 'purple', bgColor: 'bg-purple-50' },
+      { id: 'paused', label: 'Pause', icon: 'fas fa-pause-circle', color: 'purple', bgColor: 'bg-purple-50' },
       { id: 'blocked', label: 'Bloke', icon: 'fas fa-ban', color: 'orange', bgColor: 'bg-orange-50' },
       { id: 'completed', label: 'Tamamlandı', icon: 'fas fa-check', color: 'green', bgColor: 'bg-green-50' }
     ];
@@ -164,7 +164,7 @@ const TechPage = {
       actions = `
         <div class="flex gap-1">
           <button onclick="TechPage.completeTask(${a.id})" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-1.5 rounded-lg transition-all"><i class="fas fa-check mr-1"></i>Tamamla</button>
-          <button onclick="TechPage.pauseTask(${a.id})" class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-1.5 px-2 rounded-lg transition-all" title="Yarına Kaldı"><i class="fas fa-pause"></i></button>
+          <button onclick="TechPage.pauseTask(${a.id})" class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-1.5 px-2 rounded-lg transition-all" title="Pause"><i class="fas fa-pause"></i></button>
           <button onclick="TechPage.blockTask(${a.id})" class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-1.5 px-2 rounded-lg transition-all"><i class="fas fa-ban"></i></button>
         </div>
       `;
@@ -341,7 +341,7 @@ const TechPage = {
           </div>
           <div class="bg-purple-50 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-purple-600">${s.total_paused || 0}</p>
-            <p class="text-xs text-gray-500 mt-1">Yarına Kaldı</p>
+            <p class="text-xs text-gray-500 mt-1">Pause</p>
           </div>
           <div class="bg-orange-50 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-orange-600">${s.total_blocked || 0}</p>
@@ -435,7 +435,7 @@ const TechPage = {
 
         <!-- Yarına Kalan İşler -->
         ${(report.paused || []).length > 0 ? `
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-pause-circle text-purple-500 mr-2"></i>Yarına Kalan İşler</h4>
+          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-pause-circle text-purple-500 mr-2"></i>Pause Edilen İşler</h4>
           <div class="space-y-2 mb-6">
             ${report.paused.map(a => `
               <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg text-sm">
@@ -443,7 +443,7 @@ const TechPage = {
                   <span class="font-semibold">${a.title}</span>
                   <span class="text-gray-500 ml-2">— ${a.assigned_to_name}</span>
                 </div>
-                <span class="text-purple-600 text-xs"><i class="fas fa-redo mr-1"></i>Yarın devam edilecek</span>
+                <span class="text-purple-600 text-xs"><i class="fas fa-pause mr-1"></i>Pause</span>
               </div>
             `).join('')}
           </div>
@@ -775,10 +775,10 @@ const TechPage = {
   },
 
   async pauseTask(id) {
-    if (!confirm('Görevi duraklatmak istiyor musunuz? (Yarına kaldı)')) return;
+    if (!confirm('Görevi duraklatmak istiyor musunuz?')) return;
     try {
       showLoading(true);
-      await api.request(`/technicians/assignments/${id}/pause`, { method: 'POST', body: JSON.stringify({ note: 'Yarına kaldı' }) });
+      await api.request(`/technicians/assignments/${id}/pause`, { method: 'POST', body: JSON.stringify({ note: 'Pause' }) });
       await this.render();
     } catch (e) {
       alert('Hata: ' + e.message);
@@ -988,7 +988,7 @@ const TechPage = {
       </td>
       <td style="background-color:#faf5ff;">
         <p class="summary-value" style="color:#7c3aed;">${s.total_paused || 0}</p>
-        <p class="summary-label">Yarına Kaldı</p>
+        <p class="summary-label">Pause</p>
       </td>
       <td style="background-color:#eef2ff;">
         <p class="summary-value" style="color:#4338ca;">${totalHours}s ${totalMins}dk</p>
@@ -1154,7 +1154,7 @@ const TechPage = {
     // YARINA KALAN İŞLER
     if ((report.paused || []).length > 0) {
       html += `
-  <p class="section-title">Yarına Kalan İşler</p>
+  <p class="section-title">Pause Edilen İşler</p>
   <table class="data-table">
     <thead>
       <tr>
@@ -1174,7 +1174,7 @@ const TechPage = {
         <td><b>${a.title}</b></td>
         <td>${a.assigned_to_name || '-'}</td>
         <td style="text-align:center;"><span class="stars">${stars}</span></td>
-        <td><span class="tag tag-purple">Yarın devam edilecek</span></td>
+        <td><span class="tag tag-purple">Pause</span></td>
       </tr>`;
       });
       html += `
@@ -1225,7 +1225,7 @@ const TechPage = {
       </tr>
     </thead>
     <tbody>`;
-      const actionLabels = { start: 'Başlatıldı', complete: 'Tamamlandı', block: 'Bloke Edildi', pause: 'Duraklatıldı' };
+      const actionLabels = { start: 'Başlatıldı', complete: 'Tamamlandı', block: 'Bloke Edildi', pause: 'Pause' };
       const actionClasses = { start: 'tag-blue', complete: 'tag-green', block: 'tag-orange', pause: 'tag-purple' };
       report.activity_logs.forEach(log => {
         const time = new Date(log.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});

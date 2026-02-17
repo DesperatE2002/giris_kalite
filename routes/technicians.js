@@ -333,14 +333,14 @@ router.post('/assignments/:id/block', authenticateToken, async (req, res) => {
   }
 });
 
-// Görevi duraklat (yarına kaldı)
+// Görevi duraklat (pause)
 router.post('/assignments/:id/pause', authenticateToken, async (req, res) => {
   try {
     const check = await pool.query('SELECT * FROM tech_assignments WHERE id = ?', [req.params.id]);
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && parseInt(assignment.assigned_to) !== parseInt(req.user.id)) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
@@ -353,9 +353,10 @@ router.post('/assignments/:id/pause', authenticateToken, async (req, res) => {
       [req.params.id]
     );
 
+    const note = (req.body && req.body.note) ? req.body.note : 'Görev duraklatıldı';
     await pool.query(
       `INSERT INTO tech_activity_logs (assignment_id, user_id, action, note) VALUES (?, ?, 'pause', ?)`,
-      [req.params.id, req.user.id, req.body.note || 'Görev duraklatıldı — yarın devam edilecek']
+      [req.params.id, req.user.id, note]
     );
 
     const updated = await pool.query(
@@ -365,7 +366,7 @@ router.post('/assignments/:id/pause', authenticateToken, async (req, res) => {
     res.json(updated.rows[0]);
   } catch (error) {
     console.error('Görev duraklatma hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    res.status(500).json({ error: error.message || 'Sunucu hatası' });
   }
 });
 
