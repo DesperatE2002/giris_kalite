@@ -219,7 +219,7 @@ router.post('/assignments/:id/start', authenticateToken, async (req, res) => {
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && parseInt(assignment.assigned_to) !== parseInt(req.user.id)) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
@@ -234,9 +234,10 @@ router.post('/assignments/:id/start', authenticateToken, async (req, res) => {
     );
 
     // Aktivite logu
+    const startNote = (req.body && req.body.note) ? req.body.note : 'Görev başlatıldı';
     await pool.query(
       `INSERT INTO tech_activity_logs (assignment_id, user_id, action, note) VALUES (?, ?, 'start', ?)`,
-      [req.params.id, req.user.id, req.body.note || 'Görev başlatıldı']
+      [req.params.id, req.user.id, startNote]
     );
 
     const updated = await pool.query(
@@ -257,7 +258,7 @@ router.post('/assignments/:id/complete', authenticateToken, async (req, res) => 
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && parseInt(assignment.assigned_to) !== parseInt(req.user.id)) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
@@ -285,9 +286,10 @@ router.post('/assignments/:id/complete', authenticateToken, async (req, res) => 
     );
 
     // Aktivite logu
+    const completeNote = (req.body && req.body.note) ? req.body.note : `Görev tamamlandı (${durationMinutes} dk, puan: ${score})`;
     await pool.query(
       `INSERT INTO tech_activity_logs (assignment_id, user_id, action, note) VALUES (?, ?, 'complete', ?)`,
-      [req.params.id, req.user.id, req.body.note || `Görev tamamlandı (${durationMinutes} dk, puan: ${score})`]
+      [req.params.id, req.user.id, completeNote]
     );
 
     const updated = await pool.query(
@@ -308,18 +310,19 @@ router.post('/assignments/:id/block', authenticateToken, async (req, res) => {
     if (check.rows.length === 0) return res.status(404).json({ error: 'Görev bulunamadı' });
     
     const assignment = check.rows[0];
-    if (req.user.role !== 'admin' && assignment.assigned_to !== req.user.id) {
+    if (req.user.role !== 'admin' && parseInt(assignment.assigned_to) !== parseInt(req.user.id)) {
       return res.status(403).json({ error: 'Bu görev size atanmamış' });
     }
 
+    const blockReason = (req.body && req.body.reason) ? req.body.reason : 'Belirtilmedi';
     await pool.query(
       `UPDATE tech_assignments SET status = 'blocked', blocked_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [req.body.reason || 'Belirtilmedi', req.params.id]
+      [blockReason, req.params.id]
     );
 
     await pool.query(
       `INSERT INTO tech_activity_logs (assignment_id, user_id, action, note) VALUES (?, ?, 'block', ?)`,
-      [req.params.id, req.user.id, req.body.reason || 'Görev bloke edildi']
+      [req.params.id, req.user.id, blockReason]
     );
 
     const updated = await pool.query(
