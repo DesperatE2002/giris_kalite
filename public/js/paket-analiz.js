@@ -81,7 +81,7 @@ const PaketAnaliz = {
   // ANA RENDER
   // ═══════════════════════════════════════════════════════════════════
   async render() {
-    const mc = document.getElementById('main-content');
+    const mc = document.getElementById('content');
     if (!mc) return;
 
     mc.innerHTML = `
