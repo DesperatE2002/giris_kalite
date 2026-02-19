@@ -113,6 +113,11 @@ const app = {
     document.querySelectorAll('[data-page="paket-analiz"]').forEach(btn => {
       btn.style.display = (role === 'admin') ? '' : 'none';
     });
+
+    // Prosedür & OTPA - admin ve kalite
+    document.querySelectorAll('[data-page="prosedur-otpa"]').forEach(btn => {
+      btn.style.display = (role === 'admin' || role === 'kalite') ? '' : 'none';
+    });
   },
 
   navigate(page) {
@@ -184,6 +189,9 @@ const app = {
         break;
       case 'paket-analiz':
         PaketAnaliz.render();
+        break;
+      case 'prosedur-otpa':
+        ProsedurOtpa.render();
         break;
       default:
         this.navigate('dashboard');
