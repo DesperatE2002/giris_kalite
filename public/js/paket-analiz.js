@@ -14,8 +14,8 @@ const MASTER_HINTS = {
 };
 
 const BOM_HINTS = {
-  malzeme_no: ['malzeme', 'material', 'parça no', 'part', 'no', 'numara', 'code', 'kod'],
-  miktar: ['adet', 'miktar', 'quantity', 'qty', 'amount', 'sayı', 'pcs']
+  malzeme_no: ['malzeme', 'material', 'parça no', 'part', 'no', 'numara', 'code', 'kod', 'stok kodu'],
+  miktar: ['adet', 'miktar', 'quantity', 'qty', 'amount', 'sayı', 'pcs', 'kullanım', 'kullanim', 'usage', 'birim adet', 'birim miktar', 'bom qty', 'bom adet', 'per', 'piece', 'toplam', 'gerekli', 'ihtiyac', 'ihtiyaç']
 };
 
 const PaketAnaliz = {
@@ -1073,24 +1073,85 @@ const PaketAnaliz = {
 
     const mapEl = document.getElementById('pa-bom-mapping');
     if (mapEl) {
-      const fields = [{ key: 'malzeme_no', label: 'Malzeme No *' }, { key: 'miktar', label: 'Miktar' }];
+      const noMiktar = mapping.miktar === undefined;
+      const fields = [{ key: 'malzeme_no', label: 'Malzeme No *' }, { key: 'miktar', label: 'Miktar *' }];
       mapEl.innerHTML = `
+        ${noMiktar ? `
+          <div class="bg-red-500/20 border border-red-500/40 rounded-lg p-3 mb-3 text-red-300 text-sm">
+            <i class="fas fa-exclamation-triangle mr-2"></i><b>DİKKAT:</b> Miktar kolonu otomatik algılanamadı!
+            <span class="text-red-300/70 text-xs block mt-1">Miktar kolonunu aşağıdan seçmezseniz tüm kalemler <b>1 adet</b> olarak aktarılır. Lütfen doğru kolonu seçin.</span>
+          </div>
+        ` : ''}
         <div class="grid grid-cols-2 gap-2">
           ${fields.map(f => `
             <div>
               <label class="text-white/50 text-xs">${f.label}</label>
-              <select id="pa-bom-map-${f.key}" class="w-full bg-gray-800 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1" style="color-scheme:dark">
+              <select id="pa-bom-map-${f.key}" class="w-full bg-gray-800 border ${f.key === 'miktar' && noMiktar ? 'border-red-500' : 'border-white/20'} rounded px-2 py-1 text-white text-xs mt-1" style="color-scheme:dark"
+                onchange="PaketAnaliz.updateBomPreview()">
                 <option value="">— Seçilmedi —</option>
                 ${parsed.headers.map((h, i) => `<option value="${i}" ${mapping[f.key] === i ? 'selected' : ''}>${h}</option>`).join('')}
               </select>
             </div>
           `).join('')}
         </div>
-        <div class="text-white/40 text-xs mt-1">${parsed.rows.length} satır bulundu</div>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">Ayırıcı: ${parsed.delimiterName}</span>
+          <span class="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs">${parsed.headers.length} sütun / ${parsed.rows.length} satır</span>
+        </div>
       `;
       mapEl.classList.remove('hidden');
     }
+    this.updateBomPreview();
     document.getElementById('pa-bom-import-btn')?.classList.remove('hidden');
+  },
+
+  updateBomPreview() {
+    if (!this.bomParsed) return;
+    const malzIdx = parseInt(document.getElementById('pa-bom-map-malzeme_no')?.value);
+    const miktIdx = parseInt(document.getElementById('pa-bom-map-miktar')?.value);
+    const parsed = this.bomParsed;
+
+    // Show preview with mapped values
+    let prevContainer = document.getElementById('pa-bom-preview');
+    if (!prevContainer) {
+      const mapEl = document.getElementById('pa-bom-mapping');
+      if (mapEl) {
+        const div = document.createElement('div');
+        div.id = 'pa-bom-preview';
+        div.className = 'mt-3';
+        mapEl.after(div);
+        prevContainer = div;
+      }
+    }
+    if (!prevContainer) return;
+
+    const hasM = !isNaN(malzIdx);
+    const hasQ = !isNaN(miktIdx);
+
+    prevContainer.innerHTML = `
+      <div class="text-white/70 text-xs font-medium mb-1">Önizleme — Aktarılacak değerler (ilk 10):</div>
+      ${!hasQ ? '<div class="bg-yellow-500/20 border border-yellow-500/40 rounded p-2 mb-2 text-yellow-300 text-xs"><i class="fas fa-exclamation-circle mr-1"></i> Miktar kolonu seçilmedi — tüm satırlar <b>1</b> olarak aktarılacak!</div>' : ''}
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-white/10">
+          <thead><tr class="bg-white/5">
+            <th class="py-1.5 px-2 text-left text-blue-400 border border-white/10 w-8">#</th>
+            <th class="py-1.5 px-2 text-left text-blue-400 border border-white/10">Malzeme No</th>
+            <th class="py-1.5 px-2 text-right text-blue-400 border border-white/10">Miktar</th>
+          </tr></thead>
+          <tbody>${parsed.rows.slice(0, 10).map((r, idx) => {
+            const malz = hasM ? r[malzIdx] || '—' : '?';
+            const qty = hasQ ? r[miktIdx] || '1' : '1';
+            const qtyNum = parseFloat(String(qty).replace(',', '.')) || 1;
+            return `<tr class="border-b border-white/5">
+              <td class="py-1 px-2 text-white/30 border border-white/5">${idx + 1}</td>
+              <td class="py-1 px-2 text-white font-mono border border-white/5">${malz}</td>
+              <td class="py-1 px-2 text-right font-mono border border-white/5 ${!hasQ ? 'text-yellow-400' : qtyNum > 1 ? 'text-green-400 font-bold' : 'text-white/70'}">${qtyNum}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+      ${parsed.rows.length > 10 ? `<div class="text-white/30 text-xs mt-1">... ve ${parsed.rows.length - 10} satır daha</div>` : ''}
+    `;
   },
 
   async executeBomImport() {
@@ -1102,6 +1163,11 @@ const PaketAnaliz = {
       if (val !== '' && val !== undefined) mapping[key] = parseInt(val);
     });
     if (mapping.malzeme_no === undefined) { alert('Malzeme No kolonu seçilmeli!'); return; }
+
+    // Miktar kolonu seçilmediyse uyar
+    if (mapping.miktar === undefined) {
+      if (!confirm('⚠️ Miktar kolonu seçilmedi!\n\nTüm kalemler 1 adet olarak aktarılacak.\nDevam etmek istiyor musunuz?')) return;
+    }
 
     const btn = document.getElementById('pa-bom-import-btn');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aktarılıyor...'; }
