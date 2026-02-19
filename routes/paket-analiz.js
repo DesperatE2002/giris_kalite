@@ -200,7 +200,7 @@ router.delete('/bom-packages/:id', authenticateToken, authorizeRoles('admin'), a
 router.get('/bom-packages/:id/items', authenticateToken, async (req, res) => {
   try {
     const r = await pool.query(`
-      SELECT b.*, m.parca_tanimi, m.stok, m.lead_time_gun, m.birim_maliyet, m.tedarikci
+      SELECT b.*, m.parca_tanimi, m.birim_adet AS master_birim_adet, m.stok, m.lead_time_gun, m.birim_maliyet, m.tedarikci
       FROM pa_bom_items b LEFT JOIN pa_master_materials m ON b.malzeme_no = m.malzeme_no
       WHERE b.package_id = ? ORDER BY b.malzeme_no
     `, [req.params.id]);
@@ -290,23 +290,31 @@ router.post('/analyze', authenticateToken, async (req, res) => {
 
       for (const bom of bomR.rows) {
         const m = mMap[bom.malzeme_no];
-        const toplam_ihtiyac = bom.miktar * sel.adet;
 
         if (m) {
+          // Efektif BOM miktarı: BOM'da özel miktar varsa (>1) onu kullan,
+          // yoksa master'daki birim_adet kullan (asıl kullanım adedi)
+          const masterBirim = parseFloat(m.birim_adet) || 1;
+          const bomMiktar = parseFloat(bom.miktar) || 1;
+          const effective_miktar = bomMiktar > 1 ? bomMiktar : masterBirim;
+          const toplam_ihtiyac = effective_miktar * sel.adet;
+
           const stok = parseFloat(m.stok) || 0;
           const eksik = Math.max(0, toplam_ihtiyac - stok);
           const bm = parseFloat(m.birim_maliyet) || 0;
           const lt = parseInt(m.lead_time_gun) || 0;
           items.push({
-            malzeme_no: bom.malzeme_no, parca_tanimi: m.parca_tanimi || '', bom_miktar: bom.miktar,
+            malzeme_no: bom.malzeme_no, parca_tanimi: m.parca_tanimi || '', bom_miktar: effective_miktar,
             toplam_ihtiyac, stok, eksik, lead_time: eksik > 0 ? lt : 0,
-            birim_maliyet: bm, kalem_maliyet: bom.miktar * bm, eksik_maliyet: eksik * bm,
+            birim_maliyet: bm, kalem_maliyet: effective_miktar * bm, eksik_maliyet: eksik * bm,
             tedarikci: m.tedarikci || '-', durum: eksik > 0 ? 'eksik' : 'yeterli'
           });
         } else {
+          const bomMiktar = parseFloat(bom.miktar) || 1;
+          const toplam_ihtiyac = bomMiktar * sel.adet;
           warnings.push(`${bom.malzeme_no} master listede bulunamadı`);
           items.push({
-            malzeme_no: bom.malzeme_no, parca_tanimi: '⚠️ Master listede yok', bom_miktar: bom.miktar,
+            malzeme_no: bom.malzeme_no, parca_tanimi: '⚠️ Master listede yok', bom_miktar: bomMiktar,
             toplam_ihtiyac, stok: 0, eksik: toplam_ihtiyac, lead_time: 0,
             birim_maliyet: 0, kalem_maliyet: 0, eksik_maliyet: 0,
             tedarikci: '-', durum: 'bulunamadi'
