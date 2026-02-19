@@ -1,913 +1,341 @@
-// =====================================================
-// PAKET-ANALİZ MODÜLÜ — Admin-only
-// =====================================================
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAKET-ANALİZ MODÜLÜ — FRONTEND (Tamamen İzole)
+// Tabs: Analiz | Ana Veri | BOM Yönetimi | Raporlar
+// ═══════════════════════════════════════════════════════════════════════════════
 
-// Toast helper — projede global showToast yok, burada tanımlayalım
-function paToast(msg, type = 'info') {
-  const colors = {
-    success: 'bg-green-500',
-    error: 'bg-red-500',
-    warning: 'bg-yellow-500',
-    info: 'bg-blue-500'
-  };
-  const el = document.createElement('div');
-  el.className = `fixed top-4 right-4 z-[9999] px-6 py-3 rounded-xl text-white font-semibold shadow-2xl ${colors[type] || colors.info} transition-all transform`;
-  el.style.animation = 'fadeIn 0.3s';
-  el.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>${msg}`;
-  document.body.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
-}
+const MASTER_HINTS = {
+  malzeme_no: ['malzeme', 'material', 'parça no', 'part', 'no', 'numara', 'code', 'kod', 'stok kodu'],
+  parca_tanimi: ['tanım', 'tanımlama', 'description', 'açıklama', 'parça', 'isim', 'name', 'desc'],
+  birim_adet: ['birim adet', 'birim', 'unit'],
+  stok: ['stok', 'stock', 'envanter', 'inventory', 'mevcut', 'eldeki'],
+  lead_time_gun: ['lead', 'termin', 'süre', 'gün', 'day', 'lt', 'teslim'],
+  birim_maliyet: ['maliyet', 'fiyat', 'cost', 'price', 'tutar'],
+  tedarikci: ['tedarik', 'supplier', 'vendor', 'firma', 'kaynak']
+};
+
+const BOM_HINTS = {
+  malzeme_no: ['malzeme', 'material', 'parça no', 'part', 'no', 'numara', 'code', 'kod'],
+  miktar: ['adet', 'miktar', 'quantity', 'qty', 'amount', 'sayı', 'pcs']
+};
 
 const PaketAnaliz = {
-  packages: [],
-  selectedPackageId: null,
-  analysisData: null,
+  // ─── State ────────────────────────────────────────────────────────
   currentTab: 'analysis',
-  pasteData: null,    // parsed paste data { columns, rows }
+  materials: [],
+  packages: [],
+  stats: null,
+  analysisResult: null,
+  selectedPkgId: null,
+  pkgItems: [],
+  masterParsed: null,
+  bomParsed: null,
+  analysisFilter: 'all',
+  analysisSearch: '',
 
+  // ─── Formatters ───────────────────────────────────────────────────
+  fmtCur(n) {
+    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 }).format(n || 0);
+  },
+  fmtNum(n, d = 0) {
+    return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: d }).format(n || 0);
+  },
+
+  // ─── Paste Parser ─────────────────────────────────────────────────
+  parsePaste(text) {
+    if (!text?.trim()) return null;
+    const lines = text.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) return null;
+    const delimiters = ['\t', ';', ','];
+    let bestDel = '\t', maxCols = 0;
+    for (const d of delimiters) {
+      const c = lines[0].split(d).length;
+      if (c > maxCols) { maxCols = c; bestDel = d; }
+    }
+    const headers = lines[0].split(bestDel).map(h => h.trim());
+    const rows = lines.slice(1).filter(l => l.trim()).map(l => l.split(bestDel).map(c => c.trim()));
+    return { headers, rows, delimiter: bestDel };
+  },
+
+  autoMap(headers, hints) {
+    const mapping = {};
+    for (const [field, keywords] of Object.entries(hints)) {
+      let bestIdx = -1, bestScore = 0;
+      headers.forEach((h, idx) => {
+        const hl = h.toLowerCase();
+        for (const kw of keywords) {
+          if (hl.includes(kw) && kw.length > bestScore) { bestIdx = idx; bestScore = kw.length; }
+        }
+      });
+      if (bestIdx >= 0) mapping[field] = bestIdx;
+    }
+    return mapping;
+  },
+
+  statusBadge(durum) {
+    if (durum === 'yeterli') return '<span class="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs font-medium">Yeterli</span>';
+    if (durum === 'eksik') return '<span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs font-medium">Eksik</span>';
+    return '<span class="bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full text-xs font-medium">Bulunamadı</span>';
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ANA RENDER
+  // ═══════════════════════════════════════════════════════════════════
   async render() {
-    const main = document.getElementById('content');
-    main.innerHTML = `
-      <div class="fade-in">
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+
+    mc.innerHTML = `
+      <div class="max-w-7xl mx-auto">
         <div class="flex items-center justify-between mb-6">
-          <h1 class="text-3xl font-bold text-gray-800"><i class="fas fa-cubes mr-2 text-purple-600"></i>Paket-Analiz</h1>
+          <div>
+            <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+              <i class="fas fa-box-open text-purple-400"></i> Paket-Analiz
+            </h1>
+            <p class="text-white/50 text-sm mt-1">Üretim Planlama & Maliyet Analiz Sistemi</p>
+          </div>
+          <div id="pa-stats-header" class="flex gap-3"></div>
         </div>
 
-        <!-- TAB NAVİGASYON -->
-        <div class="flex gap-2 mb-6 flex-wrap">
-          <button onclick="PaketAnaliz.switchTab('analysis')" id="pa-tab-analysis"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all gradient-btn text-white shadow-lg">
-            <i class="fas fa-chart-bar mr-1"></i>Analiz
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-6" id="pa-tabs">
+          <button onclick="PaketAnaliz.switchTab('analysis')" data-tab="analysis"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+            <i class="fas fa-chart-bar"></i> Analiz
           </button>
-          <button onclick="PaketAnaliz.switchTab('import')" id="pa-tab-import"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
-            <i class="fas fa-paste mr-1"></i>Veri Aktarım
+          <button onclick="PaketAnaliz.switchTab('master')" data-tab="master"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+            <i class="fas fa-database"></i> Ana Veri
           </button>
-          <button onclick="PaketAnaliz.switchTab('packages')" id="pa-tab-packages"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
-            <i class="fas fa-box-open mr-1"></i>Paket Yönetimi
+          <button onclick="PaketAnaliz.switchTab('bom')" data-tab="bom"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+            <i class="fas fa-sitemap"></i> BOM Yönetimi
           </button>
-          <button onclick="PaketAnaliz.switchTab('items')" id="pa-tab-items"
-            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
-            <i class="fas fa-list mr-1"></i>Kalem Listesi
+          <button onclick="PaketAnaliz.switchTab('reports')" data-tab="reports"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+            <i class="fas fa-file-export"></i> Raporlar
           </button>
         </div>
 
-        <div id="pa-content"></div>
+        <div id="pa-tab-content"></div>
       </div>
     `;
 
-    await this.loadPackages();
-    this.switchTab('analysis');
+    this.switchTab(this.currentTab);
+    this.loadStatsHeader();
   },
 
-  async loadPackages() {
+  async loadStatsHeader() {
     try {
-      this.packages = await api.request('/paket-analiz/packages');
-    } catch (e) {
-      console.error('Paket yüklenemedi:', e);
-      this.packages = [];
-    }
+      const stats = await api.request('/paket-analiz/stats');
+      this.stats = stats;
+      const el = document.getElementById('pa-stats-header');
+      if (el) {
+        el.innerHTML = `
+          <div class="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs text-white/70 flex items-center gap-2">
+            <i class="fas fa-cubes text-blue-400"></i> ${stats.material_count} Malzeme
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs text-white/70 flex items-center gap-2">
+            <i class="fas fa-box text-green-400"></i> ${stats.package_count} Paket
+          </div>
+        `;
+      }
+    } catch (e) { /* ignore */ }
   },
 
   switchTab(tab) {
     this.currentTab = tab;
-    ['analysis', 'import', 'packages', 'items'].forEach(t => {
-      const btn = document.getElementById(`pa-tab-${t}`);
-      if (btn) {
-        btn.className = t === tab
-          ? 'px-4 py-2 rounded-lg font-semibold text-sm transition-all gradient-btn text-white shadow-lg'
-          : 'px-4 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 text-gray-600 hover:bg-gray-200';
-      }
+    document.querySelectorAll('#pa-tabs button').forEach(b => {
+      const isActive = b.dataset.tab === tab;
+      b.className = `px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${isActive ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/10 text-white/60 hover:bg-white/20'}`;
     });
-
-    const c = document.getElementById('pa-content');
-    if (!c) return;
-
+    const ct = document.getElementById('pa-tab-content');
+    if (!ct) return;
     switch (tab) {
-      case 'analysis': this.renderAnalysisTab(c); break;
-      case 'import': this.renderImportTab(c); break;
-      case 'packages': this.renderPackagesTab(c); break;
-      case 'items': this.renderItemsTab(c); break;
+      case 'analysis': this.renderAnalysisTab(ct); break;
+      case 'master': this.renderMasterTab(ct); break;
+      case 'bom': this.renderBomTab(ct); break;
+      case 'reports': this.renderReportsTab(ct); break;
     }
   },
 
-  // ═══════════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
   // ANALİZ TAB
-  // ═══════════════════════════════════════════════════════════════════════════════
-  renderAnalysisTab(container) {
-    container.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-calculator mr-2 text-blue-500"></i>Paket Analizi</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
-            <select id="pa-analysis-pkg" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-              <option value="">-- Paket seçin --</option>
-              ${this.packages.map(p => `<option value="${p.id}" ${p.id == this.selectedPackageId ? 'selected' : ''}>${p.name} ${p.code ? '(' + p.code + ')' : ''} — ${p.item_count || 0} kalem</option>`).join('')}
-            </select>
+  // ═══════════════════════════════════════════════════════════════════
+  async renderAnalysisTab(ct) {
+    await this.ensurePackages();
+    ct.innerHTML = `
+      <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-white mb-4"><i class="fas fa-cogs text-blue-400 mr-2"></i>Analiz Konfigürasyonu</h2>
+        ${this.packages.length === 0 ? `
+          <div class="text-center py-8 text-white/50">
+            <i class="fas fa-info-circle text-4xl mb-3 block text-blue-400/50"></i>
+            <p>Henüz BOM paketi tanımlanmamış.</p>
+            <p class="text-sm mt-2">Önce <b>"Ana Veri"</b> sekmesinden malzeme verilerinizi yükleyin, sonra <b>"BOM Yönetimi"</b> sekmesinden paketlerinizi oluşturun.</p>
           </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Adedi</label>
-            <input id="pa-analysis-count" type="number" min="1" value="1"
-              class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" placeholder="Üretilecek adet">
+        ` : `
+          <div class="space-y-3" id="pa-pkg-selections">
+            ${this.packages.map(p => `
+              <div class="flex items-center gap-4 bg-white/5 rounded-lg p-3 border border-white/10">
+                <label class="flex items-center gap-2 flex-1 cursor-pointer">
+                  <input type="checkbox" class="pa-pkg-check rounded" value="${p.id}" data-name="${p.paket_adi}">
+                  <span class="text-white font-medium">${p.paket_adi}</span>
+                  <span class="text-white/40 text-xs">(${p.item_count} kalem)</span>
+                </label>
+                <div class="flex items-center gap-2">
+                  <label class="text-white/50 text-sm">Adet:</label>
+                  <input type="number" min="1" value="1" class="pa-pkg-adet bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white text-center w-24" data-pkg="${p.id}">
+                </div>
+              </div>
+            `).join('')}
           </div>
-          <div class="flex items-end">
-            <button onclick="PaketAnaliz.runAnalysis()" 
-              class="w-full p-3 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
-              <i class="fas fa-play mr-2"></i>Hesapla
+          <div class="mt-4 flex gap-3">
+            <button onclick="PaketAnaliz.runAnalysis()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition font-medium flex items-center gap-2 shadow-lg">
+              <i class="fas fa-play"></i> Analiz Yap
             </button>
           </div>
-        </div>
+        `}
       </div>
       <div id="pa-analysis-results"></div>
     `;
   },
 
+  async ensurePackages() {
+    if (!this.packages.length) {
+      try { this.packages = await api.request('/paket-analiz/bom-packages'); } catch (e) { this.packages = []; }
+    }
+  },
+
   async runAnalysis() {
-    const pkgId = document.getElementById('pa-analysis-pkg')?.value;
-    const count = document.getElementById('pa-analysis-count')?.value || 1;
+    const checks = document.querySelectorAll('.pa-pkg-check:checked');
+    if (!checks.length) { alert('En az bir paket seçin'); return; }
 
-    if (!pkgId) return paToast('Lütfen bir paket seçin', 'warning');
-
-    this.selectedPackageId = pkgId;
-    const results = document.getElementById('pa-analysis-results');
-    results.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i><p class="text-gray-500 mt-2">Analiz hesaplanıyor...</p></div>';
-
-    try {
-      this.analysisData = await api.request(`/paket-analiz/packages/${pkgId}/analysis?count=${count}`);
-      this.renderAnalysisResults(results);
-    } catch (e) {
-      results.innerHTML = `<div class="glass-card rounded-2xl p-6 text-red-600"><i class="fas fa-exclamation-triangle mr-2"></i>Analiz hatası: ${e.message}</div>`;
-    }
-  },
-
-  renderAnalysisResults(container) {
-    const d = this.analysisData;
-    if (!d) return;
-
-    const s = d.summary;
-    const currency = d.package?.currency || 'EUR';
-    const timeUnit = d.package?.time_unit || 'gun';
-    const currSymbols = { EUR: '€', USD: '$', TL: '₺', GBP: '£' };
-    const timeLabels = { gun: 'gün', hafta: 'hafta', ay: 'ay' };
-    const cs = currSymbols[currency] || currency;
-    const tl = timeLabels[timeUnit] || timeUnit;
-    this._cs = cs;
-    this._tl = tl;
-
-    const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
-    const fmtInt = (n) => new Intl.NumberFormat('tr-TR').format(n || 0);
-
-    container.innerHTML = `
-      <!-- ÖZET KARTLAR -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
-          <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
-            <i class="fas fa-list text-white text-lg"></i>
-          </div>
-          <div class="text-2xl font-bold text-gray-800">${fmtInt(s.total_items)}</div>
-          <div class="text-gray-500 text-sm">Toplam Kalem</div>
-        </div>
-        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
-          <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
-            <i class="fas fa-exclamation text-white text-lg"></i>
-          </div>
-          <div class="text-2xl font-bold text-red-600">${fmtInt(s.missing_items)}</div>
-          <div class="text-gray-500 text-sm">Eksik Kalem</div>
-        </div>
-        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
-          <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
-            <i class="fas fa-boxes text-white text-lg"></i>
-          </div>
-          <div class="text-2xl font-bold text-gray-800">${d.package_count}</div>
-          <div class="text-gray-500 text-sm">Paket Adedi</div>
-        </div>
-        <div class="glass-card rounded-2xl p-5 text-center hover-lift">
-          <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 w-12 h-12 mx-auto mb-2 flex items-center justify-center shadow-lg">
-            <i class="fas fa-dollar-sign text-white text-lg"></i>
-          </div>
-          <div class="text-2xl font-bold text-green-600">${fmt(s.total_missing_cost)} ${cs}</div>
-          <div class="text-gray-500 text-sm">Eksik Maliyet</div>
-        </div>
-      </div>
-
-      <!-- SENARYO KARTLARI -->
-      <div class="glass-card rounded-2xl p-6 mb-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-3"><i class="fas fa-chart-line mr-2 text-purple-500"></i>Senaryo Analizi</h3>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-          ${d.scenarios.map(sc => `
-            <div class="rounded-xl p-4 text-center border-2 transition-all ${sc.count == d.package_count ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200 bg-gray-50 hover:border-gray-300'}">
-              <div class="text-lg font-bold text-gray-800">${sc.count} Paket</div>
-              <div class="text-sm text-orange-600 font-semibold mt-1">${fmt(sc.total_missing_cost)} ${cs}</div>
-              <div class="text-xs text-gray-400">eksik maliyet</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <!-- EXPORT BUTONLARI -->
-      <div class="flex gap-3 mb-6 flex-wrap">
-        <button onclick="PaketAnaliz.exportDetailExcel()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-all hover-lift shadow">
-          <i class="fas fa-file-excel mr-1"></i>Detay Rapor (Excel)
-        </button>
-        <button onclick="PaketAnaliz.exportDetailWord()" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold transition-all hover-lift shadow">
-          <i class="fas fa-file-word mr-1"></i>Detay Rapor (Word)
-        </button>
-        <button onclick="PaketAnaliz.exportMissing()" class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-all hover-lift shadow">
-          <i class="fas fa-file-excel mr-1"></i>Eksik Kalemleri İndir
-        </button>
-        <button onclick="PaketAnaliz.exportCritical()" class="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-all hover-lift shadow">
-          <i class="fas fa-exclamation-triangle mr-1"></i>Kritik Kalemleri İndir
-        </button>
-        <button onclick="PaketAnaliz.exportScenarios()" class="px-4 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white text-sm font-semibold transition-all hover-lift shadow">
-          <i class="fas fa-chart-bar mr-1"></i>Senaryo Raporu İndir
-        </button>
-      </div>
-
-      <!-- FİLTRE VE TABLO -->
-      <div class="glass-card rounded-2xl p-6">
-        <div class="flex flex-wrap gap-3 mb-4 items-center">
-          <input id="pa-filter-search" type="text" placeholder="Parça kodu veya adı ara..."
-            class="flex-1 min-w-[200px] p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm focus:border-blue-400"
-            oninput="PaketAnaliz.filterItems()">
-          <label class="flex items-center gap-2 text-gray-600 text-sm cursor-pointer">
-            <input type="checkbox" id="pa-filter-missing" onchange="PaketAnaliz.filterItems()" class="rounded border-gray-300 text-blue-500">
-            Sadece eksik
-          </label>
-          <select id="pa-filter-sort" onchange="PaketAnaliz.filterItems()"
-            class="p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm">
-            <option value="part_code">Parça Kodu</option>
-            <option value="missing_cost_desc">Eksik Maliyet ↓</option>
-            <option value="lead_time_desc">Lead Time ↓</option>
-            <option value="missing_qty_desc">Eksik Adet ↓</option>
-          </select>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50">
-              <tr class="text-gray-500 border-b border-gray-200">
-                <th class="text-left p-3 font-semibold">Parça Kodu</th>
-                <th class="text-left p-3 font-semibold">Parça Adı</th>
-                <th class="text-right p-3 font-semibold">BOM</th>
-                <th class="text-right p-3 font-semibold">İhtiyaç</th>
-                <th class="text-right p-3 font-semibold">Stok</th>
-                <th class="text-right p-3 font-semibold">Eksik</th>
-                <th class="text-right p-3 font-semibold">Fiyat (${cs})</th>
-                <th class="text-right p-3 font-semibold">Eksik Maliyet (${cs})</th>
-                <th class="text-right p-3 font-semibold">Lead Time (${tl})</th>
-                <th class="text-left p-3 font-semibold">Tedarikçi</th>
-              </tr>
-            </thead>
-            <tbody id="pa-analysis-tbody" class="divide-y divide-gray-100">
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    this.filterItems();
-  },
-
-  filterItems() {
-    if (!this.analysisData) return;
-
-    const search = (document.getElementById('pa-filter-search')?.value || '').toLowerCase();
-    const onlyMissing = document.getElementById('pa-filter-missing')?.checked;
-    const sort = document.getElementById('pa-filter-sort')?.value || 'part_code';
-
-    let items = [...this.analysisData.items];
-
-    if (search) {
-      items = items.filter(i =>
-        (i.part_code || '').toLowerCase().includes(search) ||
-        (i.part_name || '').toLowerCase().includes(search) ||
-        (i.supplier || '').toLowerCase().includes(search)
-      );
-    }
-    if (onlyMissing) {
-      items = items.filter(i => i.missing_quantity > 0);
-    }
-
-    switch (sort) {
-      case 'missing_cost_desc': items.sort((a, b) => b.missing_cost - a.missing_cost); break;
-      case 'lead_time_desc': items.sort((a, b) => (b.lead_time_days || 0) - (a.lead_time_days || 0)); break;
-      case 'missing_qty_desc': items.sort((a, b) => b.missing_quantity - a.missing_quantity); break;
-      default: items.sort((a, b) => (a.part_code || '').localeCompare(b.part_code || ''));
-    }
-
-    const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
-    const tbody = document.getElementById('pa-analysis-tbody');
-    if (!tbody) return;
-
-    const cs = this._cs || '€';
-    const tl = this._tl || 'gün';
-
-    tbody.innerHTML = items.map(item => {
-      const rowClass = item.missing_quantity > 0 ? 'bg-red-50' : '';
-      const missingClass = item.missing_quantity > 0 ? 'text-red-600 font-bold' : 'text-green-600';
-      const ltClass = (item.lead_time_days || 0) >= 30 ? 'text-orange-600 font-bold' : 'text-gray-700';
-
-      return `
-        <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all ${rowClass}">
-          <td class="p-3 text-gray-800 font-mono text-xs font-semibold">${item.part_code || ''}</td>
-          <td class="p-3 text-gray-600">${item.part_name || '-'}</td>
-          <td class="p-3 text-right text-gray-700">${fmt(item.bom_quantity)}</td>
-          <td class="p-3 text-right text-gray-700">${fmt(item.total_need)}</td>
-          <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
-          <td class="p-3 text-right ${missingClass}">${fmt(item.missing_quantity)}</td>
-          <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)} ${cs}</td>
-          <td class="p-3 text-right ${item.missing_cost > 0 ? 'text-orange-600 font-semibold' : 'text-gray-400'}">${fmt(item.missing_cost)} ${cs}</td>
-          <td class="p-3 text-right ${ltClass}">${item.lead_time_days || 0} ${tl}</td>
-          <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
-        </tr>`;
-    }).join('');
-
-    if (items.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-6 text-gray-400">Sonuç bulunamadı</td></tr>';
-    }
-  },
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // VERİ AKTARIM TAB (Kopyala-Yapıştır)
-  // ═══════════════════════════════════════════════════════════════════════════════
-  renderImportTab(container) {
-    this.pasteData = null;
-    container.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-2"><i class="fas fa-paste mr-2 text-green-600"></i>Kopyala - Yapıştır ile Veri Aktarım</h2>
-        <p class="text-gray-500 text-sm mb-4">Excel'den verileri seçip kopyalayın (Ctrl+C), ardından aşağıdaki alana yapıştırın (Ctrl+V). İlk satır kolon başlığı olarak kullanılır.</p>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
-            <select id="pa-import-pkg" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-              <option value="">-- Paket seçin --</option>
-              ${this.packages.map(p => `<option value="${p.id}" ${p.id == this.selectedPackageId ? 'selected' : ''}>${p.name} ${p.code ? '(' + p.code + ')' : ''}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Import Türü</label>
-            <select id="pa-import-type" onchange="PaketAnaliz.onImportTypeChange()" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-              <option value="bom">BOM Import (Parça Kodu + Adı + Adet)</option>
-              <option value="cost">Maliyet Import (Parça Kodu + Birim Fiyat)</option>
-              <option value="leadtime">Lead Time Import (Parça Kodu + Süre)</option>
-              <option value="stock">Stok Import (Parça Kodu + Stok Miktarı)</option>
-              <option value="full">Full Import (Tüm alanlar tek seferde)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- YAPIŞTIR ALANI -->
-        <div class="mb-4">
-          <label class="block text-gray-600 text-sm mb-1 font-medium">Excel Verisi (Kopyala-Yapıştır)</label>
-          <textarea id="pa-paste-area" rows="8"
-            class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400 font-mono text-xs"
-            placeholder="Excel'den kopyaladığınız veriyi buraya yapıştırın...&#10;&#10;Örnek (Tab ile ayrılmış):&#10;Parça Kodu&#9;Parça Adı&#9;Adet&#10;ABC-001&#9;Motor Parçası&#9;5&#10;DEF-002&#9;Conta&#9;10"
-            onpaste="setTimeout(() => PaketAnaliz.parsePaste(), 100)"></textarea>
-        </div>
-
-        <div class="flex gap-3">
-          <button onclick="PaketAnaliz.parsePaste()" class="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm transition-all">
-            <i class="fas fa-table mr-1"></i>Veriyi Ayrıştır
-          </button>
-          <button onclick="document.getElementById('pa-paste-area').value=''; PaketAnaliz.pasteData=null; document.getElementById('pa-preview-section').classList.add('hidden'); document.getElementById('pa-import-result').classList.add('hidden');" 
-            class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-sm transition-all">
-            <i class="fas fa-eraser mr-1"></i>Temizle
-          </button>
-        </div>
-      </div>
-
-      <!-- KOLON EŞLEME VE ÖNİZLEME -->
-      <div id="pa-preview-section" class="hidden">
-        <div class="glass-card rounded-2xl p-6 mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-columns mr-2 text-blue-500"></i>Kolon Eşleme</h3>
-            <span id="pa-row-count" class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold"></span>
-          </div>
-          <p class="text-gray-500 text-sm mb-4">Yapıştırdığınız verideki kolon başlıklarını sistem alanlarıyla eşleştirin.</p>
-          <div id="pa-mapping-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
-
-        <div class="glass-card rounded-2xl p-6 mb-6">
-          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-eye mr-2 text-blue-500"></i>Önizleme (İlk 5 satır)</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm" id="pa-preview-table"></table>
-          </div>
-        </div>
-
-        <div class="rounded-2xl p-4 mb-6 border-2 border-yellow-300 bg-yellow-50">
-          <p class="text-yellow-700 text-sm"><i class="fas fa-info-circle mr-1"></i><strong>Not:</strong> Veride OLMAYAN parça kodlarının ilgili alanları <strong>sıfırlanacaktır</strong> (Full Sync mantığı).</p>
-        </div>
-
-        <button onclick="PaketAnaliz.executePasteImport()" id="pa-import-btn"
-          class="w-full p-4 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-lg transition-all hover-lift shadow-lg">
-          <i class="fas fa-upload mr-2"></i>Import Et
-        </button>
-      </div>
-
-      <!-- IMPORT SONUCU -->
-      <div id="pa-import-result" class="hidden mt-6"></div>
-    `;
-  },
-
-  parsePaste() {
-    const raw = document.getElementById('pa-paste-area')?.value?.trim();
-    if (!raw) return paToast('Yapıştırılacak veri bulunamadı', 'warning');
-
-    // Satırlara ayır
-    const lines = raw.split('\n').map(l => l.trimEnd());
-    if (lines.length < 2) return paToast('En az 2 satır gerekli (1 başlık + 1 veri)', 'warning');
-
-    // Tab veya ; veya , ile ayır - hangisi daha çok varsa onu kullan
-    const firstLine = lines[0];
-    const tabCount = (firstLine.match(/\t/g) || []).length;
-    const semiCount = (firstLine.match(/;/g) || []).length;
-    const commaCount = (firstLine.match(/,/g) || []).length;
-
-    let delimiter = '\t';
-    if (semiCount > tabCount && semiCount >= commaCount) delimiter = ';';
-    else if (commaCount > tabCount && commaCount > semiCount) delimiter = ',';
-
-    const columns = lines[0].split(delimiter).map(c => c.trim());
-    const rows = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      const cells = lines[i].split(delimiter);
-      const row = {};
-      columns.forEach((col, j) => {
-        row[col] = (cells[j] || '').trim();
-      });
-      rows.push(row);
-    }
-
-    if (rows.length === 0) return paToast('Veri satırları bulunamadı', 'warning');
-
-    this.pasteData = { columns, rows };
-
-    document.getElementById('pa-preview-section').classList.remove('hidden');
-    document.getElementById('pa-row-count').textContent = `${rows.length} satır algılandı`;
-    paToast(`${rows.length} satır başarıyla ayrıştırıldı`, 'success');
-
-    this.renderPasteMapping();
-  },
-
-  renderPasteMapping() {
-    if (!this.pasteData) return;
-
-    const importType = document.getElementById('pa-import-type')?.value || 'bom';
-    const cols = this.pasteData.columns;
-
-    let fields = [];
-    switch (importType) {
-      case 'bom':
-        fields = [
-          { key: 'part_code', label: 'Parça Kodu', required: true },
-          { key: 'part_name', label: 'Parça Adı' },
-          { key: 'bom_quantity', label: 'BOM Adedi', required: true }
-        ];
-        break;
-      case 'cost':
-        fields = [
-          { key: 'part_code', label: 'Parça Kodu', required: true },
-          { key: 'unit_price', label: 'Birim Fiyat', required: true },
-          { key: 'supplier', label: 'Tedarikçi' }
-        ];
-        break;
-      case 'leadtime':
-        fields = [
-          { key: 'part_code', label: 'Parça Kodu', required: true },
-          { key: 'lead_time_days', label: 'Lead Time (gün)', required: true }
-        ];
-        break;
-      case 'stock':
-        fields = [
-          { key: 'part_code', label: 'Parça Kodu', required: true },
-          { key: 'temsa_stock', label: 'Stok Miktarı', required: true }
-        ];
-        break;
-      case 'full':
-        fields = [
-          { key: 'part_code', label: 'Parça Kodu', required: true },
-          { key: 'part_name', label: 'Parça Adı' },
-          { key: 'bom_quantity', label: 'BOM Adedi' },
-          { key: 'unit_price', label: 'Birim Fiyat' },
-          { key: 'lead_time_days', label: 'Lead Time (gün)' },
-          { key: 'delivery_date', label: 'Teslimat Tarihi' },
-          { key: 'temsa_stock', label: 'Stok Miktarı' },
-          { key: 'supplier', label: 'Tedarikçi' }
-        ];
-        break;
-    }
-
-    const autoMatch = (key) => {
-      const hints = {
-        part_code: ['parça kodu', 'part code', 'malzeme kodu', 'malzeme no', 'part no', 'pn', 'kod', 'code', 'material', 'parça no'],
-        part_name: ['parça adı', 'part name', 'malzeme adı', 'açıklama', 'description', 'tanim', 'tanım', 'ad', 'isim'],
-        bom_quantity: ['bom', 'adet', 'miktar', 'quantity', 'qty', 'amount', 'bom adedi'],
-        unit_price: ['fiyat', 'price', 'birim fiyat', 'unit price', 'maliyet', 'cost', 'tutar'],
-        lead_time_days: ['lead time', 'temin süresi', 'süre', 'gün', 'days', 'lt'],
-        delivery_date: ['teslimat', 'delivery', 'tarih', 'date', 'teslim'],
-        temsa_stock: ['stok', 'stock', 'envanter', 'inventory', 'mevcut', 'temsa'],
-        supplier: ['tedarikçi', 'supplier', 'firma', 'vendor', 'company']
-      };
-      const h = hints[key] || [];
-      return cols.find(c => h.some(hint => c.toLowerCase().includes(hint))) || '';
-    };
-
-    const mappingDiv = document.getElementById('pa-mapping-fields');
-    mappingDiv.innerHTML = fields.map(f => `
-      <div>
-        <label class="block text-gray-600 text-sm mb-1 font-medium">${f.label} ${f.required ? '<span class="text-red-500">*</span>' : ''}</label>
-        <select id="pa-map-${f.key}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm focus:border-blue-400">
-          ${f.required ? '' : '<option value="">-- Eşleme yok --</option>'}
-          ${cols.map(c => `<option value="${c}" ${c === autoMatch(f.key) ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-      </div>
-    `).join('');
-
-    // Önizleme tablosu
-    const pt = document.getElementById('pa-preview-table');
-    const previewRows = this.pasteData.rows.slice(0, 5);
-    pt.innerHTML = `
-      <thead class="bg-gray-50">
-        <tr class="text-gray-500 border-b border-gray-200">
-          ${cols.map(c => `<th class="text-left p-2 text-xs font-semibold">${c}</th>`).join('')}
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-100">
-        ${previewRows.map(row => `
-          <tr class="hover:bg-gray-50">
-            ${cols.map(c => `<td class="p-2 text-gray-700 text-xs">${row[c] ?? ''}</td>`).join('')}
-          </tr>
-        `).join('')}
-      </tbody>
-    `;
-  },
-
-  async executePasteImport() {
-    const pkgId = document.getElementById('pa-import-pkg')?.value;
-    const importType = document.getElementById('pa-import-type')?.value || 'bom';
-
-    if (!pkgId) return paToast('Lütfen bir paket seçin', 'warning');
-    if (!this.pasteData || this.pasteData.rows.length === 0) return paToast('Önce veri yapıştırıp ayrıştırın', 'warning');
-
-    const mapping = {};
-    document.querySelectorAll('[id^="pa-map-"]').forEach(el => {
-      const key = el.id.replace('pa-map-', '');
-      if (el.value) mapping[key] = el.value;
+    const selections = [];
+    checks.forEach(ch => {
+      const adetInput = document.querySelector(`.pa-pkg-adet[data-pkg="${ch.value}"]`);
+      selections.push({ package_id: parseInt(ch.value), adet: parseInt(adetInput?.value) || 1 });
     });
 
-    const btn = document.getElementById('pa-import-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>İçe aktarılıyor...';
+    const btn = document.querySelector('[onclick="PaketAnaliz.runAnalysis()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Hesaplanıyor...'; }
 
     try {
-      const result = await api.request(`/paket-analiz/import/paste/${importType}`, {
-        method: 'POST',
-        body: JSON.stringify({
-          package_id: pkgId,
-          mapping: mapping,
-          rows: this.pasteData.rows
-        })
-      });
+      const data = await api.request('/paket-analiz/analyze', { method: 'POST', body: JSON.stringify({ selections }) });
+      this.analysisResult = data;
+      this.renderAnalysisResults(data);
+    } catch (error) {
+      alert('Analiz hatası: ' + (error.message || error));
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> Analiz Yap'; }
+    }
+  },
 
-      const resultDiv = document.getElementById('pa-import-result');
-      resultDiv.classList.remove('hidden');
+  renderAnalysisResults(data) {
+    const ct = document.getElementById('pa-analysis-results');
+    if (!ct || !data?.packages?.length) return;
+    const c = data.combined;
 
-      const r = result.report;
-      resultDiv.innerHTML = `
-        <div class="rounded-2xl p-6 border-2 border-green-200 bg-green-50">
-          <h3 class="text-green-700 font-bold text-lg mb-3"><i class="fas fa-check-circle mr-2"></i>${result.message}</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-gray-800">${r.total_rows || 0}</div>
-              <div class="text-gray-500 text-sm">Toplam Satır</div>
-            </div>
-            ${r.inserted !== undefined ? `
-              <div class="text-center">
-                <div class="text-2xl font-bold text-green-600">${r.inserted}</div>
-                <div class="text-gray-500 text-sm">Yeni Eklenen</div>
-              </div>` : ''}
-            <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">${r.updated || 0}</div>
-              <div class="text-gray-500 text-sm">Güncellenen</div>
-            </div>
-            ${r.zeroed !== undefined ? `
-              <div class="text-center">
-                <div class="text-2xl font-bold text-yellow-600">${r.zeroed}</div>
-                <div class="text-gray-500 text-sm">Sıfırlanan</div>
-              </div>` : ''}
-            ${r.skipped !== undefined ? `
-              <div class="text-center">
-                <div class="text-2xl font-bold text-gray-400">${r.skipped}</div>
-                <div class="text-gray-500 text-sm">Atlanan</div>
-              </div>` : ''}
+    // For each package result
+    let html = '';
+    for (const pkg of data.packages) {
+      html += `
+        <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">
+              <i class="fas fa-box text-purple-400 mr-2"></i>${pkg.paket_adi}
+              <span class="text-white/40 text-sm font-normal ml-2">× ${this.fmtNum(pkg.adet)} adet</span>
+            </h3>
+            ${pkg.warnings?.length ? `<span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">${pkg.warnings.length} uyarı</span>` : ''}
           </div>
-          ${r.unmatched_count > 0 ? `
-            <div class="mt-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-              <p class="text-yellow-700 text-sm font-semibold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Eşleşmeyen kodlar (${r.unmatched_count}):</p>
-              <p class="text-yellow-600 text-xs">${(r.unmatched_codes || []).join(', ')}</p>
+
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <div class="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20 text-center">
+              <div class="text-blue-400 text-xs mb-1">Birim Maliyet</div>
+              <div class="text-white font-bold text-sm">${this.fmtCur(pkg.birim_maliyet)}</div>
+            </div>
+            <div class="bg-purple-500/10 rounded-lg p-3 border border-purple-500/20 text-center">
+              <div class="text-purple-400 text-xs mb-1">Toplam Maliyet</div>
+              <div class="text-white font-bold text-sm">${this.fmtCur(pkg.toplam_maliyet)}</div>
+            </div>
+            <div class="bg-red-500/10 rounded-lg p-3 border border-red-500/20 text-center">
+              <div class="text-red-400 text-xs mb-1">Eksik Kalem</div>
+              <div class="text-white font-bold text-lg">${pkg.eksik_kalem_sayisi}</div>
+            </div>
+            <div class="bg-orange-500/10 rounded-lg p-3 border border-orange-500/20 text-center">
+              <div class="text-orange-400 text-xs mb-1">Max Lead Time</div>
+              <div class="text-white font-bold text-lg">${pkg.max_lead_time} <span class="text-xs font-normal">gün</span></div>
+            </div>
+            <div class="bg-yellow-500/10 rounded-lg p-3 border border-yellow-500/20 text-center">
+              <div class="text-yellow-400 text-xs mb-1">Satın Alma Maliyeti</div>
+              <div class="text-white font-bold text-sm">${this.fmtCur(pkg.toplam_eksik_maliyet)}</div>
+            </div>
+            <div class="bg-cyan-500/10 rounded-lg p-3 border border-cyan-500/20 text-center">
+              <div class="text-cyan-400 text-xs mb-1">Bulunamadı</div>
+              <div class="text-white font-bold text-lg">${pkg.bulunamadi_sayisi}</div>
+            </div>
+          </div>
+
+          ${pkg.kritik_parca ? `
+            <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex items-center gap-3">
+              <i class="fas fa-exclamation-triangle text-red-400 text-lg"></i>
+              <div>
+                <span class="text-red-400 font-medium">Kritik Parça:</span>
+                <span class="text-white ml-2">${pkg.kritik_parca.malzeme_no} — ${pkg.kritik_parca.tanimi}</span>
+                <span class="text-red-300 ml-2">(${pkg.kritik_parca.lead_time} gün)</span>
+              </div>
             </div>
           ` : ''}
-        </div>
-      `;
 
-      paToast(result.message, 'success');
-      await this.loadPackages();
-    } catch (e) {
-      paToast('Import hatası: ' + e.message, 'error');
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-upload mr-2"></i>Import Et';
-    }
-  },
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // PAKET YÖNETİMİ TAB
-  // ═══════════════════════════════════════════════════════════════════════════════
-  renderPackagesTab(container) {
-    container.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 mb-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Yeni Paket Ekle</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Adı *</label>
-            <input id="pa-pkg-name" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="ör: Paket A">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Kodu</label>
-            <input id="pa-pkg-code" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="ör: PKT-001">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Açıklama</label>
-            <input id="pa-pkg-desc" type="text" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="Opsiyonel">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Para Birimi</label>
-            <select id="pa-pkg-currency" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-              <option value="EUR" selected>EUR (€)</option>
-              <option value="USD">USD ($)</option>
-              <option value="TL">TL (₺)</option>
-              <option value="GBP">GBP (£)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Süre Birimi</label>
-            <select id="pa-pkg-timeunit" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-              <option value="gun" selected>Gün</option>
-              <option value="hafta">Hafta</option>
-              <option value="ay">Ay</option>
-            </select>
-          </div>
-        </div>
-        <button onclick="PaketAnaliz.createPackage()" class="mt-4 px-6 py-2 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
-          <i class="fas fa-plus mr-1"></i>Oluştur
-        </button>
-      </div>
-
-      <div class="glass-card rounded-2xl p-6">
-        <h2 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-boxes mr-2 text-purple-500"></i>Mevcut Paketler</h2>
-        <div id="pa-packages-list" class="space-y-3">
-          ${this.packages.length === 0 ? '<p class="text-gray-400 text-center py-6">Henüz paket oluşturulmadı</p>' : ''}
-          ${this.packages.map(p => {
-            const currSymbols = { EUR: '€', USD: '$', TL: '₺', GBP: '£' };
-            const timeLabels = { gun: 'Gün', hafta: 'Hafta', ay: 'Ay' };
-            const curr = p.currency || 'EUR';
-            const tu = p.time_unit || 'gun';
-            return `
-            <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200 hover:shadow-md transition-all">
-              <div>
-                <span class="text-gray-800 font-semibold">${p.name}</span>
-                ${p.code ? `<span class="text-gray-400 ml-2">(${p.code})</span>` : ''}
-                <span class="ml-3 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-600 font-semibold">${p.item_count || 0} kalem</span>
-                <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-600 font-semibold">${currSymbols[curr] || curr}</span>
-                <span class="ml-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-600 font-semibold">${timeLabels[tu] || tu}</span>
-                ${p.description ? `<p class="text-gray-400 text-sm mt-1">${p.description}</p>` : ''}
-              </div>
-              <div class="flex gap-2">
-                <button onclick="PaketAnaliz.editPackage(${p.id})" 
-                  class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm transition-all"><i class="fas fa-edit"></i></button>
-                <button onclick="PaketAnaliz.deletePackage(${p.id}, '${(p.name || '').replace(/'/g, "\\'")}')" 
-                  class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-sm transition-all"><i class="fas fa-trash"></i></button>
-              </div>
+          ${pkg.warnings?.length ? `
+            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+              <div class="text-yellow-400 text-sm font-medium mb-1"><i class="fas fa-exclamation-circle mr-1"></i> Uyarılar</div>
+              ${pkg.warnings.map(w => `<div class="text-yellow-300/70 text-xs">• ${w}</div>`).join('')}
             </div>
-          `}).join('')}
-        </div>
-      </div>
-    `;
-  },
+          ` : ''}
 
-  async createPackage() {
-    const name = document.getElementById('pa-pkg-name')?.value?.trim();
-    const code = document.getElementById('pa-pkg-code')?.value?.trim();
-    const desc = document.getElementById('pa-pkg-desc')?.value?.trim();
-    const currency = document.getElementById('pa-pkg-currency')?.value || 'EUR';
-    const time_unit = document.getElementById('pa-pkg-timeunit')?.value || 'gun';
-
-    if (!name) return paToast('Paket adı gereklidir', 'warning');
-
-    try {
-      await api.request('/paket-analiz/packages', {
-        method: 'POST',
-        body: JSON.stringify({ name, code, description: desc, currency, time_unit })
-      });
-      paToast('Paket oluşturuldu', 'success');
-      await this.loadPackages();
-      this.renderPackagesTab(document.getElementById('pa-content'));
-    } catch (e) {
-      paToast('Paket oluşturulamadı: ' + e.message, 'error');
-    }
-  },
-
-  async editPackage(id) {
-    const pkg = this.packages.find(p => p.id === id);
-    if (!pkg) return paToast('Paket bulunamadı', 'error');
-    const name = pkg.name || '';
-    const code = pkg.code || '';
-    const desc = pkg.description || '';
-    const currency = pkg.currency || 'EUR';
-    const time_unit = pkg.time_unit || 'gun';
-
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-    overlay.innerHTML = `
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-edit mr-2 text-blue-500"></i>Paket Düzenle</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Adı</label>
-            <input id="pa-edit-name" type="text" value="${name}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Kodu</label>
-            <input id="pa-edit-code" type="text" value="${code}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Açıklama</label>
-            <input id="pa-edit-desc" type="text" value="${desc}" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-gray-600 text-sm mb-1 font-medium">Para Birimi</label>
-              <select id="pa-edit-currency" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-                <option value="EUR" ${currency === 'EUR' ? 'selected' : ''}>EUR (€)</option>
-                <option value="USD" ${currency === 'USD' ? 'selected' : ''}>USD ($)</option>
-                <option value="TL" ${currency === 'TL' ? 'selected' : ''}>TL (₺)</option>
-                <option value="GBP" ${currency === 'GBP' ? 'selected' : ''}>GBP (£)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-gray-600 text-sm mb-1 font-medium">Süre Birimi</label>
-              <select id="pa-edit-timeunit" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-                <option value="gun" ${time_unit === 'gun' ? 'selected' : ''}>Gün</option>
-                <option value="hafta" ${time_unit === 'hafta' ? 'selected' : ''}>Hafta</option>
-                <option value="ay" ${time_unit === 'ay' ? 'selected' : ''}>Ay</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="flex gap-3 mt-5">
-          <button onclick="PaketAnaliz.saveEditPackage(${id})" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Kaydet</button>
-          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all">İptal</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  },
-
-  async saveEditPackage(id) {
-    const name = document.getElementById('pa-edit-name')?.value?.trim();
-    const code = document.getElementById('pa-edit-code')?.value?.trim();
-    const desc = document.getElementById('pa-edit-desc')?.value?.trim();
-    const currency = document.getElementById('pa-edit-currency')?.value || 'EUR';
-    const time_unit = document.getElementById('pa-edit-timeunit')?.value || 'gun';
-
-    if (!name) return paToast('Paket adı gereklidir', 'warning');
-
-    try {
-      await api.request(`/paket-analiz/packages/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ name, code, description: desc, currency, time_unit })
-      });
-      document.querySelector('.fixed.inset-0')?.remove();
-      paToast('Paket güncellendi', 'success');
-      await this.loadPackages();
-      this.renderPackagesTab(document.getElementById('pa-content'));
-    } catch (e) {
-      paToast('Güncelleme hatası: ' + e.message, 'error');
-    }
-  },
-
-  async deletePackage(id, name) {
-    if (!confirm(`"${name}" paketini ve tüm kalemlerini silmek istediğinize emin misiniz?`)) return;
-
-    try {
-      await api.request(`/paket-analiz/packages/${id}`, { method: 'DELETE' });
-      paToast('Paket silindi', 'success');
-      await this.loadPackages();
-      this.renderPackagesTab(document.getElementById('pa-content'));
-    } catch (e) {
-      paToast('Silme hatası: ' + e.message, 'error');
-    }
-  },
-
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // KALEM LİSTESİ TAB
-  // ═══════════════════════════════════════════════════════════════════════════════
-  renderItemsTab(container) {
-    container.innerHTML = `
-      <div class="glass-card rounded-2xl p-6 mb-6">
-        <div class="flex flex-wrap items-center gap-4 mb-4">
-          <div class="flex-1 min-w-[200px]">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Paket Seç</label>
-            <select id="pa-items-pkg" onchange="PaketAnaliz.loadItemsList()" class="w-full p-3 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-              <option value="">-- Paket seçin --</option>
-              ${this.packages.map(p => `<option value="${p.id}" ${p.id == this.selectedPackageId ? 'selected' : ''}>${p.name} ${p.code ? '(' + p.code + ')' : ''}</option>`).join('')}
+          <!-- Detail Table -->
+          <div class="mb-2 flex flex-wrap gap-2 items-center">
+            <input type="text" placeholder="Ara..." class="bg-white/5 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/30 w-48"
+              oninput="PaketAnaliz.filterItems(this.value, ${pkg.package_id})">
+            <select class="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm"
+              onchange="PaketAnaliz.filterItemsByStatus(this.value, ${pkg.package_id})">
+              <option value="all">Tümü</option>
+              <option value="eksik">Sadece Eksik</option>
+              <option value="yeterli">Sadece Yeterli</option>
+              <option value="bulunamadi">Bulunamadı</option>
             </select>
-          </div>
-          <div class="flex items-end">
-            <button onclick="PaketAnaliz.showAddItemModal()" class="p-3 rounded-lg gradient-btn text-white font-semibold transition-all hover-lift">
-              <i class="fas fa-plus mr-1"></i>Kalem Ekle
-            </button>
-          </div>
-        </div>
-      </div>
-      <div id="pa-items-list"></div>
-    `;
-
-    if (this.selectedPackageId) {
-      document.getElementById('pa-items-pkg').value = this.selectedPackageId;
-      this.loadItemsList();
-    }
-  },
-
-  async loadItemsList() {
-    const pkgId = document.getElementById('pa-items-pkg')?.value;
-    const listDiv = document.getElementById('pa-items-list');
-    if (!pkgId) {
-      listDiv.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center text-gray-400">Paket seçin</div>';
-      return;
-    }
-
-    this.selectedPackageId = pkgId;
-    listDiv.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-2xl text-blue-500"></i></div>';
-
-    try {
-      const items = await api.request(`/paket-analiz/packages/${pkgId}/items`);
-
-      if (items.length === 0) {
-        listDiv.innerHTML = '<div class="glass-card rounded-2xl p-6 text-center text-gray-400">Bu pakette henüz kalem yok. Veri Aktarım sekmesinden yapıştırarak veya manuel ekleyebilirsiniz.</div>';
-        return;
-      }
-
-      const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
-      const selPkg = this.packages.find(p => p.id == pkgId);
-      const currSymbols = { EUR: '€', USD: '$', TL: '₺', GBP: '£' };
-      const timeLabelsMap = { gun: 'gün', hafta: 'hafta', ay: 'ay' };
-      const cs = currSymbols[selPkg?.currency] || '€';
-      const tl = timeLabelsMap[selPkg?.time_unit] || 'gün';
-
-      listDiv.innerHTML = `
-        <div class="glass-card rounded-2xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-gray-800 font-bold">${items.length} Kalem</h3>
-            <input id="pa-items-search" type="text" placeholder="Ara..." oninput="PaketAnaliz.filterItemsList()"
-              class="p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 text-sm w-48 focus:border-blue-400">
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="bg-gray-50">
-                <tr class="text-gray-500 border-b border-gray-200">
-                  <th class="text-left p-3 font-semibold">Parça Kodu</th>
-                  <th class="text-left p-3 font-semibold">Parça Adı</th>
-                  <th class="text-right p-3 font-semibold">BOM</th>
-                  <th class="text-right p-3 font-semibold">Fiyat (${cs})</th>
-                  <th class="text-right p-3 font-semibold">Lead Time (${tl})</th>
-                  <th class="text-right p-3 font-semibold">Stok</th>
-                  <th class="text-left p-3 font-semibold">Tedarikçi</th>
-                  <th class="text-center p-3 font-semibold">İşlem</th>
+            <table class="w-full text-sm" id="pa-items-table-${pkg.package_id}">
+              <thead>
+                <tr class="text-white/60 text-xs uppercase border-b border-white/10">
+                  <th class="text-left py-2 px-2">Malzeme No</th>
+                  <th class="text-left py-2 px-2">Parça Tanımı</th>
+                  <th class="text-right py-2 px-2">BOM</th>
+                  <th class="text-right py-2 px-2">Toplam İhtiyaç</th>
+                  <th class="text-right py-2 px-2">Stok</th>
+                  <th class="text-right py-2 px-2">Eksik</th>
+                  <th class="text-right py-2 px-2">Lead Time</th>
+                  <th class="text-right py-2 px-2">Birim ₺</th>
+                  <th class="text-right py-2 px-2">Eksik ₺</th>
+                  <th class="text-left py-2 px-2">Tedarikçi</th>
+                  <th class="text-center py-2 px-2">Durum</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-100" id="pa-items-tbody">
-                ${items.map(item => `
-                  <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all pa-item-row" 
-                    data-code="${(item.part_code || '').toLowerCase()}" data-name="${(item.part_name || '').toLowerCase()}">
-                    <td class="p-3 text-gray-800 font-mono text-xs font-semibold">${item.part_code}</td>
-                    <td class="p-3 text-gray-600">${item.part_name || '-'}</td>
-                    <td class="p-3 text-right text-gray-700">${fmt(item.bom_quantity)}</td>
-                    <td class="p-3 text-right text-gray-700">${fmt(item.unit_price)} ${cs}</td>
-                    <td class="p-3 text-right text-gray-700">${item.lead_time_days || 0} ${tl}</td>
-                    <td class="p-3 text-right text-gray-700">${fmt(item.temsa_stock)}</td>
-                    <td class="p-3 text-gray-500">${item.supplier || '-'}</td>
-                    <td class="p-3 text-center">
-                      <button onclick='PaketAnaliz.showEditItemModal(${item.id}, ${JSON.stringify(item).replace(/'/g, "&#39;")})' 
-                        class="px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs mr-1 transition-all"><i class="fas fa-edit"></i></button>
-                      <button onclick="PaketAnaliz.deleteItem(${item.id})" 
-                        class="px-2 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs transition-all"><i class="fas fa-trash"></i></button>
-                    </td>
+              <tbody>
+                ${pkg.items.map(it => `
+                  <tr class="border-b border-white/5 hover:bg-white/5 transition pa-item-row" data-pkg="${pkg.package_id}" data-status="${it.durum}" data-search="${(it.malzeme_no + ' ' + it.parca_tanimi + ' ' + it.tedarikci).toLowerCase()}">
+                    <td class="py-2 px-2 text-white font-mono text-xs">${it.malzeme_no}</td>
+                    <td class="py-2 px-2 text-white/80 text-xs max-w-[200px] truncate" title="${it.parca_tanimi}">${it.parca_tanimi}</td>
+                    <td class="py-2 px-2 text-white/70 text-right">${this.fmtNum(it.bom_miktar, 2)}</td>
+                    <td class="py-2 px-2 text-white text-right font-medium">${this.fmtNum(it.toplam_ihtiyac)}</td>
+                    <td class="py-2 px-2 text-right ${it.stok > 0 ? 'text-green-400' : 'text-red-400'}">${this.fmtNum(it.stok)}</td>
+                    <td class="py-2 px-2 text-right ${it.eksik > 0 ? 'text-red-400 font-bold' : 'text-green-400'}">${it.eksik > 0 ? this.fmtNum(it.eksik) : '-'}</td>
+                    <td class="py-2 px-2 text-right ${it.lead_time >= 30 ? 'text-red-400' : it.lead_time > 0 ? 'text-orange-400' : 'text-white/40'}">${it.lead_time > 0 ? it.lead_time + 'g' : '-'}</td>
+                    <td class="py-2 px-2 text-right text-white/70">${this.fmtCur(it.birim_maliyet)}</td>
+                    <td class="py-2 px-2 text-right ${it.eksik_maliyet > 0 ? 'text-red-400' : 'text-white/40'}">${it.eksik_maliyet > 0 ? this.fmtCur(it.eksik_maliyet) : '-'}</td>
+                    <td class="py-2 px-2 text-white/60 text-xs">${it.tedarikci}</td>
+                    <td class="py-2 px-2 text-center">${this.statusBadge(it.durum)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -915,211 +343,869 @@ const PaketAnaliz = {
           </div>
         </div>
       `;
-    } catch (e) {
-      listDiv.innerHTML = `<div class="glass-card rounded-2xl p-6 text-red-600">Kalemler yüklenemedi: ${e.message}</div>`;
     }
+
+    // Risk analysis section
+    if (c.risk_analysis) {
+      const ra = c.risk_analysis;
+      html += `
+        <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-shield-alt text-red-400 mr-2"></i>Risk Analizi</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${ra.critical_lead_time?.length ? `
+              <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <div class="text-red-400 font-medium text-sm mb-2"><i class="fas fa-clock mr-1"></i> Kritik Termin (≥30 gün) — ${ra.critical_lead_time.length} parça</div>
+                ${ra.critical_lead_time.slice(0, 5).map(i => `
+                  <div class="text-white/70 text-xs flex justify-between py-1 border-b border-white/5">
+                    <span class="font-mono">${i.malzeme_no}</span>
+                    <span class="text-red-400 font-bold">${i.lead_time} gün</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            ${ra.zero_stock?.length ? `
+              <div class="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                <div class="text-orange-400 font-medium text-sm mb-2"><i class="fas fa-box-open mr-1"></i> Stokta Yok — ${ra.zero_stock.length} parça</div>
+                ${ra.zero_stock.slice(0, 5).map(i => `
+                  <div class="text-white/70 text-xs flex justify-between py-1 border-b border-white/5">
+                    <span class="font-mono">${i.malzeme_no}</span>
+                    <span class="text-orange-400">${this.fmtNum(i.eksik)} adet gerekli</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            ${ra.high_cost?.length ? `
+              <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                <div class="text-yellow-400 font-medium text-sm mb-2"><i class="fas fa-coins mr-1"></i> Yüksek Maliyet — Top ${Math.min(5, ra.high_cost.length)}</div>
+                ${ra.high_cost.slice(0, 5).map(i => `
+                  <div class="text-white/70 text-xs flex justify-between py-1 border-b border-white/5">
+                    <span class="font-mono">${i.malzeme_no}</span>
+                    <span class="text-yellow-400">${this.fmtCur(i.eksik_maliyet)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            ${ra.single_supplier?.length ? `
+              <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <div class="text-blue-400 font-medium text-sm mb-2"><i class="fas fa-building mr-1"></i> Tek Tedarikçi Riski — ${ra.single_supplier.length} parça</div>
+                ${ra.single_supplier.slice(0, 5).map(i => `
+                  <div class="text-white/70 text-xs flex justify-between py-1 border-b border-white/5">
+                    <span class="font-mono">${i.malzeme_no}</span>
+                    <span class="text-blue-400">${i.tedarikci}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Supplier distribution
+    if (c.supplier_distribution && Object.keys(c.supplier_distribution).length) {
+      const entries = Object.entries(c.supplier_distribution).sort((a, b) => b[1] - a[1]);
+      const maxVal = entries[0]?.[1] || 1;
+      html += `
+        <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-industry text-cyan-400 mr-2"></i>Tedarikçi Dağılımı</h3>
+          <div class="space-y-2">
+            ${entries.map(([sup, val]) => `
+              <div class="flex items-center gap-3">
+                <span class="text-white/70 text-sm w-40 truncate" title="${sup}">${sup}</span>
+                <div class="flex-1 bg-white/5 rounded-full h-5 overflow-hidden">
+                  <div class="bg-cyan-500/60 h-full rounded-full transition-all" style="width:${Math.round(val / maxVal * 100)}%"></div>
+                </div>
+                <span class="text-white/80 text-sm w-28 text-right">${this.fmtCur(val)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // Scenario simulation
+    if (c.scenarios?.length) {
+      html += `
+        <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-chart-line text-green-400 mr-2"></i>Senaryo Simülasyonu</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-white/60 text-xs uppercase border-b border-white/10">
+                  <th class="text-left py-2 px-3">Üretim Adedi</th>
+                  <th class="text-right py-2 px-3">Toplam Maliyet</th>
+                  <th class="text-right py-2 px-3">Satın Alma (Eksik) Maliyeti</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${c.scenarios.map(s => `
+                  <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="py-2 px-3 text-white font-medium">${this.fmtNum(s.adet)} adet</td>
+                    <td class="py-2 px-3 text-white/80 text-right">${this.fmtCur(s.toplam_maliyet)}</td>
+                    <td class="py-2 px-3 text-red-400 text-right">${this.fmtCur(s.eksik_maliyet)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    // Pareto analysis (top 20)
+    if (c.pareto?.length) {
+      html += `
+        <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-white mb-4"><i class="fas fa-sort-amount-down text-amber-400 mr-2"></i>Pareto Analizi (Maliyet Yoğunluğu)</h3>
+          <div class="space-y-1">
+            ${c.pareto.slice(0, 20).map((p, i) => `
+              <div class="flex items-center gap-3 py-1">
+                <span class="text-white/40 text-xs w-6 text-right">${i + 1}.</span>
+                <span class="text-white/80 text-xs w-28 font-mono truncate">${p.malzeme_no}</span>
+                <div class="flex-1 bg-white/5 rounded-full h-4 overflow-hidden">
+                  <div class="h-full rounded-full transition-all ${p.cumulative_percent <= 80 ? 'bg-amber-500/60' : 'bg-white/20'}" style="width:${p.cumulative_percent}%"></div>
+                </div>
+                <span class="text-white/60 text-xs w-20 text-right">${this.fmtCur(p.kalem_maliyet)}</span>
+                <span class="text-amber-400 text-xs w-14 text-right font-medium">${p.cumulative_percent}%</span>
+              </div>
+            `).join('')}
+          </div>
+          <p class="text-white/30 text-xs mt-3">İlk %80'lik maliyet dilimi sarı ile gösterilir (80-20 kuralı).</p>
+        </div>
+      `;
+    }
+
+    // Export buttons
+    html += `
+      <div class="flex flex-wrap gap-3 mb-6">
+        <button onclick="PaketAnaliz.exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-sm flex items-center gap-2">
+          <i class="fas fa-file-excel"></i> Excel İndir
+        </button>
+        <button onclick="PaketAnaliz.exportWord()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm flex items-center gap-2">
+          <i class="fas fa-file-word"></i> Word İndir
+        </button>
+      </div>
+    `;
+
+    ct.innerHTML = html;
   },
 
-  filterItemsList() {
-    const search = (document.getElementById('pa-items-search')?.value || '').toLowerCase();
-    document.querySelectorAll('.pa-item-row').forEach(row => {
-      const code = row.dataset.code || '';
-      const name = row.dataset.name || '';
-      row.style.display = (!search || code.includes(search) || name.includes(search)) ? '' : 'none';
+  filterItems(search, pkgId) {
+    const rows = document.querySelectorAll(`.pa-item-row[data-pkg="${pkgId}"]`);
+    const s = search.toLowerCase();
+    rows.forEach(r => { r.style.display = r.dataset.search.includes(s) ? '' : 'none'; });
+  },
+
+  filterItemsByStatus(status, pkgId) {
+    const rows = document.querySelectorAll(`.pa-item-row[data-pkg="${pkgId}"]`);
+    rows.forEach(r => { r.style.display = (status === 'all' || r.dataset.status === status) ? '' : 'none'; });
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ANA VERİ (Master Data) TAB
+  // ═══════════════════════════════════════════════════════════════════
+  async renderMasterTab(ct) {
+    ct.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6" id="pa-master-stats"></div>
+
+      <!-- Import Section -->
+      <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-white mb-3"><i class="fas fa-file-import text-green-400 mr-2"></i>Excel'den Veri Aktarımı</h2>
+        <p class="text-white/50 text-xs mb-3">Excel'den kopyaladığınız veriyi aşağıya yapıştırın. İlk satır başlık olmalıdır. Kolonlar otomatik eşleştirilir.</p>
+        <textarea id="pa-master-paste" rows="6" class="w-full bg-white/5 border border-white/20 rounded-lg p-3 text-white text-sm font-mono placeholder-white/30 resize-y"
+          placeholder="Malzeme No&#9;Parça Tanımı&#9;Adet&#9;Stok&#9;Lead Time&#9;Maliyet&#9;Tedarikçi&#10;ABC-001&#9;Sensör XY&#9;2&#9;150&#9;14&#9;25.50&#9;Firma A"></textarea>
+        <div id="pa-master-mapping" class="mt-3 hidden"></div>
+        <div id="pa-master-preview" class="mt-3 hidden"></div>
+        <div class="mt-3 flex gap-3">
+          <button onclick="PaketAnaliz.parseMasterPaste()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition text-sm flex items-center gap-2">
+            <i class="fas fa-search"></i> Önizle & Eşleştir
+          </button>
+          <button id="pa-master-import-btn" onclick="PaketAnaliz.executeMasterImport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-sm flex items-center gap-2 hidden">
+            <i class="fas fa-upload"></i> İçe Aktar
+          </button>
+        </div>
+      </div>
+
+      <!-- Material Table -->
+      <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-white"><i class="fas fa-list text-blue-400 mr-2"></i>Malzeme Listesi</h2>
+          <div class="flex items-center gap-3">
+            <input type="text" id="pa-master-search" placeholder="Ara..." class="bg-white/5 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/30 w-48"
+              oninput="PaketAnaliz.searchMaterials()">
+            <button onclick="PaketAnaliz.resetAllMaterials()" class="bg-red-600/30 hover:bg-red-600/50 text-red-400 px-3 py-1.5 rounded-lg text-xs transition" title="Tüm verileri sil">
+              <i class="fas fa-trash"></i> Tümünü Sil
+            </button>
+          </div>
+        </div>
+        <div id="pa-material-table" class="overflow-x-auto"></div>
+      </div>
+    `;
+    await this.loadMaterials();
+    this.loadMasterStats();
+  },
+
+  async loadMasterStats() {
+    try {
+      const stats = await api.request('/paket-analiz/stats');
+      this.stats = stats;
+      const el = document.getElementById('pa-master-stats');
+      if (el) {
+        el.innerHTML = `
+          <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-cubes text-blue-400"></i></div>
+            <div><div class="text-white/50 text-xs">Toplam Malzeme</div><div class="text-white font-bold text-lg">${this.fmtNum(stats.material_count)}</div></div>
+          </div>
+          <div class="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-clock text-orange-400"></i></div>
+            <div><div class="text-white/50 text-xs">Ort. Lead Time</div><div class="text-white font-bold text-lg">${stats.avg_lead_time} gün</div></div>
+          </div>
+          <div class="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center"><i class="fas fa-coins text-green-400"></i></div>
+            <div><div class="text-white/50 text-xs">Toplam Stok Değeri</div><div class="text-white font-bold text-lg">${this.fmtCur(stats.total_stock_value)}</div></div>
+          </div>
+        `;
+      }
+    } catch (e) {/* ignore */}
+  },
+
+  async loadMaterials(search) {
+    try {
+      const q = search ? `?search=${encodeURIComponent(search)}` : '';
+      this.materials = await api.request('/paket-analiz/materials' + q);
+      this.renderMaterialTable();
+    } catch (e) { this.materials = []; }
+  },
+
+  searchMaterials() {
+    const s = document.getElementById('pa-master-search')?.value || '';
+    this.loadMaterials(s);
+  },
+
+  renderMaterialTable() {
+    const el = document.getElementById('pa-material-table');
+    if (!el) return;
+    if (!this.materials.length) {
+      el.innerHTML = '<div class="text-center py-8 text-white/40"><i class="fas fa-inbox text-3xl mb-2 block"></i>Henüz malzeme yok</div>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-white/60 text-xs uppercase border-b border-white/10">
+            <th class="text-left py-2 px-2">Malzeme No</th>
+            <th class="text-left py-2 px-2">Parça Tanımı</th>
+            <th class="text-right py-2 px-2">B.Adet</th>
+            <th class="text-right py-2 px-2">Stok</th>
+            <th class="text-right py-2 px-2">Lead Time</th>
+            <th class="text-right py-2 px-2">Birim ₺</th>
+            <th class="text-left py-2 px-2">Tedarikçi</th>
+            <th class="text-center py-2 px-2">İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.materials.map(m => `
+            <tr class="border-b border-white/5 hover:bg-white/5 transition" id="pa-mat-row-${m.id}">
+              <td class="py-2 px-2 text-white font-mono text-xs">${m.malzeme_no}</td>
+              <td class="py-2 px-2 text-white/80 text-xs">${m.parca_tanimi || '-'}</td>
+              <td class="py-2 px-2 text-white/70 text-right">${this.fmtNum(m.birim_adet, 1)}</td>
+              <td class="py-2 px-2 text-right ${parseFloat(m.stok) > 0 ? 'text-green-400' : 'text-red-400'}">${this.fmtNum(m.stok)}</td>
+              <td class="py-2 px-2 text-right ${parseInt(m.lead_time_gun) >= 30 ? 'text-red-400' : 'text-orange-400'}">${m.lead_time_gun}g</td>
+              <td class="py-2 px-2 text-white/70 text-right">${this.fmtCur(m.birim_maliyet)}</td>
+              <td class="py-2 px-2 text-white/60 text-xs">${m.tedarikci || '-'}</td>
+              <td class="py-2 px-2 text-center">
+                <button onclick="PaketAnaliz.editMaterial(${m.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Düzenle"><i class="fas fa-edit"></i></button>
+                <button onclick="PaketAnaliz.deleteMaterial(${m.id})" class="text-red-400 hover:text-red-300" title="Sil"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="text-white/40 text-xs mt-2">${this.materials.length} malzeme</div>
+    `;
+  },
+
+  parseMasterPaste() {
+    const text = document.getElementById('pa-master-paste')?.value;
+    const parsed = this.parsePaste(text);
+    if (!parsed) { alert('Yapıştırılan veri geçersiz. En az 2 satır (başlık + veri) olmalı.'); return; }
+
+    this.masterParsed = parsed;
+    const mapping = this.autoMap(parsed.headers, MASTER_HINTS);
+
+    const mapEl = document.getElementById('pa-master-mapping');
+    if (mapEl) {
+      const fields = [
+        { key: 'malzeme_no', label: 'Malzeme No *' },
+        { key: 'parca_tanimi', label: 'Parça Tanımı' },
+        { key: 'birim_adet', label: 'Birim Adet' },
+        { key: 'stok', label: 'Stok' },
+        { key: 'lead_time_gun', label: 'Lead Time (gün)' },
+        { key: 'birim_maliyet', label: 'Birim Maliyet' },
+        { key: 'tedarikci', label: 'Tedarikçi' }
+      ];
+      mapEl.innerHTML = `
+        <div class="text-white/70 text-sm font-medium mb-2">Kolon Eşleştirme:</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          ${fields.map(f => `
+            <div>
+              <label class="text-white/50 text-xs">${f.label}</label>
+              <select id="pa-map-${f.key}" class="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1">
+                <option value="">— Seçilmedi —</option>
+                ${parsed.headers.map((h, i) => `<option value="${i}" ${mapping[f.key] === i ? 'selected' : ''}>${h}</option>`).join('')}
+              </select>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      mapEl.classList.remove('hidden');
+    }
+
+    // Preview first 5 rows
+    const prevEl = document.getElementById('pa-master-preview');
+    if (prevEl) {
+      prevEl.innerHTML = `
+        <div class="text-white/70 text-sm font-medium mb-2">Önizleme (ilk 5 satır, toplam ${parsed.rows.length}):</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead><tr class="text-white/50 border-b border-white/10">${parsed.headers.map(h => `<th class="py-1 px-2 text-left">${h}</th>`).join('')}</tr></thead>
+            <tbody>${parsed.rows.slice(0, 5).map(r => `<tr class="border-b border-white/5">${r.map(c => `<td class="py-1 px-2 text-white/70">${c}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>
+        </div>
+      `;
+      prevEl.classList.remove('hidden');
+    }
+
+    document.getElementById('pa-master-import-btn')?.classList.remove('hidden');
+  },
+
+  async executeMasterImport() {
+    if (!this.masterParsed) return;
+
+    const mapping = {};
+    ['malzeme_no', 'parca_tanimi', 'birim_adet', 'stok', 'lead_time_gun', 'birim_maliyet', 'tedarikci'].forEach(key => {
+      const val = document.getElementById(`pa-map-${key}`)?.value;
+      if (val !== '' && val !== undefined) mapping[key] = parseInt(val);
     });
-  },
 
-  showAddItemModal() {
-    const pkgId = document.getElementById('pa-items-pkg')?.value;
-    if (!pkgId) return paToast('Önce bir paket seçin', 'warning');
+    if (mapping.malzeme_no === undefined) { alert('Malzeme No kolonu seçilmeli!'); return; }
 
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-    overlay.innerHTML = `
-      <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-plus-circle mr-2 text-green-500"></i>Yeni Kalem Ekle</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="col-span-2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Kodu *</label>
-            <input id="pa-add-code" type="text" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div class="col-span-2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Adı</label>
-            <input id="pa-add-name" type="text" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">BOM Adedi</label>
-            <input id="pa-add-bom" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Birim Fiyat</label>
-            <input id="pa-add-price" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Lead Time (gün)</label>
-            <input id="pa-add-lt" type="number" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Stok</label>
-            <input id="pa-add-stock" type="number" step="0.01" value="0" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div class="col-span-2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Tedarikçi</label>
-            <input id="pa-add-supplier" type="text" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-        </div>
-        <div class="flex gap-3 mt-4">
-          <button onclick="PaketAnaliz.saveNewItem()" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Ekle</button>
-          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all">İptal</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  },
-
-  async saveNewItem() {
-    const pkgId = document.getElementById('pa-items-pkg')?.value;
-    const data = {
-      part_code: document.getElementById('pa-add-code')?.value?.trim(),
-      part_name: document.getElementById('pa-add-name')?.value?.trim(),
-      bom_quantity: parseFloat(document.getElementById('pa-add-bom')?.value) || 0,
-      unit_price: parseFloat(document.getElementById('pa-add-price')?.value) || 0,
-      lead_time_days: parseInt(document.getElementById('pa-add-lt')?.value) || 0,
-      temsa_stock: parseFloat(document.getElementById('pa-add-stock')?.value) || 0,
-      supplier: document.getElementById('pa-add-supplier')?.value?.trim()
-    };
-
-    if (!data.part_code) return paToast('Parça kodu gereklidir', 'warning');
+    const btn = document.getElementById('pa-master-import-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aktarılıyor...'; }
 
     try {
-      await api.request(`/paket-analiz/packages/${pkgId}/items`, {
+      const result = await api.request('/paket-analiz/materials/import-paste', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: JSON.stringify({ rows: this.masterParsed.rows, mapping })
       });
-      document.querySelector('.fixed.inset-0')?.remove();
-      paToast('Kalem eklendi', 'success');
-      this.loadItemsList();
-    } catch (e) {
-      paToast('Ekleme hatası: ' + e.message, 'error');
+      alert(`Tamamlandı! ${result.inserted || 0} eklendi, ${result.updated || 0} güncellendi.${result.errors?.length ? '\nHatalar: ' + result.errors.join(', ') : ''}`);
+      this.masterParsed = null;
+      document.getElementById('pa-master-paste').value = '';
+      document.getElementById('pa-master-mapping')?.classList.add('hidden');
+      document.getElementById('pa-master-preview')?.classList.add('hidden');
+      btn?.classList.add('hidden');
+      this.loadMaterials();
+      this.loadMasterStats();
+      this.loadStatsHeader();
+    } catch (error) {
+      alert('Hata: ' + (error.message || error));
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload"></i> İçe Aktar'; }
     }
   },
 
-  showEditItemModal(id, item) {
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
-    overlay.innerHTML = `
-      <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-edit mr-2 text-blue-500"></i>Kalem Düzenle</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="col-span-2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Kodu *</label>
-            <input id="pa-edit-code" type="text" value="${item.part_code || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div class="col-span-2">
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Parça Adı</label>
-            <input id="pa-edit-name" type="text" value="${item.part_name || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">BOM Adedi</label>
-            <input id="pa-edit-bom" type="number" step="0.01" value="${item.bom_quantity || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Birim Fiyat</label>
-            <input id="pa-edit-price" type="number" step="0.01" value="${item.unit_price || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Lead Time (gün)</label>
-            <input id="pa-edit-lt" type="number" value="${item.lead_time_days || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Stok</label>
-            <input id="pa-edit-stock" type="number" step="0.01" value="${item.temsa_stock || 0}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Teslimat Tarihi</label>
-            <input id="pa-edit-delivery" type="text" value="${item.delivery_date || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400" placeholder="ör: 2025-03-15">
-          </div>
-          <div>
-            <label class="block text-gray-600 text-sm mb-1 font-medium">Tedarikçi</label>
-            <input id="pa-edit-supplier" type="text" value="${item.supplier || ''}" class="w-full p-2 rounded-lg bg-gray-50 text-gray-800 border border-gray-200 focus:border-blue-400">
+  editMaterial(id) {
+    const m = this.materials.find(x => x.id === id);
+    if (!m) return;
+    const row = document.getElementById(`pa-mat-row-${id}`);
+    if (!row) return;
+    row.innerHTML = `
+      <td class="py-1 px-2 text-white font-mono text-xs">${m.malzeme_no}</td>
+      <td class="py-1 px-1"><input type="text" value="${m.parca_tanimi || ''}" class="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs w-full" id="pa-edit-tanim-${id}"></td>
+      <td class="py-1 px-1"><input type="number" value="${m.birim_adet}" class="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs w-16 text-right" id="pa-edit-badet-${id}"></td>
+      <td class="py-1 px-1"><input type="number" value="${m.stok}" class="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs w-20 text-right" id="pa-edit-stok-${id}"></td>
+      <td class="py-1 px-1"><input type="number" value="${m.lead_time_gun}" class="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs w-16 text-right" id="pa-edit-lt-${id}"></td>
+      <td class="py-1 px-1"><input type="number" step="0.01" value="${m.birim_maliyet}" class="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs w-20 text-right" id="pa-edit-mal-${id}"></td>
+      <td class="py-1 px-1"><input type="text" value="${m.tedarikci || ''}" class="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs w-full" id="pa-edit-ted-${id}"></td>
+      <td class="py-1 px-2 text-center">
+        <button onclick="PaketAnaliz.saveMaterial(${id})" class="text-green-400 hover:text-green-300 mr-2"><i class="fas fa-check"></i></button>
+        <button onclick="PaketAnaliz.renderMaterialTable()" class="text-white/40 hover:text-white/60"><i class="fas fa-times"></i></button>
+      </td>
+    `;
+  },
+
+  async saveMaterial(id) {
+    try {
+      await api.request(`/paket-analiz/materials/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          parca_tanimi: document.getElementById(`pa-edit-tanim-${id}`)?.value || '',
+          birim_adet: parseFloat(document.getElementById(`pa-edit-badet-${id}`)?.value) || 1,
+          stok: parseFloat(document.getElementById(`pa-edit-stok-${id}`)?.value) || 0,
+          lead_time_gun: parseInt(document.getElementById(`pa-edit-lt-${id}`)?.value) || 0,
+          birim_maliyet: parseFloat(document.getElementById(`pa-edit-mal-${id}`)?.value) || 0,
+          tedarikci: document.getElementById(`pa-edit-ted-${id}`)?.value || ''
+        })
+      });
+      this.loadMaterials();
+    } catch (e) { alert('Güncelleme hatası'); }
+  },
+
+  async deleteMaterial(id) {
+    if (!confirm('Bu malzemeyi silmek istediğinize emin misiniz?')) return;
+    try {
+      await api.request(`/paket-analiz/materials/${id}`, { method: 'DELETE' });
+      this.loadMaterials();
+      this.loadMasterStats();
+    } catch (e) { alert('Silme hatası'); }
+  },
+
+  async resetAllMaterials() {
+    if (!confirm('TÜM malzeme verilerini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+    try {
+      await api.request('/paket-analiz/materials', { method: 'DELETE' });
+      this.loadMaterials();
+      this.loadMasterStats();
+      this.loadStatsHeader();
+    } catch (e) { alert('Silme hatası'); }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BOM YÖNETİMİ TAB
+  // ═══════════════════════════════════════════════════════════════════
+  async renderBomTab(ct) {
+    await this.ensurePackages();
+    ct.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol: Paket Listesi -->
+        <div class="lg:col-span-1">
+          <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-white"><i class="fas fa-box text-purple-400 mr-2"></i>Paketler</h2>
+              <button onclick="PaketAnaliz.showCreatePackage()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs transition">
+                <i class="fas fa-plus"></i> Yeni
+              </button>
+            </div>
+            <div id="pa-package-list">
+              ${this.packages.length === 0 ? '<div class="text-center py-6 text-white/40 text-sm">Henüz paket yok</div>' :
+                this.packages.map(p => `
+                  <div class="p-3 rounded-lg mb-2 cursor-pointer transition border ${this.selectedPkgId === p.id ? 'bg-purple-500/20 border-purple-500/40' : 'bg-white/5 border-white/10 hover:bg-white/10'}"
+                    onclick="PaketAnaliz.selectPackage(${p.id})">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <div class="text-white font-medium text-sm">${p.paket_adi}</div>
+                        <div class="text-white/40 text-xs">${p.item_count} kalem${p.aciklama ? ' • ' + p.aciklama : ''}</div>
+                      </div>
+                      <div class="flex gap-1">
+                        <button onclick="event.stopPropagation(); PaketAnaliz.editPackage(${p.id})" class="text-blue-400 hover:text-blue-300 text-xs p-1"><i class="fas fa-edit"></i></button>
+                        <button onclick="event.stopPropagation(); PaketAnaliz.deletePackage(${p.id})" class="text-red-400 hover:text-red-300 text-xs p-1"><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')
+              }
+            </div>
+            <div id="pa-create-pkg-form" class="hidden mt-3"></div>
           </div>
         </div>
-        <div class="flex gap-3 mt-4">
-          <button onclick="PaketAnaliz.saveEditItem(${id})" class="flex-1 p-3 rounded-lg gradient-btn text-white font-semibold transition-all">Kaydet</button>
-          <button onclick="this.closest('.fixed').remove()" class="flex-1 p-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition-all">İptal</button>
+
+        <!-- Sağ: Seçili Paket Detay -->
+        <div class="lg:col-span-2">
+          <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6" id="pa-pkg-detail">
+            ${this.selectedPkgId ? '<div class="text-center text-white/40 py-8"><i class="fas fa-spinner fa-spin text-2xl"></i></div>' :
+              '<div class="text-center py-12 text-white/40"><i class="fas fa-hand-pointer text-4xl mb-3 block text-purple-400/30"></i><p>Bir paket seçin veya yeni paket oluşturun.</p></div>'}
+          </div>
         </div>
       </div>
     `;
-    document.body.appendChild(overlay);
+    if (this.selectedPkgId) this.loadPackageItems(this.selectedPkgId);
   },
 
-  async saveEditItem(id) {
-    const data = {
-      part_code: document.getElementById('pa-edit-code')?.value?.trim(),
-      part_name: document.getElementById('pa-edit-name')?.value?.trim(),
-      bom_quantity: parseFloat(document.getElementById('pa-edit-bom')?.value) || 0,
-      unit_price: parseFloat(document.getElementById('pa-edit-price')?.value) || 0,
-      lead_time_days: parseInt(document.getElementById('pa-edit-lt')?.value) || 0,
-      temsa_stock: parseFloat(document.getElementById('pa-edit-stock')?.value) || 0,
-      delivery_date: document.getElementById('pa-edit-delivery')?.value?.trim() || null,
-      supplier: document.getElementById('pa-edit-supplier')?.value?.trim()
-    };
+  showCreatePackage() {
+    const el = document.getElementById('pa-create-pkg-form');
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="bg-white/5 rounded-lg p-3 border border-white/10">
+        <input type="text" id="pa-new-pkg-name" placeholder="Paket adı" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 mb-2">
+        <input type="text" id="pa-new-pkg-desc" placeholder="Açıklama (opsiyonel)" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 mb-2">
+        <div class="flex gap-2">
+          <button onclick="PaketAnaliz.createPackage()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs transition flex-1">Oluştur</button>
+          <button onclick="document.getElementById('pa-create-pkg-form').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white/60 px-3 py-1.5 rounded-lg text-xs transition">İptal</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('pa-new-pkg-name')?.focus();
+  },
 
-    if (!data.part_code) return paToast('Parça kodu gereklidir', 'warning');
+  async createPackage() {
+    const name = document.getElementById('pa-new-pkg-name')?.value?.trim();
+    const desc = document.getElementById('pa-new-pkg-desc')?.value?.trim();
+    if (!name) { alert('Paket adı zorunlu'); return; }
+    try {
+      const pkg = await api.request('/paket-analiz/bom-packages', { method: 'POST', body: JSON.stringify({ paket_adi: name, aciklama: desc }) });
+      this.packages = await api.request('/paket-analiz/bom-packages');
+      this.selectedPkgId = pkg.id;
+      this.renderBomTab(document.getElementById('pa-tab-content'));
+    } catch (e) { alert('Hata: ' + (e.message || e)); }
+  },
+
+  async editPackage(id) {
+    const pkg = this.packages.find(p => p.id === id);
+    if (!pkg) return;
+    const name = prompt('Paket adı:', pkg.paket_adi);
+    if (!name?.trim()) return;
+    const desc = prompt('Açıklama:', pkg.aciklama || '');
+    try {
+      await api.request(`/paket-analiz/bom-packages/${id}`, { method: 'PUT', body: JSON.stringify({ paket_adi: name.trim(), aciklama: desc || '' }) });
+      this.packages = await api.request('/paket-analiz/bom-packages');
+      this.renderBomTab(document.getElementById('pa-tab-content'));
+    } catch (e) { alert('Hata'); }
+  },
+
+  async deletePackage(id) {
+    if (!confirm('Bu paketi ve tüm BOM kalemlerini silmek istediğinize emin misiniz?')) return;
+    try {
+      await api.request(`/paket-analiz/bom-packages/${id}`, { method: 'DELETE' });
+      if (this.selectedPkgId === id) this.selectedPkgId = null;
+      this.packages = await api.request('/paket-analiz/bom-packages');
+      this.renderBomTab(document.getElementById('pa-tab-content'));
+      this.loadStatsHeader();
+    } catch (e) { alert('Hata'); }
+  },
+
+  async selectPackage(id) {
+    this.selectedPkgId = id;
+    // Highlight
+    document.querySelectorAll('#pa-package-list > div').forEach(d => {
+      d.className = d.className.replace(/bg-purple-500\/20 border-purple-500\/40|bg-white\/5 border-white\/10/g, '');
+    });
+    this.renderBomTab(document.getElementById('pa-tab-content'));
+    await this.loadPackageItems(id);
+  },
+
+  async loadPackageItems(pkgId) {
+    const detail = document.getElementById('pa-pkg-detail');
+    if (!detail) return;
+    const pkg = this.packages.find(p => p.id === pkgId);
+    if (!pkg) return;
 
     try {
-      await api.request(`/paket-analiz/items/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
+      this.pkgItems = await api.request(`/paket-analiz/bom-packages/${pkgId}/items`);
+    } catch (e) { this.pkgItems = []; }
+
+    detail.innerHTML = `
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-white"><i class="fas fa-list-ol text-green-400 mr-2"></i>${pkg.paket_adi} — BOM Kalemleri</h2>
+        <span class="text-white/40 text-sm">${this.pkgItems.length} kalem</span>
+      </div>
+
+      <!-- BOM Import -->
+      <div class="bg-white/5 rounded-lg p-4 border border-white/10 mb-4">
+        <div class="text-white/70 text-sm mb-2"><i class="fas fa-paste text-blue-400 mr-1"></i> BOM Verisi Yapıştır (Malzeme No + Miktar)</div>
+        <textarea id="pa-bom-paste" rows="4" class="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-white text-xs font-mono placeholder-white/30 resize-y"
+          placeholder="Malzeme No&#9;Miktar&#10;ABC-001&#9;2&#10;ABC-002&#9;5"></textarea>
+        <div id="pa-bom-mapping" class="mt-2 hidden"></div>
+        <div class="mt-2 flex gap-2">
+          <button onclick="PaketAnaliz.parseBomPaste()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs transition">
+            <i class="fas fa-search"></i> Önizle
+          </button>
+          <button id="pa-bom-import-btn" onclick="PaketAnaliz.executeBomImport()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs transition hidden">
+            <i class="fas fa-upload"></i> İçe Aktar (Mevcut kalemleri siler)
+          </button>
+        </div>
+      </div>
+
+      <!-- Add single item -->
+      <div class="flex gap-2 mb-4">
+        <input type="text" id="pa-bom-new-malz" placeholder="Malzeme No" class="bg-white/5 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/30 flex-1">
+        <input type="number" id="pa-bom-new-qty" placeholder="Miktar" value="1" min="0.01" step="0.01" class="bg-white/5 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/30 w-24">
+        <button onclick="PaketAnaliz.addBomItem()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm transition"><i class="fas fa-plus"></i></button>
+      </div>
+
+      <!-- Items table -->
+      <div class="overflow-x-auto">
+        ${this.pkgItems.length === 0 ? '<div class="text-center py-6 text-white/40 text-sm">Bu pakette henüz BOM kalemi yok</div>' : `
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-white/60 text-xs uppercase border-b border-white/10">
+                <th class="text-left py-2 px-2">Malzeme No</th>
+                <th class="text-left py-2 px-2">Parça Tanımı</th>
+                <th class="text-right py-2 px-2">Miktar</th>
+                <th class="text-right py-2 px-2">Stok</th>
+                <th class="text-right py-2 px-2">Lead Time</th>
+                <th class="text-right py-2 px-2">Birim ₺</th>
+                <th class="text-left py-2 px-2">Tedarikçi</th>
+                <th class="text-center py-2 px-2">Durum</th>
+                <th class="text-center py-2 px-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.pkgItems.map(it => {
+                const hasMaster = it.parca_tanimi !== null && it.parca_tanimi !== undefined;
+                return `
+                  <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                    <td class="py-2 px-2 text-white font-mono text-xs">${it.malzeme_no}</td>
+                    <td class="py-2 px-2 text-xs ${hasMaster ? 'text-white/80' : 'text-yellow-400'}">${hasMaster ? it.parca_tanimi : '⚠️ Master\'da yok'}</td>
+                    <td class="py-2 px-2 text-white text-right font-medium">${this.fmtNum(it.miktar, 2)}</td>
+                    <td class="py-2 px-2 text-right ${hasMaster ? (parseFloat(it.stok) > 0 ? 'text-green-400' : 'text-red-400') : 'text-white/30'}">${hasMaster ? this.fmtNum(it.stok) : '-'}</td>
+                    <td class="py-2 px-2 text-right text-orange-400">${hasMaster ? (it.lead_time_gun || 0) + 'g' : '-'}</td>
+                    <td class="py-2 px-2 text-right text-white/70">${hasMaster ? this.fmtCur(it.birim_maliyet) : '-'}</td>
+                    <td class="py-2 px-2 text-white/60 text-xs">${hasMaster ? (it.tedarikci || '-') : '-'}</td>
+                    <td class="py-2 px-2 text-center">${hasMaster ? '<span class="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs">OK</span>' : '<span class="bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full text-xs">?</span>'}</td>
+                    <td class="py-2 px-2 text-center">
+                      <button onclick="PaketAnaliz.deleteBomItem(${it.id})" class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+    `;
+  },
+
+  parseBomPaste() {
+    const text = document.getElementById('pa-bom-paste')?.value;
+    const parsed = this.parsePaste(text);
+    if (!parsed) { alert('Geçersiz veri. En az 2 satır olmalı.'); return; }
+
+    this.bomParsed = parsed;
+    const mapping = this.autoMap(parsed.headers, BOM_HINTS);
+
+    const mapEl = document.getElementById('pa-bom-mapping');
+    if (mapEl) {
+      const fields = [{ key: 'malzeme_no', label: 'Malzeme No *' }, { key: 'miktar', label: 'Miktar' }];
+      mapEl.innerHTML = `
+        <div class="grid grid-cols-2 gap-2">
+          ${fields.map(f => `
+            <div>
+              <label class="text-white/50 text-xs">${f.label}</label>
+              <select id="pa-bom-map-${f.key}" class="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1">
+                <option value="">— Seçilmedi —</option>
+                ${parsed.headers.map((h, i) => `<option value="${i}" ${mapping[f.key] === i ? 'selected' : ''}>${h}</option>`).join('')}
+              </select>
+            </div>
+          `).join('')}
+        </div>
+        <div class="text-white/40 text-xs mt-1">${parsed.rows.length} satır bulundu</div>
+      `;
+      mapEl.classList.remove('hidden');
+    }
+    document.getElementById('pa-bom-import-btn')?.classList.remove('hidden');
+  },
+
+  async executeBomImport() {
+    if (!this.bomParsed || !this.selectedPkgId) return;
+
+    const mapping = {};
+    ['malzeme_no', 'miktar'].forEach(key => {
+      const val = document.getElementById(`pa-bom-map-${key}`)?.value;
+      if (val !== '' && val !== undefined) mapping[key] = parseInt(val);
+    });
+    if (mapping.malzeme_no === undefined) { alert('Malzeme No kolonu seçilmeli!'); return; }
+
+    const btn = document.getElementById('pa-bom-import-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Aktarılıyor...'; }
+
+    try {
+      const result = await api.request(`/paket-analiz/bom-packages/${this.selectedPkgId}/items/import-paste`, {
+        method: 'POST',
+        body: JSON.stringify({ rows: this.bomParsed.rows, mapping })
       });
-      document.querySelector('.fixed.inset-0')?.remove();
-      paToast('Kalem güncellendi', 'success');
-      this.loadItemsList();
-    } catch (e) {
-      paToast('Güncelleme hatası: ' + e.message, 'error');
+      alert(`${result.imported} kalem aktarıldı.${result.warnings?.length ? '\nUyarılar: ' + result.warnings.join(', ') : ''}`);
+      this.bomParsed = null;
+      document.getElementById('pa-bom-paste').value = '';
+      document.getElementById('pa-bom-mapping')?.classList.add('hidden');
+      btn?.classList.add('hidden');
+      this.packages = await api.request('/paket-analiz/bom-packages');
+      this.loadPackageItems(this.selectedPkgId);
+      this.loadStatsHeader();
+    } catch (error) {
+      alert('Hata: ' + (error.message || error));
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload"></i> İçe Aktar (Mevcut kalemleri siler)'; }
     }
   },
 
-  async deleteItem(id) {
-    if (!confirm('Bu kalemi silmek istediğinize emin misiniz?')) return;
+  async addBomItem() {
+    if (!this.selectedPkgId) return;
+    const malz = document.getElementById('pa-bom-new-malz')?.value?.trim();
+    const qty = parseFloat(document.getElementById('pa-bom-new-qty')?.value) || 1;
+    if (!malz) { alert('Malzeme No girin'); return; }
     try {
-      await api.request(`/paket-analiz/items/${id}`, { method: 'DELETE' });
-      paToast('Kalem silindi', 'success');
-      this.loadItemsList();
-    } catch (e) {
-      paToast('Silme hatası: ' + e.message, 'error');
+      await api.request(`/paket-analiz/bom-packages/${this.selectedPkgId}/items`, {
+        method: 'POST',
+        body: JSON.stringify({ malzeme_no: malz, miktar: qty })
+      });
+      document.getElementById('pa-bom-new-malz').value = '';
+      document.getElementById('pa-bom-new-qty').value = '1';
+      this.packages = await api.request('/paket-analiz/bom-packages');
+      this.loadPackageItems(this.selectedPkgId);
+    } catch (e) { alert('Hata'); }
+  },
+
+  async deleteBomItem(id) {
+    if (!confirm('Bu kalemi silmek istiyor musunuz?')) return;
+    try {
+      await api.request(`/paket-analiz/bom-items/${id}`, { method: 'DELETE' });
+      this.packages = await api.request('/paket-analiz/bom-packages');
+      this.loadPackageItems(this.selectedPkgId);
+    } catch (e) { alert('Silme hatası'); }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // RAPORLAR TAB
+  // ═══════════════════════════════════════════════════════════════════
+  renderReportsTab(ct) {
+    const hasResult = !!this.analysisResult;
+    ct.innerHTML = `
+      <div class="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-white mb-4"><i class="fas fa-file-export text-blue-400 mr-2"></i>Rapor & Dışa Aktarım</h2>
+        ${!hasResult ? `
+          <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-yellow-300 text-sm">
+            <i class="fas fa-info-circle mr-2"></i> Rapor oluşturmak için önce <b>"Analiz"</b> sekmesinden bir analiz çalıştırın.
+          </div>
+        ` : `
+          <p class="text-white/50 text-sm mb-4">Son analiz sonuçlarını farklı formatlarda dışa aktarabilirsiniz.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button onclick="PaketAnaliz.exportExcel()" class="bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-xl p-6 text-center transition group">
+              <i class="fas fa-file-excel text-green-400 text-3xl mb-3 block group-hover:scale-110 transition"></i>
+              <div class="text-white font-medium">Excel İndir</div>
+              <div class="text-white/40 text-xs mt-1">Detaylı tablo formatında</div>
+            </button>
+            <button onclick="PaketAnaliz.exportWord()" class="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-xl p-6 text-center transition group">
+              <i class="fas fa-file-word text-blue-400 text-3xl mb-3 block group-hover:scale-110 transition"></i>
+              <div class="text-white font-medium">Word İndir</div>
+              <div class="text-white/40 text-xs mt-1">Yönetici özet raporu</div>
+            </button>
+            <button onclick="PaketAnaliz.exportSummaryText()" class="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-xl p-6 text-center transition group">
+              <i class="fas fa-clipboard-list text-purple-400 text-3xl mb-3 block group-hover:scale-110 transition"></i>
+              <div class="text-white font-medium">Özet Kopyala</div>
+              <div class="text-white/40 text-xs mt-1">Panoya kopyala</div>
+            </button>
+          </div>
+
+          <!-- Quick summary -->
+          <div class="mt-6 bg-white/5 rounded-lg p-4 border border-white/10">
+            <h3 class="text-white font-medium text-sm mb-3">Analiz Özeti</h3>
+            ${this.analysisResult.packages.map(pkg => `
+              <div class="mb-3 p-3 bg-white/5 rounded-lg">
+                <div class="text-white font-medium text-sm">${pkg.paket_adi} × ${this.fmtNum(pkg.adet)}</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs">
+                  <div><span class="text-white/40">Birim Maliyet:</span> <span class="text-white">${this.fmtCur(pkg.birim_maliyet)}</span></div>
+                  <div><span class="text-white/40">Toplam:</span> <span class="text-white">${this.fmtCur(pkg.toplam_maliyet)}</span></div>
+                  <div><span class="text-white/40">Eksik:</span> <span class="text-red-400">${pkg.eksik_kalem_sayisi} kalem</span></div>
+                  <div><span class="text-white/40">Max Lead:</span> <span class="text-orange-400">${pkg.max_lead_time} gün</span></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    `;
+  },
+
+  // ─── Export Functions ─────────────────────────────────────────────
+  exportExcel() {
+    if (!this.analysisResult) return;
+    const data = this.analysisResult;
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>td,th{border:1px solid #ccc;padding:4px 8px;font-size:11px;font-family:Arial}th{background:#4472C4;color:white;font-weight:bold}.right{text-align:right}.red{color:#c00}.green{color:#0a0}.header{background:#D9E2F3;font-weight:bold;font-size:13px}</style></head><body>';
+
+    for (const pkg of data.packages) {
+      html += `<table><tr><td colspan="11" class="header">${pkg.paket_adi} — ${this.fmtNum(pkg.adet)} Adet Üretim Analizi</td></tr>`;
+      html += `<tr><td colspan="5">Birim Maliyet: ${this.fmtCur(pkg.birim_maliyet)}</td><td colspan="3">Toplam Maliyet: ${this.fmtCur(pkg.toplam_maliyet)}</td><td colspan="3">Eksik Kalem: ${pkg.eksik_kalem_sayisi} | Max Lead: ${pkg.max_lead_time}g</td></tr>`;
+      html += '<tr><th>Malzeme No</th><th>Parça Tanımı</th><th>BOM Miktar</th><th>Toplam İhtiyaç</th><th>Stok</th><th>Eksik</th><th>Lead Time</th><th>Birim ₺</th><th>Eksik ₺</th><th>Tedarikçi</th><th>Durum</th></tr>';
+      for (const it of pkg.items) {
+        html += `<tr>
+          <td>${it.malzeme_no}</td>
+          <td>${it.parca_tanimi}</td>
+          <td class="right">${it.bom_miktar}</td>
+          <td class="right">${it.toplam_ihtiyac}</td>
+          <td class="right ${it.stok > 0 ? 'green' : 'red'}">${it.stok}</td>
+          <td class="right ${it.eksik > 0 ? 'red' : ''}">${it.eksik || '-'}</td>
+          <td class="right">${it.lead_time > 0 ? it.lead_time + 'g' : '-'}</td>
+          <td class="right">${it.birim_maliyet.toFixed(2)}</td>
+          <td class="right ${it.eksik_maliyet > 0 ? 'red' : ''}">${it.eksik_maliyet > 0 ? it.eksik_maliyet.toFixed(2) : '-'}</td>
+          <td>${it.tedarikci}</td>
+          <td>${it.durum === 'yeterli' ? 'Yeterli' : it.durum === 'eksik' ? 'EKSİK' : 'BULUNAMADI'}</td>
+        </tr>`;
+      }
+      html += '</table><br>';
     }
+    html += '</body></html>';
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Paket_Analiz_${new Date().toISOString().slice(0, 10)}.xls`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   },
 
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // EXPORT HELPERS
-  // ═══════════════════════════════════════════════════════════════════════════════
-  exportMissing() {
-    if (!this.selectedPackageId || !this.analysisData) return;
-    const count = document.getElementById('pa-analysis-count')?.value || 1;
-    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/missing?count=${count}`, '_blank');
-  },
-  exportCritical() {
-    if (!this.selectedPackageId) return;
-    const count = document.getElementById('pa-analysis-count')?.value || 1;
-    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/critical?count=${count}`, '_blank');
-  },
-  exportScenarios() {
-    if (!this.selectedPackageId) return;
-    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/scenarios`, '_blank');
-  },
-  exportDetailExcel() {
-    if (!this.selectedPackageId || !this.analysisData) return;
-    const count = document.getElementById('pa-analysis-count')?.value || 1;
-    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/detail-excel?count=${count}`, '_blank');
-  },
-  exportDetailWord() {
-    if (!this.selectedPackageId || !this.analysisData) return;
-    const count = document.getElementById('pa-analysis-count')?.value || 1;
-    window.open(`/api/paket-analiz/packages/${this.selectedPackageId}/export/detail-word?count=${count}`, '_blank');
+  exportWord() {
+    if (!this.analysisResult) return;
+    const data = this.analysisResult;
+    const now = new Date().toLocaleDateString('tr-TR');
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial;font-size:11pt;color:#333}h1{color:#1F4E79;font-size:18pt;border-bottom:2px solid #1F4E79;padding-bottom:4px}h2{color:#2E75B6;font-size:14pt;margin-top:20px}table{border-collapse:collapse;width:100%;margin:10px 0}td,th{border:1px solid #BDD7EE;padding:4px 6px;font-size:9pt}th{background:#2E75B6;color:white}.metric{font-size:14pt;font-weight:bold;color:#1F4E79}.warn{color:#c00;font-weight:bold}</style></head><body>`;
+    html += `<h1>Paket-Analiz Raporu</h1><p>Tarih: ${now} | Oluşturan: ${authManager?.currentUser?.fullname || '-'}</p>`;
+
+    for (const pkg of data.packages) {
+      html += `<h2>${pkg.paket_adi} — ${this.fmtNum(pkg.adet)} Adet</h2>`;
+      html += `<table><tr><td><b>Birim Maliyet</b><br><span class="metric">${this.fmtCur(pkg.birim_maliyet)}</span></td><td><b>Toplam Maliyet</b><br><span class="metric">${this.fmtCur(pkg.toplam_maliyet)}</span></td><td><b>Eksik Kalem</b><br><span class="metric warn">${pkg.eksik_kalem_sayisi}</span></td><td><b>Max Lead Time</b><br><span class="metric">${pkg.max_lead_time} gün</span></td></tr></table>`;
+
+      if (pkg.kritik_parca) {
+        html += `<p class="warn">⚠ Kritik Parça: ${pkg.kritik_parca.malzeme_no} — ${pkg.kritik_parca.tanimi} (${pkg.kritik_parca.lead_time} gün)</p>`;
+      }
+
+      html += '<table><tr><th>Malzeme No</th><th>Parça Tanımı</th><th>BOM</th><th>İhtiyaç</th><th>Stok</th><th>Eksik</th><th>Lead</th><th>Birim ₺</th><th>Eksik ₺</th><th>Tedarikçi</th><th>Durum</th></tr>';
+      for (const it of pkg.items) {
+        html += `<tr><td>${it.malzeme_no}</td><td>${it.parca_tanimi}</td><td style="text-align:right">${it.bom_miktar}</td><td style="text-align:right">${it.toplam_ihtiyac}</td><td style="text-align:right">${it.stok}</td><td style="text-align:right;${it.eksik > 0 ? 'color:red;font-weight:bold' : ''}">${it.eksik || '-'}</td><td style="text-align:right">${it.lead_time > 0 ? it.lead_time + 'g' : '-'}</td><td style="text-align:right">${it.birim_maliyet.toFixed(2)}</td><td style="text-align:right;${it.eksik_maliyet > 0 ? 'color:red' : ''}">${it.eksik_maliyet > 0 ? it.eksik_maliyet.toFixed(2) : '-'}</td><td>${it.tedarikci}</td><td>${it.durum === 'yeterli' ? 'Yeterli' : it.durum === 'eksik' ? 'EKSİK' : 'YOK'}</td></tr>`;
+      }
+      html += '</table>';
+    }
+
+    // Risk section
+    const ra = data.combined?.risk_analysis;
+    if (ra) {
+      html += '<h2>Risk Analizi</h2>';
+      if (ra.critical_lead_time?.length) {
+        html += `<p><b>Kritik Termin (≥30 gün):</b> ${ra.critical_lead_time.length} parça</p><ul>`;
+        ra.critical_lead_time.slice(0, 10).forEach(i => { html += `<li>${i.malzeme_no} — ${i.parca_tanimi}: <b>${i.lead_time} gün</b></li>`; });
+        html += '</ul>';
+      }
+      if (ra.zero_stock?.length) {
+        html += `<p><b>Stokta Yok:</b> ${ra.zero_stock.length} parça</p>`;
+      }
+    }
+
+    html += '</body></html>';
+    const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Paket_Analiz_Rapor_${new Date().toISOString().slice(0, 10)}.doc`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   },
 
-  onImportTypeChange() {
-    if (this.pasteData) this.renderPasteMapping();
+  exportSummaryText() {
+    if (!this.analysisResult) return;
+    const data = this.analysisResult;
+    let text = `PAKET-ANALİZ ÖZET — ${new Date().toLocaleDateString('tr-TR')}\n${'═'.repeat(50)}\n\n`;
+    for (const pkg of data.packages) {
+      text += `📦 ${pkg.paket_adi} × ${pkg.adet} adet\n`;
+      text += `   Birim Maliyet: ${this.fmtCur(pkg.birim_maliyet)}\n`;
+      text += `   Toplam Maliyet: ${this.fmtCur(pkg.toplam_maliyet)}\n`;
+      text += `   Eksik Kalem: ${pkg.eksik_kalem_sayisi} | Max Lead Time: ${pkg.max_lead_time} gün\n`;
+      text += `   Satın Alma Maliyeti: ${this.fmtCur(pkg.toplam_eksik_maliyet)}\n`;
+      if (pkg.kritik_parca) text += `   ⚠ Kritik: ${pkg.kritik_parca.malzeme_no} (${pkg.kritik_parca.lead_time}g)\n`;
+      text += '\n';
+    }
+    navigator.clipboard.writeText(text).then(() => alert('Özet panoya kopyalandı!')).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Özet panoya kopyalandı!');
+    });
   }
 };
