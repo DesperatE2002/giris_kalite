@@ -41,19 +41,40 @@ const PaketAnaliz = {
   },
 
   // ─── Paste Parser ─────────────────────────────────────────────────
-  parsePaste(text) {
+  parsePaste(text, forceDelimiter) {
     if (!text?.trim()) return null;
     const lines = text.trim().split('\n').filter(l => l.trim());
     if (lines.length < 2) return null;
-    const delimiters = ['\t', ';', ','];
-    let bestDel = '\t', maxCols = 0;
-    for (const d of delimiters) {
-      const c = lines[0].split(d).length;
-      if (c > maxCols) { maxCols = c; bestDel = d; }
+
+    let bestDel;
+    if (forceDelimiter) {
+      bestDel = forceDelimiter;
+    } else {
+      // Tab her zaman Excel'den gelir — tab varsa tab kullan
+      const tabCols = lines[0].split('\t').length;
+      if (tabCols > 1) {
+        bestDel = '\t';
+      } else {
+        // Tab yoksa ; dene, sonra , (virgül Türkçe ondalıkla karışır)
+        const semiCols = lines[0].split(';').length;
+        if (semiCols > 1) {
+          bestDel = ';';
+        } else {
+          bestDel = ',';
+        }
+      }
     }
+
     const headers = lines[0].split(bestDel).map(h => h.trim());
-    const rows = lines.slice(1).filter(l => l.trim()).map(l => l.split(bestDel).map(c => c.trim()));
-    return { headers, rows, delimiter: bestDel };
+    const rows = lines.slice(1).filter(l => l.trim()).map(l => {
+      const cells = l.split(bestDel).map(c => c.trim());
+      // Eksik hücreleri boşla doldur
+      while (cells.length < headers.length) cells.push('');
+      return cells;
+    });
+
+    const delimName = bestDel === '\t' ? 'Tab' : bestDel === ';' ? 'Noktalı virgül' : 'Virgül';
+    return { headers, rows, delimiter: bestDel, delimiterName: delimName };
   },
 
   autoMap(headers, hints) {
@@ -297,7 +318,7 @@ const PaketAnaliz = {
           <div class="mb-2 flex flex-wrap gap-2 items-center">
             <input type="text" placeholder="Ara..." class="bg-white/5 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/30 w-48"
               oninput="PaketAnaliz.filterItems(this.value, ${pkg.package_id})">
-            <select class="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm"
+            <select class="bg-gray-800 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm" style="color-scheme:dark"
               onchange="PaketAnaliz.filterItemsByStatus(this.value, ${pkg.package_id})">
               <option value="all">Tümü</option>
               <option value="eksik">Sadece Eksik</option>
@@ -650,7 +671,7 @@ const PaketAnaliz = {
           ${fields.map(f => `
             <div>
               <label class="text-white/50 text-xs">${f.label}</label>
-              <select id="pa-map-${f.key}" class="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1">
+              <select id="pa-map-${f.key}" class="w-full bg-gray-800 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1" style="color-scheme:dark">
                 <option value="">— Seçilmedi —</option>
                 ${parsed.headers.map((h, i) => `<option value="${i}" ${mapping[f.key] === i ? 'selected' : ''}>${h}</option>`).join('')}
               </select>
@@ -661,15 +682,29 @@ const PaketAnaliz = {
       mapEl.classList.remove('hidden');
     }
 
-    // Preview first 5 rows
+    // Preview first 5 rows + delimiter info
     const prevEl = document.getElementById('pa-master-preview');
     if (prevEl) {
+      const colMismatch = parsed.rows.some(r => r.length !== parsed.headers.length);
       prevEl.innerHTML = `
-        <div class="text-white/70 text-sm font-medium mb-2">Önizleme (ilk 5 satır, toplam ${parsed.rows.length}):</div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-white/70 text-sm font-medium">Önizleme (ilk 5 satır, toplam ${parsed.rows.length}):</span>
+          <span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">Ayırıcı: ${parsed.delimiterName}</span>
+          <span class="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs">${parsed.headers.length} sütun</span>
+          ${colMismatch ? '<span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>Bazı satırlarda sütun sayısı uyuşmuyor!</span>' : '<span class="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs"><i class="fas fa-check mr-1"></i>OK</span>'}
+        </div>
+        ${colMismatch ? `
+          <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 mb-2 text-yellow-300 text-xs">
+            <i class="fas fa-exclamation-circle mr-1"></i> Sütunlar düzgün ayrılmamış olabilir. Farklı bir ayırıcı deneyin:
+            <button onclick="PaketAnaliz.reParseMaster('\\t')" class="ml-2 underline hover:text-yellow-200">Tab</button> |
+            <button onclick="PaketAnaliz.reParseMaster(';')" class="underline hover:text-yellow-200">Noktalı virgül</button> |
+            <button onclick="PaketAnaliz.reParseMaster(',')" class="underline hover:text-yellow-200">Virgül</button>
+          </div>
+        ` : ''}
         <div class="overflow-x-auto">
-          <table class="w-full text-xs">
-            <thead><tr class="text-white/50 border-b border-white/10">${parsed.headers.map(h => `<th class="py-1 px-2 text-left">${h}</th>`).join('')}</tr></thead>
-            <tbody>${parsed.rows.slice(0, 5).map(r => `<tr class="border-b border-white/5">${r.map(c => `<td class="py-1 px-2 text-white/70">${c}</td>`).join('')}</tr>`).join('')}</tbody>
+          <table class="w-full text-xs border border-white/10">
+            <thead><tr class="bg-white/5">${parsed.headers.map((h, i) => `<th class="py-1.5 px-2 text-left text-blue-400 border border-white/10"><span class="text-white/30 mr-1">[${i}]</span>${h}</th>`).join('')}</tr></thead>
+            <tbody>${parsed.rows.slice(0, 5).map(r => `<tr class="border-b border-white/5">${r.map(c => `<td class="py-1 px-2 text-white/70 border border-white/5 font-mono">${c}</td>`).join('')}</tr>`).join('')}</tbody>
           </table>
         </div>
       `;
@@ -677,6 +712,68 @@ const PaketAnaliz = {
     }
 
     document.getElementById('pa-master-import-btn')?.classList.remove('hidden');
+  },
+
+  reParseMaster(delimiter) {
+    const text = document.getElementById('pa-master-paste')?.value;
+    const parsed = this.parsePaste(text, delimiter);
+    if (!parsed) return;
+    this.masterParsed = parsed;
+    const mapping = this.autoMap(parsed.headers, MASTER_HINTS);
+    // Re-render mapping selects
+    const fields = [
+      { key: 'malzeme_no', label: 'Malzeme No *' },
+      { key: 'parca_tanimi', label: 'Parça Tanımı' },
+      { key: 'birim_adet', label: 'Birim Adet' },
+      { key: 'stok', label: 'Stok' },
+      { key: 'lead_time_gun', label: 'Lead Time (gün)' },
+      { key: 'birim_maliyet', label: 'Birim Maliyet' },
+      { key: 'tedarikci', label: 'Tedarikçi' }
+    ];
+    const mapEl = document.getElementById('pa-master-mapping');
+    if (mapEl) {
+      mapEl.innerHTML = `
+        <div class="text-white/70 text-sm font-medium mb-2">Kolon Eşleştirme:</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          ${fields.map(f => `
+            <div>
+              <label class="text-white/50 text-xs">${f.label}</label>
+              <select id="pa-map-${f.key}" class="w-full bg-gray-800 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1" style="color-scheme:dark">
+                <option value="">— Seçilmedi —</option>
+                ${parsed.headers.map((h, i) => `<option value="${i}" ${mapping[f.key] === i ? 'selected' : ''}>${h}</option>`).join('')}
+              </select>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    // Re-render preview
+    const colMismatch = parsed.rows.some(r => r.length !== parsed.headers.length);
+    const prevEl = document.getElementById('pa-master-preview');
+    if (prevEl) {
+      prevEl.innerHTML = `
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-white/70 text-sm font-medium">Önizleme (ilk 5 satır, toplam ${parsed.rows.length}):</span>
+          <span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs">Ayırıcı: ${parsed.delimiterName}</span>
+          <span class="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded text-xs">${parsed.headers.length} sütun</span>
+          ${colMismatch ? '<span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-xs"><i class="fas fa-exclamation-triangle mr-1"></i>Sütun uyuşmazlığı!</span>' : '<span class="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs"><i class="fas fa-check mr-1"></i>OK</span>'}
+        </div>
+        ${colMismatch ? `
+          <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 mb-2 text-yellow-300 text-xs">
+            <i class="fas fa-exclamation-circle mr-1"></i> Farklı ayırıcı deneyin:
+            <button onclick="PaketAnaliz.reParseMaster('\\t')" class="ml-2 underline hover:text-yellow-200">Tab</button> |
+            <button onclick="PaketAnaliz.reParseMaster(';')" class="underline hover:text-yellow-200">Noktalı virgül</button> |
+            <button onclick="PaketAnaliz.reParseMaster(',')" class="underline hover:text-yellow-200">Virgül</button>
+          </div>
+        ` : ''}
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border border-white/10">
+            <thead><tr class="bg-white/5">${parsed.headers.map((h, i) => `<th class="py-1.5 px-2 text-left text-blue-400 border border-white/10"><span class="text-white/30 mr-1">[${i}]</span>${h}</th>`).join('')}</tr></thead>
+            <tbody>${parsed.rows.slice(0, 5).map(r => `<tr class="border-b border-white/5">${r.map(c => `<td class="py-1 px-2 text-white/70 border border-white/5 font-mono">${c}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>
+        </div>
+      `;
+    }
   },
 
   async executeMasterImport() {
@@ -982,7 +1079,7 @@ const PaketAnaliz = {
           ${fields.map(f => `
             <div>
               <label class="text-white/50 text-xs">${f.label}</label>
-              <select id="pa-bom-map-${f.key}" class="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1">
+              <select id="pa-bom-map-${f.key}" class="w-full bg-gray-800 border border-white/20 rounded px-2 py-1 text-white text-xs mt-1" style="color-scheme:dark">
                 <option value="">— Seçilmedi —</option>
                 ${parsed.headers.map((h, i) => `<option value="${i}" ${mapping[f.key] === i ? 'selected' : ''}>${h}</option>`).join('')}
               </select>
