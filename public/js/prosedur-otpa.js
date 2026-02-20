@@ -86,7 +86,7 @@ const ProsedurOtpa = {
           ${['otpa', 'prosedurler', 'sablonlar', 'raporlar'].map(t => {
             const labels = { otpa: '<i class="fas fa-folder-open mr-1"></i>OTPA Kayıtları', prosedurler: '<i class="fas fa-book mr-1"></i>Prosedürler', sablonlar: '<i class="fas fa-clipboard-list mr-1"></i>Form Şablonları', raporlar: '<i class="fas fa-chart-bar mr-1"></i>Raporlar' };
             const active = this.tab === t;
-            return `<button onclick="ProsedurOtpa.switchTab('${t}')" class="flex-1 min-w-[140px] px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${active ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}">${labels[t]}</button>`;
+            return `<button data-tab="${t}" onclick="ProsedurOtpa.switchTab('${t}')" class="po-tab-btn flex-1 min-w-[140px] px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${active ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}">${labels[t]}</button>`;
           }).join('')}
         </div>
         <div class="p-6" id="po-tab-content">
@@ -98,7 +98,15 @@ const ProsedurOtpa = {
     this.renderTabContent();
   },
 
-  switchTab(t) { this.tab = t; this.renderTabContent(); },
+  switchTab(t) {
+    this.tab = t;
+    // Tab butonlarının aktif stilini güncelle
+    document.querySelectorAll('.po-tab-btn').forEach(btn => {
+      const isActive = btn.dataset.tab === t;
+      btn.className = `po-tab-btn flex-1 min-w-[140px] px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${isActive ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}`;
+    });
+    this.renderTabContent();
+  },
 
   async renderTabContent() {
     const el = document.getElementById('po-tab-content');
@@ -711,6 +719,7 @@ const ProsedurOtpa = {
             <td class="px-4 py-3 text-gray-400 text-xs">${this.fmtDate(d.publish_date)}</td>
             <td class="px-4 py-3 text-center">
               <div class="flex gap-1 justify-center">
+                ${d.file_path ? `<button onclick="ProsedurOtpa.previewDoc(${d.id}, '${(d.file_original_name || '').replace(/'/g, '\\\'')}')" class="px-2 py-1 rounded bg-green-500/20 text-green-300 text-xs hover:bg-green-500/30" title="Görüntüle"><i class="fas fa-eye"></i></button>` : ''}
                 ${d.file_path ? `<button onclick="ProsedurOtpa.downloadDoc(${d.id})" class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs hover:bg-blue-500/30" title="İndir"><i class="fas fa-download"></i></button>` : ''}
                 <button onclick="ProsedurOtpa.showRevisions(${d.id})" class="px-2 py-1 rounded bg-gray-600/50 text-gray-300 text-xs hover:bg-gray-500/50" title="Revizyon Geçmişi"><i class="fas fa-history"></i></button>
                 ${this.isAdmin() ? `
@@ -740,7 +749,69 @@ const ProsedurOtpa = {
 
   downloadDoc(id) {
     const token = localStorage.getItem('token');
-    window.open(`/api/prosedur-otpa/documents/${id}/download?token=${token}`, '_blank');
+    // Fetch blob and trigger download
+    fetch(`/api/prosedur-otpa/documents/${id}/download`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(r => {
+      if (!r.ok) throw new Error('İndirme hatası');
+      const fname = (r.headers.get('content-disposition') || '').match(/filename[^;=\n]*=(['"]?)([^'"\n]*?)\1(;|$)/)?.[2] || 'document';
+      return r.blob().then(blob => ({ blob, fname }));
+    }).then(({ blob, fname }) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = decodeURIComponent(fname);
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }).catch(e => alert('İndirme hatası: ' + e.message));
+  },
+
+  previewDoc(id, filename) {
+    const token = localStorage.getItem('token');
+    const ext = (filename || '').split('.').pop().toLowerCase();
+    const isPdf = ext === 'pdf';
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+
+    // Fetch as blob and preview inline
+    fetch(`/api/prosedur-otpa/documents/${id}/download`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(r => {
+      if (!r.ok) throw new Error('Dosya yüklenemedi');
+      return r.blob();
+    }).then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (isPdf || isImage) {
+        // Modal ile göster
+        const modal = document.createElement('div');
+        modal.id = 'po-preview-modal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+        modal.style.background = 'rgba(0,0,0,0.85)';
+        modal.innerHTML = `
+          <div class="relative w-full max-w-5xl h-[85vh] flex flex-col bg-gray-900 rounded-2xl overflow-hidden border border-gray-600/30">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-700">
+              <div class="flex items-center gap-3">
+                <i class="fas ${isPdf ? 'fa-file-pdf text-red-400' : 'fa-image text-green-400'} text-xl"></i>
+                <span class="text-white font-semibold text-sm truncate max-w-md">${this.esc(filename)}</span>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="ProsedurOtpa.downloadDoc(${id})" class="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 text-sm hover:bg-blue-500/30"><i class="fas fa-download mr-1"></i>İndir</button>
+                <button onclick="document.getElementById('po-preview-modal').remove();" class="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 text-sm hover:bg-red-500/30"><i class="fas fa-times mr-1"></i>Kapat</button>
+              </div>
+            </div>
+            <div class="flex-1 overflow-auto bg-gray-800 flex items-center justify-center">
+              ${isPdf
+                ? `<iframe src="${blobUrl}" class="w-full h-full" frameborder="0"></iframe>`
+                : `<img src="${blobUrl}" class="max-w-full max-h-full object-contain p-4" alt="${this.esc(filename)}">`
+              }
+            </div>
+          </div>`;
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+        document.body.appendChild(modal);
+      } else {
+        // Desteklenmeyen dosya: doğrudan yeni sekmede aç
+        window.open(blobUrl, '_blank');
+      }
+    }).catch(e => alert('Önizleme hatası: ' + e.message));
   },
 
   async showRevisions(docId) {
