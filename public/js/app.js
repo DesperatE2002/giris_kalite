@@ -118,6 +118,11 @@ const app = {
     document.querySelectorAll('[data-page="prosedur-otpa"]').forEach(btn => {
       btn.style.display = (role === 'admin' || role === 'kalite') ? '' : 'none';
     });
+
+    // Saha Değişiklik Geçmişi - admin ve kalite
+    document.querySelectorAll('[data-page="field-changelog"]').forEach(btn => {
+      btn.style.display = (role === 'admin' || role === 'kalite') ? '' : 'none';
+    });
   },
 
   navigate(page) {
@@ -192,6 +197,9 @@ const app = {
         break;
       case 'prosedur-otpa':
         ProsedurOtpa.render();
+        break;
+      case 'field-changelog':
+        FieldChangelog.render();
         break;
       default:
         this.navigate('dashboard');

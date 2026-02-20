@@ -36,6 +36,7 @@ import projectsRoutes from '../routes/projects.js';
 import techniciansRoutes from '../routes/technicians.js';
 import paketAnalizRoutes, { migratePacketAnaliz } from '../routes/paket-analiz.js';
 import prosedurOtpaRoutes, { migrateProsedurOtpa } from '../routes/prosedur-otpa.js';
+import fieldChangelogRoutes, { migrateFieldChangelog } from '../routes/field-changelog.js';
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/projects', projectsRoutes);
 app.use('/api/technicians', techniciansRoutes);
 app.use('/api/paket-analiz', paketAnalizRoutes);
 app.use('/api/prosedur-otpa', prosedurOtpaRoutes);
+app.use('/api/field-changelog', fieldChangelogRoutes);
 
 // Auto-migration: total_returned_quantity ve returned_by sütunlarını ekle
 import pool from '../db/database.js';
@@ -200,6 +202,11 @@ import pool from '../db/database.js';
 // Auto-migration: Prosedür-OTPA tabloları
 (async () => {
   await migrateProsedurOtpa();
+})();
+
+// Auto-migration: Saha Değişiklik Geçmişi tabloları
+(async () => {
+  await migrateFieldChangelog();
 })();
 
 // Health check
