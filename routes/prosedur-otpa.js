@@ -212,7 +212,7 @@ router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res,
     const { doc_name, doc_code, revision_no, publish_date, department, doc_type, description } = req.body;
     if (!doc_name?.trim()) return res.status(400).json({ error: 'Doküman adı zorunlu' });
 
-    const filePath = req.file ? `/uploads/prosedur-otpa/documents/${req.file.filename}` : null;
+    const filePath = req.file ? req.file.path : null;
     const r = await pool.query(
       `INSERT INTO po_documents (doc_name, doc_code, revision_no, publish_date, department, doc_type, description, file_path, file_original_name, file_size, created_by)
        VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING *`,
@@ -239,7 +239,7 @@ router.put('/documents/:id', authenticateToken, authorizeRoles('admin'), (req, r
       );
     }
 
-    const filePath = req.file ? `/uploads/prosedur-otpa/documents/${req.file.filename}` : oldDoc.file_path;
+    const filePath = req.file ? req.file.path : oldDoc.file_path;
     const fileName = req.file ? req.file.originalname : oldDoc.file_original_name;
     const fileSize = req.file ? req.file.size : oldDoc.file_size;
 
@@ -277,10 +277,29 @@ router.get('/documents/:id/download', authenticateToken, async (req, res) => {
     const r = await pool.query('SELECT file_path, file_original_name FROM po_documents WHERE id=?', [req.params.id]);
     if (!r.rows.length || !r.rows[0].file_path) return res.status(404).json({ error: 'Dosya bulunamadı' });
     const doc = r.rows[0];
-    const absPath = path.resolve(doc.file_path.replace(/^\//, ''));
-    if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya bulunamadı' });
+    // Önce doğrudan kayıtlı path'i dene (req.file.path ile kaydedilen)
+    let absPath = path.isAbsolute(doc.file_path) ? doc.file_path : path.resolve(doc.file_path);
+    // Eğer bulunamazsa eski format ile dene (hardcoded /uploads/... → relative)
+    if (!fs.existsSync(absPath)) {
+      absPath = path.resolve(doc.file_path.replace(/^\//, ''));
+    }
+    // Hâlâ bulunamazsa uploadsDir ile birleştir
+    if (!fs.existsSync(absPath)) {
+      const fname = path.basename(doc.file_path);
+      absPath = path.resolve(uploadsDir, 'documents', fname);
+    }
+    if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya sunucuda bulunamadı. Dosya yeniden yüklenmelidir.' });
+    // İndirme mi yoksa önizleme mi?
+    if (req.query.preview === '1') {
+      const mimeTypes = { '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.xls': 'application/vnd.ms-excel', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+      const ext = path.extname(doc.file_original_name || absPath).toLowerCase();
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.file_original_name || 'document')}"`);
+      return fs.createReadStream(absPath).pipe(res);
+    }
     res.download(absPath, doc.file_original_name || 'document');
-  } catch (e) { res.status(500).json({ error: 'İndirme hatası' }); }
+  } catch (e) { res.status(500).json({ error: 'İndirme hatası: ' + e.message }); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -532,7 +551,7 @@ router.post('/otpa/:id/files', authenticateToken, (req, res, next) => { req.uplo
     for (const f of (req.files || [])) {
       const r = await pool.query(
         'INSERT INTO po_otpa_files (otpa_id, file_type, file_category, file_path, file_original_name, file_size, description, uploaded_by) VALUES (?,?,?,?,?,?,?,?) RETURNING *',
-        [req.params.id, file_type || 'image', file_category || 'genel', `/uploads/prosedur-otpa/otpa-files/${f.filename}`, f.originalname, f.size, description || '', req.user.id]
+        [req.params.id, file_type || 'image', file_category || 'genel', f.path, f.originalname, f.size, description || '', req.user.id]
       );
       uploaded.push(r.rows[0]);
     }
@@ -553,8 +572,15 @@ router.get('/otpa-files/:id/download', authenticateToken, async (req, res) => {
     const r = await pool.query('SELECT file_path, file_original_name FROM po_otpa_files WHERE id=?', [req.params.id]);
     if (!r.rows.length || !r.rows[0].file_path) return res.status(404).json({ error: 'Dosya bulunamadı' });
     const f = r.rows[0];
-    const absPath = path.resolve(f.file_path.replace(/^\//, ''));
-    if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya bulunamadı' });
+    let absPath = path.isAbsolute(f.file_path) ? f.file_path : path.resolve(f.file_path);
+    if (!fs.existsSync(absPath)) {
+      absPath = path.resolve(f.file_path.replace(/^\//, ''));
+    }
+    if (!fs.existsSync(absPath)) {
+      const fname = path.basename(f.file_path);
+      absPath = path.resolve(uploadsDir, 'otpa-files', fname);
+    }
+    if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya sunucuda bulunamadı' });
     res.download(absPath, f.file_original_name || 'file');
   } catch (e) { res.status(500).json({ error: 'İndirme hatası' }); }
 });

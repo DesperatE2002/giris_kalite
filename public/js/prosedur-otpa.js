@@ -749,11 +749,13 @@ const ProsedurOtpa = {
 
   downloadDoc(id) {
     const token = localStorage.getItem('token');
-    // Fetch blob and trigger download
     fetch(`/api/prosedur-otpa/documents/${id}/download`, {
       headers: { 'Authorization': `Bearer ${token}` }
-    }).then(r => {
-      if (!r.ok) throw new Error('İndirme hatası');
+    }).then(async r => {
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.error || 'İndirme hatası');
+      }
       const fname = (r.headers.get('content-disposition') || '').match(/filename[^;=\n]*=(['"]?)([^'"\n]*?)\1(;|$)/)?.[2] || 'document';
       return r.blob().then(blob => ({ blob, fname }));
     }).then(({ blob, fname }) => {
@@ -762,7 +764,7 @@ const ProsedurOtpa = {
       a.href = url; a.download = decodeURIComponent(fname);
       document.body.appendChild(a); a.click();
       document.body.removeChild(a); URL.revokeObjectURL(url);
-    }).catch(e => alert('İndirme hatası: ' + e.message));
+    }).catch(e => alert(e.message));
   },
 
   previewDoc(id, filename) {
@@ -771,11 +773,14 @@ const ProsedurOtpa = {
     const isPdf = ext === 'pdf';
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
 
-    // Fetch as blob and preview inline
-    fetch(`/api/prosedur-otpa/documents/${id}/download`, {
+    // ?preview=1 ile Content-Type doğru gönderilir
+    fetch(`/api/prosedur-otpa/documents/${id}/download?preview=1`, {
       headers: { 'Authorization': `Bearer ${token}` }
-    }).then(r => {
-      if (!r.ok) throw new Error('Dosya yüklenemedi');
+    }).then(async r => {
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.error || 'Dosya yüklenemedi');
+      }
       return r.blob();
     }).then(blob => {
       const blobUrl = URL.createObjectURL(blob);
