@@ -120,7 +120,7 @@ const FieldChangelog = {
     switch (this.tab) {
       case 'archive': this.renderArchiveTab(el); break;
       case 'timeline-search': this.renderTimelineSearchTab(el); break;
-      case 'new-entry': this.editingLog = 'new'; this.renderLogForm(document.getElementById('content')); break;
+      case 'new-entry': this.editingLog = 'new'; history.pushState({ page: 'field-changelog', sub: 'new-entry' }, '', '#field-changelog'); this.renderLogForm(document.getElementById('content')); break;
       case 'import': this.renderImportTab(el); break;
     }
   },
@@ -284,6 +284,7 @@ const FieldChangelog = {
     if (!otpa) return alert('Lütfen OTPA No girin');
 
     this.viewingTimeline = { otpaNo: otpa, logs: [] };
+    history.pushState({ page: 'field-changelog', sub: 'timeline' }, '', '#field-changelog');
     this.render();
   },
 
@@ -425,6 +426,7 @@ const FieldChangelog = {
   async openLogDetail(id) {
     try {
       this.viewingLog = await api.request(`/field-changelog/logs/${id}`);
+      history.pushState({ page: 'field-changelog', sub: 'log-detail' }, '', '#field-changelog');
       this.render();
     } catch (e) { alert('Hata: ' + e.message); }
   },
@@ -568,6 +570,7 @@ const FieldChangelog = {
   async startEdit(id) {
     try {
       this.editingLog = await api.request(`/field-changelog/logs/${id}`);
+      history.pushState({ page: 'field-changelog', sub: 'edit' }, '', '#field-changelog');
       this.render();
     } catch (e) { alert('Hata: ' + e.message); }
   },

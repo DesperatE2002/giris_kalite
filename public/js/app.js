@@ -13,18 +13,27 @@ const app = {
       
       // Setup navigation
       this.setupNavigation();
+      this.setupHistoryNavigation();
       
       // Update user info
       this.updateUserInfo();
       
-      // Viewer role -> welcome screen, proje_yonetici -> projects, others -> dashboard
-      const user = authManager.currentUser;
-      if (user && user.role === 'viewer') {
-        this.navigate('welcome');
-      } else if (user && user.role === 'proje_yonetici') {
-        this.navigate('projects');
+      // Check hash for deep-link navigation
+      const hash = location.hash.replace('#', '');
+      const validPages = ['dashboard','goods-receipt','returns','quality','admin','projects','technicians','taskboard','paket-analiz','prosedur-otpa','field-changelog','welcome'];
+      
+      if (hash && validPages.includes(hash)) {
+        this.navigate(hash);
       } else {
-        this.navigate('dashboard');
+        // Viewer role -> welcome screen, proje_yonetici -> projects, others -> dashboard
+        const user = authManager.currentUser;
+        if (user && user.role === 'viewer') {
+          this.navigate('welcome');
+        } else if (user && user.role === 'proje_yonetici') {
+          this.navigate('projects');
+        } else {
+          this.navigate('dashboard');
+        }
       }
     } else {
       // Show login screen
@@ -48,6 +57,37 @@ const app = {
 
     // Show/hide menu items based on role
     this.updateMenuVisibility();
+  },
+
+  // ─── Browser History (Back/Forward) Support ───────────────────────
+  setupHistoryNavigation() {
+    window.addEventListener('popstate', (e) => {
+      const state = e.state;
+      if (state?.page) {
+        this._clearModuleStates();
+        this.navigate(state.page, false);
+      } else {
+        const hash = location.hash.replace('#', '');
+        if (hash) {
+          this._clearModuleStates();
+          this.navigate(hash, false);
+        }
+      }
+    });
+  },
+
+  _clearModuleStates() {
+    if (typeof FieldChangelog !== 'undefined') {
+      FieldChangelog.viewingLog = null;
+      FieldChangelog.viewingTimeline = null;
+      FieldChangelog.editingLog = null;
+    }
+    if (typeof ProsedurOtpa !== 'undefined') {
+      ProsedurOtpa.viewingOtpa = null;
+      ProsedurOtpa.fillingForm = null;
+      ProsedurOtpa.viewingBatteryReport = null;
+      ProsedurOtpa.viewingTemplate = null;
+    }
   },
 
   updateUserInfo() {
@@ -125,7 +165,12 @@ const app = {
     });
   },
 
-  navigate(page) {
+  navigate(page, pushHistory = true) {
+    // Push browser history state
+    if (pushHistory && history.pushState) {
+      history.pushState({ page }, '', '#' + page);
+    }
+
     // Show instant loading feedback
     const content = document.getElementById('content');
     content.innerHTML = `

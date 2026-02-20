@@ -264,6 +264,7 @@ const ProsedurOtpa = {
   async openOtpaDetail(id) {
     try {
       this.viewingOtpa = await api.request(`/prosedur-otpa/otpa/${id}`);
+      history.pushState({ page: 'prosedur-otpa', sub: 'otpa-detail' }, '', '#prosedur-otpa');
       this.render();
     } catch (e) { alert('Hata: ' + e.message); }
   },
@@ -535,6 +536,7 @@ const ProsedurOtpa = {
   async openFormFiller(formId) {
     try {
       this.fillingForm = await api.request(`/prosedur-otpa/otpa-forms/${formId}`);
+      history.pushState({ page: 'prosedur-otpa', sub: 'form-filler' }, '', '#prosedur-otpa');
       this.render();
     } catch (e) { alert('Hata: ' + e.message); }
   },
@@ -1049,6 +1051,7 @@ const ProsedurOtpa = {
         api.request(`/prosedur-otpa/form-templates/${id}/items`)
       ]);
       this.viewingTemplate = { template, items };
+      history.pushState({ page: 'prosedur-otpa', sub: 'template-editor' }, '', '#prosedur-otpa');
       this.render();
     } catch (e) { alert('Hata: ' + e.message); }
   },
@@ -1302,6 +1305,7 @@ const ProsedurOtpa = {
   async openBatteryReport(otpaId, batteryNo) {
     try {
       this.viewingBatteryReport = await api.request(`/prosedur-otpa/otpa/${otpaId}/battery/${batteryNo}/report`);
+      history.pushState({ page: 'prosedur-otpa', sub: 'battery-report' }, '', '#prosedur-otpa');
       this.render();
     } catch (e) { alert('Rapor hatası: ' + e.message); }
   },
