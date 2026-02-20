@@ -65,17 +65,17 @@ const ProsedurOtpa = {
     c.innerHTML = `
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Başlık -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
           <div>
-            <h1 class="text-3xl font-bold gradient-text"><i class="fas fa-file-alt mr-2"></i>Prosedür & OTPA Rapor</h1>
-            <p class="text-gray-400 mt-1">Doküman Yönetimi • Kalite Kontrol Formları • OTPA Arşivi</p>
+            <h1 class="text-xl sm:text-3xl font-bold gradient-text"><i class="fas fa-file-alt mr-2"></i>Prosedür & OTPA Rapor</h1>
+            <p class="text-gray-400 mt-1 text-xs sm:text-base">Doküman Yönetimi • Kalite Kontrol Formları • OTPA Arşivi</p>
           </div>
-          <div class="flex gap-3 text-center flex-wrap">
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-blue-400">${this.stats.document_count}</div><div class="text-xs text-gray-400">Doküman</div></div>
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-green-400">${this.stats.otpa_count}</div><div class="text-xs text-gray-400">OTPA</div></div>
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-yellow-400">${this.stats.completed_form_count}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-purple-400">${this.stats.template_count}</div><div class="text-xs text-gray-400">Form Şablonu</div></div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-2 sm:px-4 py-2 rounded-xl"><div class="text-lg sm:text-2xl font-bold text-blue-400">${this.stats.document_count}</div><div class="text-xs text-gray-400">Doküman</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-2 sm:px-4 py-2 rounded-xl"><div class="text-lg sm:text-2xl font-bold text-green-400">${this.stats.otpa_count}</div><div class="text-xs text-gray-400">OTPA</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-2 sm:px-4 py-2 rounded-xl"><div class="text-lg sm:text-2xl font-bold text-yellow-400">${this.stats.completed_form_count}</div><div class="text-xs text-gray-400">Form</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-2 sm:px-4 py-2 rounded-xl"><div class="text-lg sm:text-2xl font-bold text-purple-400">${this.stats.template_count}</div><div class="text-xs text-gray-400">Şablon</div></div>
           </div>
         </div>
       </div>
@@ -86,10 +86,10 @@ const ProsedurOtpa = {
           ${['otpa', 'prosedurler', 'sablonlar', 'raporlar'].map(t => {
             const labels = { otpa: '<i class="fas fa-folder-open mr-1"></i>OTPA Kayıtları', prosedurler: '<i class="fas fa-book mr-1"></i>Prosedürler', sablonlar: '<i class="fas fa-clipboard-list mr-1"></i>Form Şablonları', raporlar: '<i class="fas fa-chart-bar mr-1"></i>Raporlar' };
             const active = this.tab === t;
-            return `<button data-tab="${t}" onclick="ProsedurOtpa.switchTab('${t}')" class="po-tab-btn flex-1 min-w-[140px] px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${active ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}">${labels[t]}</button>`;
+            return `<button data-tab="${t}" onclick="ProsedurOtpa.switchTab('${t}')" class="po-tab-btn flex-1 min-w-0 px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${active ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}">${labels[t]}</button>`;
           }).join('')}
         </div>
-        <div class="p-6" id="po-tab-content">
+        <div class="p-3 sm:p-6" id="po-tab-content">
           <!-- Tab içeriği buraya render edilecek -->
         </div>
       </div>
@@ -103,7 +103,7 @@ const ProsedurOtpa = {
     // Tab butonlarının aktif stilini güncelle
     document.querySelectorAll('.po-tab-btn').forEach(btn => {
       const isActive = btn.dataset.tab === t;
-      btn.className = `po-tab-btn flex-1 min-w-[140px] px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap ${isActive ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}`;
+      btn.className = `po-tab-btn flex-1 min-w-0 px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${isActive ? 'gradient-btn text-white border-b-2 border-blue-400' : 'text-gray-400 hover:text-white hover:bg-white/5'}`;
     });
     this.renderTabContent();
   },
@@ -143,13 +143,13 @@ const ProsedurOtpa = {
 
       ${!this.otpas.length
         ? '<div class="text-center py-16 text-gray-500"><i class="fas fa-folder-open text-5xl mb-3 block"></i><p>Henüz OTPA kaydı yok</p></div>'
-        : `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        : `<div class="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           ${this.otpas.map(o => `
-            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openOtpaDetail(${o.id})">
-              <div class="flex items-start justify-between mb-3">
-                <div>
-                  <div class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">${this.esc(o.otpa_no)}</div>
-                  <div class="text-sm text-gray-400">${this.esc(o.project_name || '-')}</div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openOtpaDetail(${o.id})">
+              <div class="flex items-start justify-between mb-2 sm:mb-3">
+                <div class="min-w-0 flex-1 mr-2">
+                  <div class="text-base sm:text-lg font-bold text-white group-hover:text-blue-400 transition-colors truncate">${this.esc(o.otpa_no)}</div>
+                  <div class="text-xs sm:text-sm text-gray-400 truncate">${this.esc(o.project_name || '-')}</div>
                 </div>
                 ${this.statusBadge(o.status)}
               </div>
@@ -297,12 +297,12 @@ const ProsedurOtpa = {
     c.innerHTML = `
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div class="flex items-center gap-4">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
+          <div class="flex items-center gap-3 sm:gap-4">
             <button onclick="ProsedurOtpa.viewingOtpa=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
             <div>
-              <h1 class="text-2xl font-bold text-white"><i class="fas fa-folder-open mr-2 text-blue-400"></i>${this.esc(otpa.otpa_no)}</h1>
+              <h1 class="text-lg sm:text-2xl font-bold text-white"><i class="fas fa-folder-open mr-2 text-blue-400"></i>${this.esc(otpa.otpa_no)}</h1>
               <p class="text-gray-400 mt-1">${this.esc(otpa.project_name || '')} ${this.statusBadge(otpa.status)}</p>
             </div>
           </div>
@@ -311,11 +311,11 @@ const ProsedurOtpa = {
             ${this.isAdmin() ? `<button onclick="ProsedurOtpa.deleteOtpa(${otpa.id})" class="px-3 py-2 rounded-lg bg-red-500/20 text-red-300 text-sm hover:bg-red-500/30"><i class="fas fa-trash mr-1"></i>Sil</button>` : ''}
           </div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Sorumlu</div><div class="font-semibold text-white">${this.esc(otpa.responsible_tech || '-')}</div></div>
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Batarya</div><div class="font-semibold text-white">${otpa.battery_count || 0} adet</div></div>
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Üretim Tarihi</div><div class="font-semibold text-white">${this.fmtDate(otpa.production_date)}</div></div>
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Oluşturulma</div><div class="font-semibold text-white">${this.fmtDate(otpa.created_at)}</div></div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4">
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-2 sm:p-3 rounded-xl text-center"><div class="text-xs sm:text-sm text-gray-400">Sorumlu</div><div class="font-semibold text-white text-sm sm:text-base truncate">${this.esc(otpa.responsible_tech || '-')}</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-2 sm:p-3 rounded-xl text-center"><div class="text-xs sm:text-sm text-gray-400">Batarya</div><div class="font-semibold text-white text-sm sm:text-base">${otpa.battery_count || 0} adet</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-2 sm:p-3 rounded-xl text-center"><div class="text-xs sm:text-sm text-gray-400">Üretim Tarihi</div><div class="font-semibold text-white text-sm sm:text-base">${this.fmtDate(otpa.production_date)}</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-2 sm:p-3 rounded-xl text-center"><div class="text-xs sm:text-sm text-gray-400">Oluşturulma</div><div class="font-semibold text-white text-sm sm:text-base">${this.fmtDate(otpa.created_at)}</div></div>
         </div>
       </div>
 
@@ -331,12 +331,12 @@ const ProsedurOtpa = {
         const batteryNos = Object.keys(formsByBattery).map(Number).sort((a, b) => a - b);
         if (!batteryNos.length) return '';
         return `
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold text-white"><i class="fas fa-battery-full mr-2 text-blue-400"></i>Batarya Bazlı Görünüm</h2>
-          <span class="text-sm text-gray-400">${batteryNos.length} batarya • Rapor görüntülemek için tıklayın</span>
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+          <h2 class="text-base sm:text-lg font-bold text-white"><i class="fas fa-battery-full mr-2 text-blue-400"></i>Batarya Bazlı Görünüm</h2>
+          <span class="text-xs sm:text-sm text-gray-400">${batteryNos.length} batarya • Rapor görüntülemek için tıklayın</span>
         </div>
-        <div class="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div class="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           ${batteryNos.map(bno => {
             const bForms = formsByBattery[bno];
             const total = bForms.length;
@@ -345,8 +345,8 @@ const ProsedurOtpa = {
             const pct = total ? Math.round((completed / total) * 100) : 0;
             const allDone = completed === total && total > 0;
             return `
-          <div class="bg-gray-800/70 border ${allDone ? 'border-green-500/40' : 'border-gray-600/20'} p-4 rounded-xl hover:border-blue-400/50 transition-all cursor-pointer group text-center" onclick="ProsedurOtpa.openBatteryReport(${otpa.id}, ${bno})">
-            <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-xl font-bold mb-2 ${allDone ? 'bg-green-500/20 text-green-400' : completed > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-500'}">
+          <div class="bg-gray-800/70 border ${allDone ? 'border-green-500/40' : 'border-gray-600/20'} p-3 sm:p-4 rounded-xl hover:border-blue-400/50 transition-all cursor-pointer group text-center" onclick="ProsedurOtpa.openBatteryReport(${otpa.id}, ${bno})">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold mb-2 ${allDone ? 'bg-green-500/20 text-green-400' : completed > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-500'}">
               B${bno}
             </div>
             <div class="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">Batarya ${bno}</div>
@@ -365,10 +365,10 @@ const ProsedurOtpa = {
       })() : ''}
 
       <!-- Form Doldurma Bölümü -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex justify-between items-center mb-4">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-clipboard-check mr-2 text-green-400"></i>Kalite Formları</h2>
-          <div class="flex gap-2">
+          <div class="flex flex-col sm:flex-row gap-2">
             ${templates.filter(t => t.is_active).length ? `
             <select id="po-detail-template" class="px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-sm" style="color-scheme:dark;">
               <option value="" class="bg-gray-800 text-white">-- Form Şablonu Seç --</option>
@@ -404,8 +404,8 @@ const ProsedurOtpa = {
       </div>
 
       <!-- Dosyalar -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex justify-between items-center mb-4">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-paperclip mr-2 text-yellow-400"></i>Dosyalar & Görseller</h2>
           <button onclick="ProsedurOtpa.showFileUpload(${otpa.id})" class="gradient-btn px-3 py-2 rounded-lg text-white text-sm font-semibold"><i class="fas fa-upload mr-1"></i>Dosya Yükle</button>
         </div>
@@ -428,7 +428,7 @@ const ProsedurOtpa = {
                       <div class="text-sm font-semibold text-white truncate">${this.esc(f.file_original_name || 'Dosya')}</div>
                       <div class="text-xs text-gray-400">${this.fmtDateTime(f.created_at)} • ${f.file_size ? (f.file_size / 1024).toFixed(0) + ' KB' : ''}</div>
                     </div>
-                    <button onclick="ProsedurOtpa.deleteFile(${f.id}, ${otpa.id})" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-trash"></i></button>
+                    <button onclick="ProsedurOtpa.deleteFile(${f.id}, ${otpa.id})" class="text-red-400 hover:text-red-300 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><i class="fas fa-trash"></i></button>
                   </div>`;
                 }).join('')}
               </div>
@@ -546,12 +546,12 @@ const ProsedurOtpa = {
     const items = d.items || [];
 
     c.innerHTML = `
-    <div class="max-w-4xl mx-auto space-y-6">
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex items-center gap-4 mb-4">
+    <div class="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex items-center gap-3 sm:gap-4 mb-4">
           <button onclick="ProsedurOtpa.fillingForm=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
-          <div class="flex-1">
-            <h1 class="text-xl font-bold text-white">
+          <div class="flex-1 min-w-0">
+            <h1 class="text-base sm:text-xl font-bold text-white">
               ${this.esc(form.form_name)} ${this.formTypeBadge(form.form_type)}
               ${form.battery_no ? `<span class="ml-2 text-blue-400">— Batarya ${form.battery_no}</span>` : ''}
             </h1>
@@ -560,8 +560,8 @@ const ProsedurOtpa = {
         </div>
       </div>
 
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl space-y-4">
-        <h2 class="text-lg font-bold text-white mb-3"><i class="fas fa-list-check mr-2 text-green-400"></i>Kontrol Maddeleri (${items.length})</h2>
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl space-y-3 sm:space-y-4">
+        <h2 class="text-base sm:text-lg font-bold text-white mb-3"><i class="fas fa-list-check mr-2 text-green-400"></i>Kontrol Maddeleri (${items.length})</h2>
         ${items.map((item, i) => `
           <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl" data-item-id="${item.id}">
             <div class="flex items-start gap-3">
@@ -692,7 +692,37 @@ const ProsedurOtpa = {
   renderDocsList(docs) {
     if (!docs.length) return '<div class="text-center py-16 text-gray-500"><i class="fas fa-book text-5xl mb-3 block"></i><p>Henüz doküman yok</p></div>';
     return `
-    <div class="overflow-x-auto rounded-xl border border-white/10">
+    <!-- Mobile card view -->
+    <div class="sm:hidden space-y-2">
+      ${docs.map(d => `
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-white text-sm truncate">${this.esc(d.doc_name)}</div>
+            <div class="flex items-center gap-2 mt-1 flex-wrap">
+              ${this.docTypeBadge(d.doc_type)}
+              ${d.doc_code ? `<span class="text-gray-400 font-mono text-xs">${this.esc(d.doc_code)}</span>` : ''}
+              ${d.revision_no ? `<span class="text-gray-500 text-xs">Rev.${this.esc(d.revision_no)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        ${d.description ? `<div class="text-xs text-gray-400 mb-2 line-clamp-2">${this.esc(d.description)}</div>` : ''}
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500">${this.fmtDate(d.publish_date)} ${d.department ? '• ' + this.esc(d.department) : ''}</span>
+          <div class="flex gap-1.5">
+            ${d.file_path ? `<button onclick="ProsedurOtpa.previewDoc(${d.id}, '${(d.file_original_name || '').replace(/'/g, '\\\'')}')" class="w-8 h-8 rounded-lg bg-green-500/20 text-green-300 text-xs flex items-center justify-center active:bg-green-500/40" title="Görüntüle"><i class="fas fa-eye"></i></button>` : ''}
+            ${d.file_path ? `<button onclick="ProsedurOtpa.downloadDoc(${d.id})" class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-300 text-xs flex items-center justify-center active:bg-blue-500/40" title="İndir"><i class="fas fa-download"></i></button>` : ''}
+            <button onclick="ProsedurOtpa.showRevisions(${d.id})" class="w-8 h-8 rounded-lg bg-gray-600/50 text-gray-300 text-xs flex items-center justify-center active:bg-gray-500/50" title="Revizyon"><i class="fas fa-history"></i></button>
+            ${this.isAdmin() ? `
+            <button onclick="ProsedurOtpa.showDocForm(${JSON.stringify(d).replace(/"/g, '&quot;')})" class="w-8 h-8 rounded-lg bg-yellow-500/20 text-yellow-300 text-xs flex items-center justify-center active:bg-yellow-500/40" title="Düzenle"><i class="fas fa-edit"></i></button>
+            <button onclick="ProsedurOtpa.deleteDoc(${d.id})" class="w-8 h-8 rounded-lg bg-red-500/20 text-red-300 text-xs flex items-center justify-center active:bg-red-500/40" title="Sil"><i class="fas fa-trash"></i></button>
+            ` : ''}
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <!-- Desktop table view -->
+    <div class="hidden sm:block overflow-x-auto rounded-xl border border-white/10">
       <table class="w-full text-sm text-left">
         <thead class="bg-gray-800/50 text-gray-400 uppercase text-xs">
           <tr>
@@ -700,8 +730,8 @@ const ProsedurOtpa = {
             <th class="px-4 py-3">Kod</th>
             <th class="px-4 py-3">Tür</th>
             <th class="px-4 py-3">Rev.</th>
-            <th class="px-4 py-3">Departman</th>
-            <th class="px-4 py-3">Tarih</th>
+            <th class="px-4 py-3 hidden md:table-cell">Departman</th>
+            <th class="px-4 py-3 hidden md:table-cell">Tarih</th>
             <th class="px-4 py-3 text-center">İşlem</th>
           </tr>
         </thead>
@@ -715,8 +745,8 @@ const ProsedurOtpa = {
             <td class="px-4 py-3 text-gray-300 font-mono text-xs">${this.esc(d.doc_code || '-')}</td>
             <td class="px-4 py-3">${this.docTypeBadge(d.doc_type)}</td>
             <td class="px-4 py-3 text-gray-300">${this.esc(d.revision_no || '0')}</td>
-            <td class="px-4 py-3 text-gray-400">${this.esc(d.department || '-')}</td>
-            <td class="px-4 py-3 text-gray-400 text-xs">${this.fmtDate(d.publish_date)}</td>
+            <td class="px-4 py-3 text-gray-400 hidden md:table-cell">${this.esc(d.department || '-')}</td>
+            <td class="px-4 py-3 text-gray-400 text-xs hidden md:table-cell">${this.fmtDate(d.publish_date)}</td>
             <td class="px-4 py-3 text-center">
               <div class="flex gap-1 justify-center">
                 ${d.file_path ? `<button onclick="ProsedurOtpa.previewDoc(${d.id}, '${(d.file_original_name || '').replace(/'/g, '\\\'')}')" class="px-2 py-1 rounded bg-green-500/20 text-green-300 text-xs hover:bg-green-500/30" title="Görüntüle"><i class="fas fa-eye"></i></button>` : ''}
@@ -792,11 +822,11 @@ const ProsedurOtpa = {
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
         modal.style.background = 'rgba(0,0,0,0.85)';
         modal.innerHTML = `
-          <div class="relative w-full max-w-5xl h-[85vh] flex flex-col bg-gray-900 rounded-2xl overflow-hidden border border-gray-600/30">
-            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-700">
-              <div class="flex items-center gap-3">
-                <i class="fas ${isPdf ? 'fa-file-pdf text-red-400' : 'fa-image text-green-400'} text-xl"></i>
-                <span class="text-white font-semibold text-sm truncate max-w-md">${this.esc(filename)}</span>
+          <div class="relative w-full max-w-full sm:max-w-5xl h-[95vh] sm:h-[85vh] flex flex-col bg-gray-900 rounded-none sm:rounded-2xl overflow-hidden border border-gray-600/30">
+            <div class="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-700">
+              <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <i class="fas ${isPdf ? 'fa-file-pdf text-red-400' : 'fa-image text-green-400'} text-lg sm:text-xl"></i>
+                <span class="text-white font-semibold text-xs sm:text-sm truncate">${this.esc(filename)}</span>
               </div>
               <div class="flex gap-2">
                 <button onclick="ProsedurOtpa.downloadDoc(${id})" class="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 text-sm hover:bg-blue-500/30"><i class="fas fa-download mr-1"></i>İndir</button>
@@ -1030,14 +1060,14 @@ const ProsedurOtpa = {
     const items = d.items || [];
 
     c.innerHTML = `
-    <div class="max-w-4xl mx-auto space-y-6">
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <button onclick="ProsedurOtpa.viewingTemplate=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
-            <div>
-              <h1 class="text-xl font-bold text-white">${this.esc(t.form_name)} ${this.formTypeBadge(t.form_type)}</h1>
-              <p class="text-gray-400 text-sm mt-1">${this.esc(t.description || '')} • ${items.length} madde</p>
+    <div class="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+            <button onclick="ProsedurOtpa.viewingTemplate=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl flex-shrink-0"><i class="fas fa-arrow-left"></i></button>
+            <div class="min-w-0">
+              <h1 class="text-base sm:text-xl font-bold text-white truncate">${this.esc(t.form_name)} ${this.formTypeBadge(t.form_type)}</h1>
+              <p class="text-gray-400 text-xs sm:text-sm mt-1">${this.esc(t.description || '')} • ${items.length} madde</p>
             </div>
           </div>
           <div class="flex gap-2">
@@ -1048,7 +1078,7 @@ const ProsedurOtpa = {
       </div>
 
       <!-- Maddeler -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl space-y-3">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl space-y-3">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-list-ol mr-2 text-green-400"></i>Kontrol Maddeleri</h2>
         </div>
@@ -1060,8 +1090,8 @@ const ProsedurOtpa = {
             <div class="text-xs text-gray-500">${item.control_type === 'evet_hayir' ? 'Evet/Hayır' : item.control_type === 'sayisal' ? 'Sayısal' : 'Açıklama'} ${item.is_required ? '• Zorunlu' : ''}</div>
           </div>
           ${this.isAdmin() ? `
-          <button onclick="ProsedurOtpa.editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-yellow-400 hover:text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-edit"></i></button>
-          <button onclick="ProsedurOtpa.deleteItem(${item.id})" class="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-trash"></i></button>
+          <button onclick="ProsedurOtpa.editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-yellow-400 hover:text-yellow-300 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><i class="fas fa-edit"></i></button>
+          <button onclick="ProsedurOtpa.deleteItem(${item.id})" class="text-red-400 hover:text-red-300 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><i class="fas fa-trash"></i></button>
           ` : ''}
         </div>
         `).join('')}
@@ -1153,8 +1183,8 @@ const ProsedurOtpa = {
     el.innerHTML = `
     <div class="space-y-4">
       <p class="text-gray-400 text-sm">Bir OTPA seçerek genel raporunu görüntüleyin.</p>
-      <div class="flex gap-3 items-center">
-        <select id="po-report-otpa" class="flex-1 max-w-md px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white" style="color-scheme:dark;">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <select id="po-report-otpa" class="flex-1 sm:max-w-md px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white" style="color-scheme:dark;">
           <option value="" class="bg-gray-800 text-white">-- OTPA Seçin --</option>
           ${this.otpas.map(o => `<option value="${o.id}" class="bg-gray-800 text-white">${this.esc(o.otpa_no)} — ${this.esc(o.project_name || '')}</option>`).join('')}
         </select>
@@ -1179,19 +1209,19 @@ const ProsedurOtpa = {
       const s = r.summary;
 
       out.innerHTML = `
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl space-y-6 mt-4" id="po-report-content">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-6 rounded-2xl space-y-4 sm:space-y-6 mt-4" id="po-report-content">
         <div class="text-center border-b border-white/10 pb-4">
-          <h2 class="text-2xl font-bold text-white">OTPA Genel Raporu</h2>
+          <h2 class="text-xl sm:text-2xl font-bold text-white">OTPA Genel Raporu</h2>
           <p class="text-gray-400">${this.esc(otpa.otpa_no)} — ${this.esc(otpa.project_name || '')}</p>
           <p class="text-xs text-gray-500 mt-1">Rapor tarihi: ${new Date().toLocaleString('tr-TR')}</p>
         </div>
 
         <!-- Özet -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-blue-400">${otpa.battery_count || 0}</div><div class="text-xs text-gray-400">Batarya</div></div>
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-green-400">${s.completedForms}/${s.totalForms}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold ${s.totalNonConform > 0 ? 'text-red-400' : 'text-green-400'}">${s.totalNonConform}</div><div class="text-xs text-gray-400">Uygunsuz</div></div>
-          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-yellow-400">${s.fileCount}</div><div class="text-xs text-gray-400">Dosya</div></div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-4 rounded-xl text-center"><div class="text-xl sm:text-3xl font-bold text-blue-400">${otpa.battery_count || 0}</div><div class="text-xs text-gray-400">Batarya</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-4 rounded-xl text-center"><div class="text-xl sm:text-3xl font-bold text-green-400">${s.completedForms}/${s.totalForms}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-4 rounded-xl text-center"><div class="text-xl sm:text-3xl font-bold ${s.totalNonConform > 0 ? 'text-red-400' : 'text-green-400'}">${s.totalNonConform}</div><div class="text-xs text-gray-400">Uygunsuz</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-4 rounded-xl text-center"><div class="text-xl sm:text-3xl font-bold text-yellow-400">${s.fileCount}</div><div class="text-xs text-gray-400">Dosya</div></div>
         </div>
 
         <!-- Genel Bilgiler -->
@@ -1212,18 +1242,18 @@ const ProsedurOtpa = {
           <div class="overflow-x-auto rounded-xl border border-white/10">
             <table class="w-full text-sm">
               <thead class="bg-gray-800/50 text-gray-400 text-xs uppercase"><tr>
-                <th class="px-3 py-2">Form</th><th class="px-3 py-2">Tür</th><th class="px-3 py-2">Batarya</th><th class="px-3 py-2">Durum</th><th class="px-3 py-2">Dolduran</th><th class="px-3 py-2">Cevap</th><th class="px-3 py-2">Uygunsuz</th>
+                <th class="px-2 sm:px-3 py-2">Form</th><th class="px-2 sm:px-3 py-2">Tür</th><th class="px-2 sm:px-3 py-2 hidden sm:table-cell">Batarya</th><th class="px-2 sm:px-3 py-2">Durum</th><th class="px-2 sm:px-3 py-2 hidden sm:table-cell">Dolduran</th><th class="px-2 sm:px-3 py-2 hidden sm:table-cell">Cevap</th><th class="px-2 sm:px-3 py-2">NOK</th>
               </tr></thead>
               <tbody class="divide-y divide-white/5">
                 ${forms.map(f => `
                 <tr class="hover:bg-white/5">
-                  <td class="px-3 py-2 text-white">${this.esc(f.form_name)}</td>
-                  <td class="px-3 py-2">${this.formTypeBadge(f.form_type)}</td>
-                  <td class="px-3 py-2 text-gray-300">${f.battery_no ? 'B' + f.battery_no : 'Genel'}</td>
-                  <td class="px-3 py-2">${this.statusBadge(f.status)}</td>
-                  <td class="px-3 py-2 text-gray-400">${this.esc(f.filled_by_name || '-')}</td>
-                  <td class="px-3 py-2 text-gray-300">${f.total_answers || 0}</td>
-                  <td class="px-3 py-2 ${parseInt(f.nonconform_count) > 0 ? 'text-red-400 font-bold' : 'text-green-400'}">${f.nonconform_count || 0}</td>
+                  <td class="px-2 sm:px-3 py-2 text-white text-xs sm:text-sm">${this.esc(f.form_name)}</td>
+                  <td class="px-2 sm:px-3 py-2">${this.formTypeBadge(f.form_type)}</td>
+                  <td class="px-2 sm:px-3 py-2 text-gray-300 hidden sm:table-cell">${f.battery_no ? 'B' + f.battery_no : 'Genel'}</td>
+                  <td class="px-2 sm:px-3 py-2">${this.statusBadge(f.status)}</td>
+                  <td class="px-2 sm:px-3 py-2 text-gray-400 hidden sm:table-cell">${this.esc(f.filled_by_name || '-')}</td>
+                  <td class="px-2 sm:px-3 py-2 text-gray-300 hidden sm:table-cell">${f.total_answers || 0}</td>
+                  <td class="px-2 sm:px-3 py-2 ${parseInt(f.nonconform_count) > 0 ? 'text-red-400 font-bold' : 'text-green-400'}">${f.nonconform_count || 0}</td>
                 </tr>`).join('')}
               </tbody>
             </table>
@@ -1289,17 +1319,17 @@ const ProsedurOtpa = {
     const allCompleted = forms.length > 0 && forms.every(f => f.status === 'completed');
 
     c.innerHTML = `
-    <div class="max-w-5xl mx-auto space-y-6">
+    <div class="max-w-5xl mx-auto space-y-4 sm:space-y-6">
       <!-- Header -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
-        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div class="flex items-center gap-4">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
+          <div class="flex items-center gap-3 sm:gap-4">
             <button onclick="ProsedurOtpa.viewingBatteryReport=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
             <div>
-              <h1 class="text-2xl font-bold text-white">
+              <h1 class="text-lg sm:text-2xl font-bold text-white">
                 <i class="fas fa-battery-full mr-2 text-blue-400"></i>Batarya ${batteryNo} — Detay Raporu
               </h1>
-              <p class="text-gray-300 mt-1">${this.esc(otpa.otpa_no)} • ${this.esc(otpa.project_name || '')}</p>
+              <p class="text-gray-300 mt-1 text-sm">${this.esc(otpa.otpa_no)} • ${this.esc(otpa.project_name || '')}</p>
             </div>
           </div>
           <div class="flex gap-2 flex-wrap">
@@ -1308,33 +1338,33 @@ const ProsedurOtpa = {
           </div>
         </div>
         <!-- Özet kartlar -->
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
-          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
-            <div class="text-sm text-gray-400">Batarya No</div>
-            <div class="text-2xl font-bold text-blue-400">B${batteryNo}</div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mt-4">
+          <div class="bg-gray-800/70 border border-gray-600/20 p-2 sm:p-3 rounded-xl text-center">
+            <div class="text-xs sm:text-sm text-gray-400">Batarya No</div>
+            <div class="text-lg sm:text-2xl font-bold text-blue-400">B${batteryNo}</div>
           </div>
-          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
-            <div class="text-sm text-gray-400">Form Sayısı</div>
-            <div class="text-2xl font-bold text-white">${forms.length}</div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-2 sm:p-3 rounded-xl text-center">
+            <div class="text-xs sm:text-sm text-gray-400">Form Sayısı</div>
+            <div class="text-lg sm:text-2xl font-bold text-white">${forms.length}</div>
           </div>
-          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
-            <div class="text-sm text-gray-400">Toplam Madde</div>
-            <div class="text-2xl font-bold text-white">${totalItems}</div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-2 sm:p-3 rounded-xl text-center">
+            <div class="text-xs sm:text-sm text-gray-400">Toplam Madde</div>
+            <div class="text-lg sm:text-2xl font-bold text-white">${totalItems}</div>
           </div>
-          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
-            <div class="text-sm text-gray-400">OK</div>
-            <div class="text-2xl font-bold text-green-400">${totalOk}</div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-2 sm:p-3 rounded-xl text-center">
+            <div class="text-xs sm:text-sm text-gray-400">OK</div>
+            <div class="text-lg sm:text-2xl font-bold text-green-400">${totalOk}</div>
           </div>
-          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
-            <div class="text-sm text-gray-400">NOK</div>
-            <div class="text-2xl font-bold ${totalNok > 0 ? 'text-red-400' : 'text-green-400'}">${totalNok}</div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-2 sm:p-3 rounded-xl text-center">
+            <div class="text-xs sm:text-sm text-gray-400">NOK</div>
+            <div class="text-lg sm:text-2xl font-bold ${totalNok > 0 ? 'text-red-400' : 'text-green-400'}">${totalNok}</div>
           </div>
         </div>
       </div>
 
       <!-- Genel bilgi -->
-      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-5 rounded-2xl">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 sm:p-5 rounded-2xl">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-sm">
           <div><span class="text-gray-400">Sorumlu:</span> <span class="text-white font-semibold">${this.esc(otpa.responsible_tech || '-')}</span></div>
           <div><span class="text-gray-400">Üretim Tarihi:</span> <span class="text-white font-semibold">${this.fmtDate(otpa.production_date)}</span></div>
           <div><span class="text-gray-400">Durum:</span> ${allCompleted ? '<span class="text-green-400 font-semibold">Tamamlandı</span>' : '<span class="text-yellow-400 font-semibold">Devam Ediyor</span>'}</div>
@@ -1352,19 +1382,19 @@ const ProsedurOtpa = {
         return `
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 rounded-2xl overflow-hidden">
         <!-- Form başlığı -->
-        <div class="p-5 border-b border-gray-600/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div class="flex items-center gap-3">
+        <div class="p-3 sm:p-5 border-b border-gray-600/20 flex flex-col gap-2">
+          <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
             ${this.formTypeBadge(f.form_type)}
-            <h3 class="text-lg font-bold text-white">${this.esc(f.form_name || 'Form')}</h3>
+            <h3 class="text-base sm:text-lg font-bold text-white">${this.esc(f.form_name || 'Form')}</h3>
             ${this.statusBadge(f.status)}
           </div>
-          <div class="flex gap-4 text-sm">
+          <div class="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs sm:text-sm">
             <span class="text-gray-400"><i class="fas fa-user mr-1"></i>Dolduran: <span class="text-white font-semibold">${this.esc(f.filled_by_name || 'Henüz doldurulmadı')}</span></span>
             ${f.filled_at ? `<span class="text-gray-400"><i class="fas fa-clock mr-1"></i>${this.fmtDateTime(f.filled_at)}</span>` : ''}
           </div>
         </div>
         <!-- Sonuç özet bar -->
-        <div class="px-5 py-3 bg-gray-800/50 flex items-center gap-4 text-sm">
+        <div class="px-3 sm:px-5 py-2 sm:py-3 bg-gray-800/50 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
           <span class="text-gray-400">Sonuç:</span>
           <span class="text-green-400 font-semibold"><i class="fas fa-check mr-1"></i>${okCount} OK</span>
           <span class="text-red-400 font-semibold"><i class="fas fa-times mr-1"></i>${nokCount} NOK</span>
@@ -1374,13 +1404,13 @@ const ProsedurOtpa = {
         </div>
         <!-- Madde tablosu -->
         <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-xs sm:text-sm">
             <thead class="bg-gray-800/60 text-gray-400 text-xs uppercase">
               <tr>
-                <th class="px-4 py-3 w-12 text-center">No</th>
-                <th class="px-4 py-3 text-left">Kontrol Maddesi</th>
-                <th class="px-4 py-3 w-32 text-center">Sonuç</th>
-                <th class="px-4 py-3 text-left">Yorum</th>
+                <th class="px-2 sm:px-4 py-2 sm:py-3 w-8 sm:w-12 text-center">No</th>
+                <th class="px-2 sm:px-4 py-2 sm:py-3 text-left">Kontrol Maddesi</th>
+                <th class="px-2 sm:px-4 py-2 sm:py-3 w-20 sm:w-32 text-center">Sonuç</th>
+                <th class="px-2 sm:px-4 py-2 sm:py-3 text-left hidden sm:table-cell">Yorum</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-700/30">
@@ -1398,16 +1428,16 @@ const ProsedurOtpa = {
                 }
                 return `
               <tr class="hover:bg-gray-800/30 ${(item.answer_value === 'hayir' || item.answer_value === 'nok') ? 'bg-red-500/5' : ''}">
-                <td class="px-4 py-3 text-center text-gray-400 font-mono">${item.item_no || i + 1}</td>
-                <td class="px-4 py-3 text-white">${this.esc(item.item_text)} ${item.is_required ? '<span class="text-red-400 text-xs">*</span>' : ''}</td>
-                <td class="px-4 py-3 text-center">${resultHtml}</td>
-                <td class="px-4 py-3 text-gray-400">${this.esc(item.comment || '-')}</td>
+                <td class="px-2 sm:px-4 py-2 sm:py-3 text-center text-gray-400 font-mono">${item.item_no || i + 1}</td>
+                <td class="px-2 sm:px-4 py-2 sm:py-3 text-white">${this.esc(item.item_text)} ${item.is_required ? '<span class="text-red-400 text-xs">*</span>' : ''}</td>
+                <td class="px-2 sm:px-4 py-2 sm:py-3 text-center">${resultHtml}</td>
+                <td class="px-2 sm:px-4 py-2 sm:py-3 text-gray-400 hidden sm:table-cell">${this.esc(item.comment || '-')}</td>
               </tr>`;
               }).join('')}
             </tbody>
           </table>
         </div>
-        ${f.notes ? `<div class="px-5 py-3 border-t border-gray-600/20 text-sm"><span class="text-gray-400">Form Notu:</span> <span class="text-white">${this.esc(f.notes)}</span></div>` : ''}
+        ${f.notes ? `<div class="px-3 sm:px-5 py-2 sm:py-3 border-t border-gray-600/20 text-xs sm:text-sm"><span class="text-gray-400">Form Notu:</span> <span class="text-white">${this.esc(f.notes)}</span></div>` : ''}
       </div>`;
       }).join('')}
     </div>`;
