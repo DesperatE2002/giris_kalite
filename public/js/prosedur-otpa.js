@@ -62,23 +62,23 @@ const ProsedurOtpa = {
     c.innerHTML = `
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Başlık -->
-      <div class="glass-card p-6 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 class="text-3xl font-bold gradient-text"><i class="fas fa-file-alt mr-2"></i>Prosedür & OTPA Rapor</h1>
             <p class="text-gray-400 mt-1">Doküman Yönetimi • Kalite Kontrol Formları • OTPA Arşivi</p>
           </div>
           <div class="flex gap-3 text-center flex-wrap">
-            <div class="glass-card px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-blue-400">${this.stats.document_count}</div><div class="text-xs text-gray-400">Doküman</div></div>
-            <div class="glass-card px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-green-400">${this.stats.otpa_count}</div><div class="text-xs text-gray-400">OTPA</div></div>
-            <div class="glass-card px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-yellow-400">${this.stats.completed_form_count}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
-            <div class="glass-card px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-purple-400">${this.stats.template_count}</div><div class="text-xs text-gray-400">Form Şablonu</div></div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-blue-400">${this.stats.document_count}</div><div class="text-xs text-gray-400">Doküman</div></div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-green-400">${this.stats.otpa_count}</div><div class="text-xs text-gray-400">OTPA</div></div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-yellow-400">${this.stats.completed_form_count}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-purple-400">${this.stats.template_count}</div><div class="text-xs text-gray-400">Form Şablonu</div></div>
           </div>
         </div>
       </div>
 
       <!-- Tablar -->
-      <div class="glass-card rounded-2xl overflow-hidden">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden">
         <div class="flex border-b border-white/10 overflow-x-auto">
           ${['otpa', 'prosedurler', 'sablonlar', 'raporlar'].map(t => {
             const labels = { otpa: '<i class="fas fa-folder-open mr-1"></i>OTPA Kayıtları', prosedurler: '<i class="fas fa-book mr-1"></i>Prosedürler', sablonlar: '<i class="fas fa-clipboard-list mr-1"></i>Form Şablonları', raporlar: '<i class="fas fa-chart-bar mr-1"></i>Raporlar' };
@@ -134,7 +134,7 @@ const ProsedurOtpa = {
         ? '<div class="text-center py-16 text-gray-500"><i class="fas fa-folder-open text-5xl mb-3 block"></i><p>Henüz OTPA kaydı yok</p></div>'
         : `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           ${this.otpas.map(o => `
-            <div class="glass-card p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openOtpaDetail(${o.id})">
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openOtpaDetail(${o.id})">
               <div class="flex items-start justify-between mb-3">
                 <div>
                   <div class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">${this.esc(o.otpa_no)}</div>
@@ -200,8 +200,8 @@ const ProsedurOtpa = {
         <div>
           <label class="block text-sm text-gray-400 mb-1">Durum</label>
           <select id="po-f-status" class="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white focus:border-blue-400 focus:outline-none" style="color-scheme:dark;">
-            <option value="open" ${data?.status==='open'?'selected':''}>Açık</option>
-            <option value="closed" ${data?.status==='closed'?'selected':''}>Kapalı</option>
+            <option value="open" class="bg-gray-800 text-white" ${data?.status==='open'?'selected':''}>Açık</option>
+            <option value="closed" class="bg-gray-800 text-white" ${data?.status==='closed'?'selected':''}>Kapalı</option>
           </select>
         </div>` : ''}
       </div>
@@ -286,7 +286,7 @@ const ProsedurOtpa = {
     c.innerHTML = `
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="glass-card p-6 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div class="flex items-center gap-4">
             <button onclick="ProsedurOtpa.viewingOtpa=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
@@ -301,22 +301,22 @@ const ProsedurOtpa = {
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-          <div class="glass-card p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Sorumlu</div><div class="font-semibold text-white">${this.esc(otpa.responsible_tech || '-')}</div></div>
-          <div class="glass-card p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Batarya</div><div class="font-semibold text-white">${otpa.battery_count || 0} adet</div></div>
-          <div class="glass-card p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Üretim Tarihi</div><div class="font-semibold text-white">${this.fmtDate(otpa.production_date)}</div></div>
-          <div class="glass-card p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Oluşturulma</div><div class="font-semibold text-white">${this.fmtDate(otpa.created_at)}</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Sorumlu</div><div class="font-semibold text-white">${this.esc(otpa.responsible_tech || '-')}</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Batarya</div><div class="font-semibold text-white">${otpa.battery_count || 0} adet</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Üretim Tarihi</div><div class="font-semibold text-white">${this.fmtDate(otpa.production_date)}</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Oluşturulma</div><div class="font-semibold text-white">${this.fmtDate(otpa.created_at)}</div></div>
         </div>
       </div>
 
       <!-- Form Doldurma Bölümü -->
-      <div class="glass-card p-6 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-clipboard-check mr-2 text-green-400"></i>Kalite Formları</h2>
           <div class="flex gap-2">
             ${templates.filter(t => t.is_active).length ? `
             <select id="po-detail-template" class="px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-sm" style="color-scheme:dark;">
-              <option value="">-- Form Şablonu Seç --</option>
-              ${templates.filter(t => t.is_active).map(t => `<option value="${t.id}">${this.esc(t.form_name)} (${t.form_type})</option>`).join('')}
+              <option value="" class="bg-gray-800 text-white">-- Form Şablonu Seç --</option>
+              ${templates.filter(t => t.is_active).map(t => `<option value="${t.id}" class="bg-gray-800 text-white">${this.esc(t.form_name)} (${t.form_type})</option>`).join('')}
             </select>
             <button onclick="ProsedurOtpa.createBulkForms(${otpa.id})" class="gradient-btn px-3 py-2 rounded-lg text-white text-sm font-semibold"><i class="fas fa-plus mr-1"></i>Tüm Bataryalar İçin Oluştur</button>
             ` : '<span class="text-gray-500 text-sm">Henüz aktif form şablonu yok. Form Şablonları tabından ekleyin.</span>'}
@@ -330,7 +330,7 @@ const ProsedurOtpa = {
               <h3 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">${this.formTypeBadge(type)} ${flist[0]?.form_name || type} (${flist.length})</h3>
               <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 ${flist.map(f => `
-                  <div class="glass-card p-3 rounded-lg hover:border-blue-400/30 transition-all cursor-pointer flex items-center gap-3" onclick="ProsedurOtpa.openFormFiller(${f.id})">
+                  <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-lg hover:border-blue-400/30 transition-all cursor-pointer flex items-center gap-3" onclick="ProsedurOtpa.openFormFiller(${f.id})">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${f.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}">
                       ${f.battery_no ? 'B' + f.battery_no : '<i class="fas fa-file-alt"></i>'}
                     </div>
@@ -348,7 +348,7 @@ const ProsedurOtpa = {
       </div>
 
       <!-- Dosyalar -->
-      <div class="glass-card p-6 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-paperclip mr-2 text-yellow-400"></i>Dosyalar & Görseller</h2>
           <button onclick="ProsedurOtpa.showFileUpload(${otpa.id})" class="gradient-btn px-3 py-2 rounded-lg text-white text-sm font-semibold"><i class="fas fa-upload mr-1"></i>Dosya Yükle</button>
@@ -364,7 +364,7 @@ const ProsedurOtpa = {
                 ${flist.map(f => {
                   const isImage = (f.file_original_name || '').match(/\.(jpg|jpeg|png|gif|webp)$/i);
                   return `
-                  <div class="glass-card p-3 rounded-lg flex items-center gap-3 group">
+                  <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-lg flex items-center gap-3 group">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center ${isImage ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}">
                       <i class="fas ${isImage ? 'fa-image' : 'fa-file-alt'}"></i>
                     </div>
@@ -381,7 +381,7 @@ const ProsedurOtpa = {
         }
       </div>
 
-      ${otpa.notes ? `<div class="glass-card p-4 rounded-2xl"><div class="text-sm text-gray-400 mb-1"><i class="fas fa-sticky-note mr-1"></i>Notlar</div><div class="text-white">${this.esc(otpa.notes)}</div></div>` : ''}
+      ${otpa.notes ? `<div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl"><div class="text-sm text-gray-400 mb-1"><i class="fas fa-sticky-note mr-1"></i>Notlar</div><div class="text-white">${this.esc(otpa.notes)}</div></div>` : ''}
     </div>`;
   },
 
@@ -392,26 +392,26 @@ const ProsedurOtpa = {
     area.classList.toggle('hidden');
     if (!area.classList.contains('hidden')) {
       area.innerHTML = `
-      <div class="glass-card p-4 rounded-xl border border-dashed border-blue-400/30 space-y-3">
+      <div class="bg-white/10 backdrop-blur-md border border-dashed border-blue-400/30 p-4 rounded-xl space-y-3">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label class="block text-xs text-gray-400 mb-1">Dosya Kategorisi</label>
             <select id="po-up-cat" class="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-sm" style="color-scheme:dark;">
-              <option value="genel">Genel</option>
-              <option value="kalite-foto">Kalite Fotoğrafı</option>
-              <option value="hata-foto">Hata Fotoğrafı</option>
-              <option value="etiket">Etiket</option>
-              <option value="test-raporu">Test Raporu</option>
-              <option value="cycle-raporu">Cycle Raporu</option>
-              <option value="diger">Diğer</option>
+              <option value="genel" class="bg-gray-800 text-white">Genel</option>
+              <option value="kalite-foto" class="bg-gray-800 text-white">Kalite Fotoğrafı</option>
+              <option value="hata-foto" class="bg-gray-800 text-white">Hata Fotoğrafı</option>
+              <option value="etiket" class="bg-gray-800 text-white">Etiket</option>
+              <option value="test-raporu" class="bg-gray-800 text-white">Test Raporu</option>
+              <option value="cycle-raporu" class="bg-gray-800 text-white">Cycle Raporu</option>
+              <option value="diger" class="bg-gray-800 text-white">Diğer</option>
             </select>
           </div>
           <div>
             <label class="block text-xs text-gray-400 mb-1">Dosya Türü</label>
             <select id="po-up-type" class="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-sm" style="color-scheme:dark;">
-              <option value="image">Görsel</option>
-              <option value="document">Doküman</option>
-              <option value="report">Rapor</option>
+              <option value="image" class="bg-gray-800 text-white">Görsel</option>
+              <option value="document" class="bg-gray-800 text-white">Doküman</option>
+              <option value="report" class="bg-gray-800 text-white">Rapor</option>
             </select>
           </div>
           <div>
@@ -491,7 +491,7 @@ const ProsedurOtpa = {
 
     c.innerHTML = `
     <div class="max-w-4xl mx-auto space-y-6">
-      <div class="glass-card p-6 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
         <div class="flex items-center gap-4 mb-4">
           <button onclick="ProsedurOtpa.fillingForm=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
           <div class="flex-1">
@@ -504,10 +504,10 @@ const ProsedurOtpa = {
         </div>
       </div>
 
-      <div class="glass-card p-6 rounded-2xl space-y-4">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl space-y-4">
         <h2 class="text-lg font-bold text-white mb-3"><i class="fas fa-list-check mr-2 text-green-400"></i>Kontrol Maddeleri (${items.length})</h2>
         ${items.map((item, i) => `
-          <div class="glass-card p-4 rounded-xl" data-item-id="${item.id}">
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl" data-item-id="${item.id}">
             <div class="flex items-start gap-3">
               <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">${item.item_no || i + 1}</div>
               <div class="flex-1 space-y-2">
@@ -522,7 +522,7 @@ const ProsedurOtpa = {
         `).join('')}
       </div>
 
-      <div class="glass-card p-4 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
         <label class="block text-sm text-gray-400 mb-1">Form Notu</label>
         <textarea id="po-form-note" rows="2" class="w-full px-3 py-2 bg-gray-800/50 border border-white/10 rounded-lg text-white focus:border-blue-400 focus:outline-none resize-none" placeholder="Genel not...">${this.esc(form.notes || '')}</textarea>
       </div>
@@ -617,11 +617,11 @@ const ProsedurOtpa = {
         <div class="flex gap-2 flex-wrap">
           <input id="po-doc-search" placeholder="Doküman ara..." class="px-3 py-2 bg-gray-800/50 border border-white/10 rounded-lg text-white text-sm placeholder-gray-500 focus:border-blue-400 focus:outline-none" onkeyup="ProsedurOtpa.filterDocs()">
           <select id="po-doc-filter" class="px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-sm" style="color-scheme:dark;" onchange="ProsedurOtpa.filterDocs()">
-            <option value="">Tüm Türler</option>
-            <option value="prosedur">Prosedür</option>
-            <option value="talimat">Talimat</option>
-            <option value="form">Form</option>
-            <option value="rapor">Rapor</option>
+            <option value="" class="bg-gray-800 text-white">Tüm Türler</option>
+            <option value="prosedur" class="bg-gray-800 text-white">Prosedür</option>
+            <option value="talimat" class="bg-gray-800 text-white">Talimat</option>
+            <option value="form" class="bg-gray-800 text-white">Form</option>
+            <option value="rapor" class="bg-gray-800 text-white">Rapor</option>
           </select>
         </div>
         ${this.isAdmin() ? `<button onclick="ProsedurOtpa.showDocForm()" class="gradient-btn px-4 py-2.5 rounded-xl text-white text-sm font-semibold whitespace-nowrap"><i class="fas fa-plus mr-1"></i>Yeni Doküman</button>` : ''}
@@ -732,7 +732,7 @@ const ProsedurOtpa = {
         <div>
           <label class="block text-sm text-gray-400 mb-1">Doküman Türü</label>
           <select id="po-d-type" class="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white" style="color-scheme:dark;">
-            ${['prosedur', 'talimat', 'form', 'rapor'].map(t => `<option value="${t}" ${data?.doc_type === t ? 'selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('')}
+            ${['prosedur', 'talimat', 'form', 'rapor'].map(t => `<option value="${t}" class="bg-gray-800 text-white" ${data?.doc_type === t ? 'selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('')}
           </select>
         </div>
         <div>
@@ -816,7 +816,7 @@ const ProsedurOtpa = {
         ? '<div class="text-center py-16 text-gray-500"><i class="fas fa-clipboard-list text-5xl mb-3 block"></i><p>Henüz form şablonu yok</p></div>'
         : `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           ${this.templates.map(t => `
-            <div class="glass-card p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openTemplateEditor(${t.id})">
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openTemplateEditor(${t.id})">
               <div class="flex items-start justify-between mb-2">
                 <div>
                   <div class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">${this.esc(t.form_name)}</div>
@@ -907,7 +907,7 @@ const ProsedurOtpa = {
 
     c.innerHTML = `
     <div class="max-w-4xl mx-auto space-y-6">
-      <div class="glass-card p-6 rounded-2xl">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
             <button onclick="ProsedurOtpa.viewingTemplate=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
@@ -924,12 +924,12 @@ const ProsedurOtpa = {
       </div>
 
       <!-- Maddeler -->
-      <div class="glass-card p-6 rounded-2xl space-y-3">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl space-y-3">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-list-ol mr-2 text-green-400"></i>Kontrol Maddeleri</h2>
         </div>
         ${items.map((item, i) => `
-        <div class="glass-card p-3 rounded-xl flex items-center gap-3 group">
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl flex items-center gap-3 group">
           <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">${item.item_no || i + 1}</div>
           <div class="flex-1 min-w-0">
             <div class="text-white font-medium">${this.esc(item.item_text)}</div>
@@ -943,7 +943,7 @@ const ProsedurOtpa = {
         `).join('')}
 
         ${this.isAdmin() ? `
-        <div class="glass-card p-4 rounded-xl border border-dashed border-blue-400/30 mt-4" id="po-add-item-box">
+        <div class="bg-white/10 backdrop-blur-md border border-dashed border-blue-400/30 p-4 rounded-xl mt-4" id="po-add-item-box">
           <h3 class="text-sm font-semibold text-gray-400 mb-3"><i class="fas fa-plus mr-1"></i>Yeni Madde Ekle</h3>
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
@@ -957,9 +957,9 @@ const ProsedurOtpa = {
             <div>
               <label class="block text-xs text-gray-500 mb-1">Kontrol Tipi</label>
               <select id="po-i-type" class="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-sm" style="color-scheme:dark;">
-                <option value="evet_hayir">Evet / Hayır</option>
-                <option value="sayisal">Sayısal</option>
-                <option value="aciklama">Açıklama</option>
+                <option value="evet_hayir" class="bg-gray-800 text-white">Evet / Hayır</option>
+                <option value="sayisal" class="bg-gray-800 text-white">Sayısal</option>
+                <option value="aciklama" class="bg-gray-800 text-white">Açıklama</option>
               </select>
             </div>
           </div>
@@ -1031,8 +1031,8 @@ const ProsedurOtpa = {
       <p class="text-gray-400 text-sm">Bir OTPA seçerek genel raporunu görüntüleyin.</p>
       <div class="flex gap-3 items-center">
         <select id="po-report-otpa" class="flex-1 max-w-md px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white" style="color-scheme:dark;">
-          <option value="">-- OTPA Seçin --</option>
-          ${this.otpas.map(o => `<option value="${o.id}">${this.esc(o.otpa_no)} — ${this.esc(o.project_name || '')}</option>`).join('')}
+          <option value="" class="bg-gray-800 text-white">-- OTPA Seçin --</option>
+          ${this.otpas.map(o => `<option value="${o.id}" class="bg-gray-800 text-white">${this.esc(o.otpa_no)} — ${this.esc(o.project_name || '')}</option>`).join('')}
         </select>
         <button onclick="ProsedurOtpa.generateReport()" class="gradient-btn px-4 py-2.5 rounded-lg text-white text-sm font-semibold"><i class="fas fa-file-alt mr-1"></i>Rapor Oluştur</button>
       </div>
@@ -1055,7 +1055,7 @@ const ProsedurOtpa = {
       const s = r.summary;
 
       out.innerHTML = `
-      <div class="glass-card p-6 rounded-2xl space-y-6 mt-4" id="po-report-content">
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl space-y-6 mt-4" id="po-report-content">
         <div class="text-center border-b border-white/10 pb-4">
           <h2 class="text-2xl font-bold text-white">OTPA Genel Raporu</h2>
           <p class="text-gray-400">${this.esc(otpa.otpa_no)} — ${this.esc(otpa.project_name || '')}</p>
@@ -1064,10 +1064,10 @@ const ProsedurOtpa = {
 
         <!-- Özet -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="glass-card p-4 rounded-xl text-center"><div class="text-3xl font-bold text-blue-400">${otpa.battery_count || 0}</div><div class="text-xs text-gray-400">Batarya</div></div>
-          <div class="glass-card p-4 rounded-xl text-center"><div class="text-3xl font-bold text-green-400">${s.completedForms}/${s.totalForms}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
-          <div class="glass-card p-4 rounded-xl text-center"><div class="text-3xl font-bold ${s.totalNonConform > 0 ? 'text-red-400' : 'text-green-400'}">${s.totalNonConform}</div><div class="text-xs text-gray-400">Uygunsuz</div></div>
-          <div class="glass-card p-4 rounded-xl text-center"><div class="text-3xl font-bold text-yellow-400">${s.fileCount}</div><div class="text-xs text-gray-400">Dosya</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-blue-400">${otpa.battery_count || 0}</div><div class="text-xs text-gray-400">Batarya</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-green-400">${s.completedForms}/${s.totalForms}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold ${s.totalNonConform > 0 ? 'text-red-400' : 'text-green-400'}">${s.totalNonConform}</div><div class="text-xs text-gray-400">Uygunsuz</div></div>
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-yellow-400">${s.fileCount}</div><div class="text-xs text-gray-400">Dosya</div></div>
         </div>
 
         <!-- Genel Bilgiler -->
@@ -1112,7 +1112,7 @@ const ProsedurOtpa = {
           <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-paperclip mr-2 text-yellow-400"></i>Eklenen Dosyalar (${files.length})</h3>
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             ${files.map(f => `
-            <div class="glass-card p-2 rounded-lg text-center">
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-lg text-center">
               <i class="fas ${(f.file_original_name || '').match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'fa-image text-green-400' : 'fa-file-alt text-blue-400'} text-2xl mb-1 block"></i>
               <div class="text-xs text-white truncate">${this.esc(f.file_original_name || 'dosya')}</div>
               <div class="text-xs text-gray-500">${this.esc(f.file_category)}</div>
