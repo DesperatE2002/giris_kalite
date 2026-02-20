@@ -14,6 +14,7 @@ const ProsedurOtpa = {
   viewingDoc: null,      // doküman düzenleme
   viewingTemplate: null, // şablon düzenleme
   fillingForm: null,     // aktif doldurma
+  viewingBatteryReport: null, // batarya rapor görüntüleme { otpa, batteryNo, forms }
   searchTerm: '',
 
   // ─── Helpers ──────────────────────────────────────────────────────
@@ -51,6 +52,8 @@ const ProsedurOtpa = {
 
     // Eğer form doldurma modundaysa
     if (this.fillingForm) { this.renderFormFiller(c); return; }
+    // Eğer batarya rapor görüntüleme modundaysa
+    if (this.viewingBatteryReport) { this.renderBatteryReport(c); return; }
     // Eğer OTPA detay modundaysa
     if (this.viewingOtpa) { this.renderOtpaDetail(c); return; }
     // Eğer şablon düzenleme modundaysa
@@ -62,23 +65,23 @@ const ProsedurOtpa = {
     c.innerHTML = `
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Başlık -->
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 class="text-3xl font-bold gradient-text"><i class="fas fa-file-alt mr-2"></i>Prosedür & OTPA Rapor</h1>
             <p class="text-gray-400 mt-1">Doküman Yönetimi • Kalite Kontrol Formları • OTPA Arşivi</p>
           </div>
           <div class="flex gap-3 text-center flex-wrap">
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-blue-400">${this.stats.document_count}</div><div class="text-xs text-gray-400">Doküman</div></div>
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-green-400">${this.stats.otpa_count}</div><div class="text-xs text-gray-400">OTPA</div></div>
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-yellow-400">${this.stats.completed_form_count}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-purple-400">${this.stats.template_count}</div><div class="text-xs text-gray-400">Form Şablonu</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-blue-400">${this.stats.document_count}</div><div class="text-xs text-gray-400">Doküman</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-green-400">${this.stats.otpa_count}</div><div class="text-xs text-gray-400">OTPA</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-yellow-400">${this.stats.completed_form_count}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 px-4 py-2 rounded-xl"><div class="text-2xl font-bold text-purple-400">${this.stats.template_count}</div><div class="text-xs text-gray-400">Form Şablonu</div></div>
           </div>
         </div>
       </div>
 
       <!-- Tablar -->
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl overflow-hidden">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 rounded-2xl overflow-hidden">
         <div class="flex border-b border-white/10 overflow-x-auto">
           ${['otpa', 'prosedurler', 'sablonlar', 'raporlar'].map(t => {
             const labels = { otpa: '<i class="fas fa-folder-open mr-1"></i>OTPA Kayıtları', prosedurler: '<i class="fas fa-book mr-1"></i>Prosedürler', sablonlar: '<i class="fas fa-clipboard-list mr-1"></i>Form Şablonları', raporlar: '<i class="fas fa-chart-bar mr-1"></i>Raporlar' };
@@ -134,7 +137,7 @@ const ProsedurOtpa = {
         ? '<div class="text-center py-16 text-gray-500"><i class="fas fa-folder-open text-5xl mb-3 block"></i><p>Henüz OTPA kaydı yok</p></div>'
         : `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           ${this.otpas.map(o => `
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openOtpaDetail(${o.id})">
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openOtpaDetail(${o.id})">
               <div class="flex items-start justify-between mb-3">
                 <div>
                   <div class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">${this.esc(o.otpa_no)}</div>
@@ -286,7 +289,7 @@ const ProsedurOtpa = {
     c.innerHTML = `
     <div class="max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div class="flex items-center gap-4">
             <button onclick="ProsedurOtpa.viewingOtpa=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
@@ -301,15 +304,60 @@ const ProsedurOtpa = {
           </div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Sorumlu</div><div class="font-semibold text-white">${this.esc(otpa.responsible_tech || '-')}</div></div>
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Batarya</div><div class="font-semibold text-white">${otpa.battery_count || 0} adet</div></div>
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Üretim Tarihi</div><div class="font-semibold text-white">${this.fmtDate(otpa.production_date)}</div></div>
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Oluşturulma</div><div class="font-semibold text-white">${this.fmtDate(otpa.created_at)}</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Sorumlu</div><div class="font-semibold text-white">${this.esc(otpa.responsible_tech || '-')}</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Batarya</div><div class="font-semibold text-white">${otpa.battery_count || 0} adet</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Üretim Tarihi</div><div class="font-semibold text-white">${this.fmtDate(otpa.production_date)}</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl text-center"><div class="text-sm text-gray-400">Oluşturulma</div><div class="font-semibold text-white">${this.fmtDate(otpa.created_at)}</div></div>
         </div>
       </div>
 
+      <!-- Batarya Bazlı Görünüm -->
+      ${otpa.battery_count > 0 && forms.length > 0 ? (() => {
+        // Group forms by battery number
+        const formsByBattery = {};
+        forms.forEach(f => {
+          if (!f.battery_no) return;
+          if (!formsByBattery[f.battery_no]) formsByBattery[f.battery_no] = [];
+          formsByBattery[f.battery_no].push(f);
+        });
+        const batteryNos = Object.keys(formsByBattery).map(Number).sort((a, b) => a - b);
+        if (!batteryNos.length) return '';
+        return `
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold text-white"><i class="fas fa-battery-full mr-2 text-blue-400"></i>Batarya Bazlı Görünüm</h2>
+          <span class="text-sm text-gray-400">${batteryNos.length} batarya • Rapor görüntülemek için tıklayın</span>
+        </div>
+        <div class="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          ${batteryNos.map(bno => {
+            const bForms = formsByBattery[bno];
+            const total = bForms.length;
+            const completed = bForms.filter(f => f.status === 'completed').length;
+            const hasNok = bForms.some(f => f.filled_by_name);
+            const pct = total ? Math.round((completed / total) * 100) : 0;
+            const allDone = completed === total && total > 0;
+            return `
+          <div class="bg-gray-800/70 border ${allDone ? 'border-green-500/40' : 'border-gray-600/20'} p-4 rounded-xl hover:border-blue-400/50 transition-all cursor-pointer group text-center" onclick="ProsedurOtpa.openBatteryReport(${otpa.id}, ${bno})">
+            <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-xl font-bold mb-2 ${allDone ? 'bg-green-500/20 text-green-400' : completed > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-500'}">
+              B${bno}
+            </div>
+            <div class="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">Batarya ${bno}</div>
+            <div class="flex gap-1 mt-2 justify-center">
+              ${bForms.map(f => `<span class="w-3 h-3 rounded-full ${f.status === 'completed' ? 'bg-green-500' : 'bg-gray-600'}" title="${this.esc(f.form_name || f.form_type)}"></span>`).join('')}
+            </div>
+            <div class="text-xs text-gray-400 mt-1">${completed}/${total} form</div>
+            <div class="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+              <div class="h-1.5 rounded-full ${allDone ? 'bg-green-500' : 'bg-blue-500'}" style="width: ${pct}%"></div>
+            </div>
+            ${bForms.filter(f => f.filled_by_name).length ? `<div class="text-xs text-gray-500 mt-1 truncate"><i class="fas fa-user mr-1"></i>${this.esc(bForms.find(f => f.filled_by_name)?.filled_by_name)}</div>` : ''}
+          </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+      })() : ''}
+
       <!-- Form Doldurma Bölümü -->
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-clipboard-check mr-2 text-green-400"></i>Kalite Formları</h2>
           <div class="flex gap-2">
@@ -330,7 +378,7 @@ const ProsedurOtpa = {
               <h3 class="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wider">${this.formTypeBadge(type)} ${flist[0]?.form_name || type} (${flist.length})</h3>
               <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 ${flist.map(f => `
-                  <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-lg hover:border-blue-400/30 transition-all cursor-pointer flex items-center gap-3" onclick="ProsedurOtpa.openFormFiller(${f.id})">
+                  <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-lg hover:border-blue-400/30 transition-all cursor-pointer flex items-center gap-3" onclick="ProsedurOtpa.openFormFiller(${f.id})">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${f.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}">
                       ${f.battery_no ? 'B' + f.battery_no : '<i class="fas fa-file-alt"></i>'}
                     </div>
@@ -348,7 +396,7 @@ const ProsedurOtpa = {
       </div>
 
       <!-- Dosyalar -->
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-paperclip mr-2 text-yellow-400"></i>Dosyalar & Görseller</h2>
           <button onclick="ProsedurOtpa.showFileUpload(${otpa.id})" class="gradient-btn px-3 py-2 rounded-lg text-white text-sm font-semibold"><i class="fas fa-upload mr-1"></i>Dosya Yükle</button>
@@ -364,7 +412,7 @@ const ProsedurOtpa = {
                 ${flist.map(f => {
                   const isImage = (f.file_original_name || '').match(/\.(jpg|jpeg|png|gif|webp)$/i);
                   return `
-                  <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-lg flex items-center gap-3 group">
+                  <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-lg flex items-center gap-3 group">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center ${isImage ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}">
                       <i class="fas ${isImage ? 'fa-image' : 'fa-file-alt'}"></i>
                     </div>
@@ -381,7 +429,7 @@ const ProsedurOtpa = {
         }
       </div>
 
-      ${otpa.notes ? `<div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl"><div class="text-sm text-gray-400 mb-1"><i class="fas fa-sticky-note mr-1"></i>Notlar</div><div class="text-white">${this.esc(otpa.notes)}</div></div>` : ''}
+      ${otpa.notes ? `<div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-2xl"><div class="text-sm text-gray-400 mb-1"><i class="fas fa-sticky-note mr-1"></i>Notlar</div><div class="text-white">${this.esc(otpa.notes)}</div></div>` : ''}
     </div>`;
   },
 
@@ -491,7 +539,7 @@ const ProsedurOtpa = {
 
     c.innerHTML = `
     <div class="max-w-4xl mx-auto space-y-6">
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
         <div class="flex items-center gap-4 mb-4">
           <button onclick="ProsedurOtpa.fillingForm=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
           <div class="flex-1">
@@ -504,10 +552,10 @@ const ProsedurOtpa = {
         </div>
       </div>
 
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl space-y-4">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl space-y-4">
         <h2 class="text-lg font-bold text-white mb-3"><i class="fas fa-list-check mr-2 text-green-400"></i>Kontrol Maddeleri (${items.length})</h2>
         ${items.map((item, i) => `
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl" data-item-id="${item.id}">
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl" data-item-id="${item.id}">
             <div class="flex items-start gap-3">
               <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">${item.item_no || i + 1}</div>
               <div class="flex-1 space-y-2">
@@ -522,7 +570,7 @@ const ProsedurOtpa = {
         `).join('')}
       </div>
 
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-2xl">
         <label class="block text-sm text-gray-400 mb-1">Form Notu</label>
         <textarea id="po-form-note" rows="2" class="w-full px-3 py-2 bg-gray-800/50 border border-white/10 rounded-lg text-white focus:border-blue-400 focus:outline-none resize-none" placeholder="Genel not...">${this.esc(form.notes || '')}</textarea>
       </div>
@@ -654,7 +702,7 @@ const ProsedurOtpa = {
           <tr class="hover:bg-white/5 transition-colors">
             <td class="px-4 py-3">
               <div class="font-semibold text-white">${this.esc(d.doc_name)}</div>
-              ${d.description ? `<div class="text-xs text-gray-500 truncate max-w-[200px]">${this.esc(d.description)}</div>` : ''}
+              ${d.description ? `<div class="text-xs text-gray-400 truncate max-w-[200px]">${this.esc(d.description)}</div>` : ''}
             </td>
             <td class="px-4 py-3 text-gray-300 font-mono text-xs">${this.esc(d.doc_code || '-')}</td>
             <td class="px-4 py-3">${this.docTypeBadge(d.doc_type)}</td>
@@ -816,7 +864,7 @@ const ProsedurOtpa = {
         ? '<div class="text-center py-16 text-gray-500"><i class="fas fa-clipboard-list text-5xl mb-3 block"></i><p>Henüz form şablonu yok</p></div>'
         : `<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           ${this.templates.map(t => `
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openTemplateEditor(${t.id})">
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl hover:border-blue-400/30 transition-all cursor-pointer group" onclick="ProsedurOtpa.openTemplateEditor(${t.id})">
               <div class="flex items-start justify-between mb-2">
                 <div>
                   <div class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">${this.esc(t.form_name)}</div>
@@ -907,7 +955,7 @@ const ProsedurOtpa = {
 
     c.innerHTML = `
     <div class="max-w-4xl mx-auto space-y-6">
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
             <button onclick="ProsedurOtpa.viewingTemplate=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
@@ -924,12 +972,12 @@ const ProsedurOtpa = {
       </div>
 
       <!-- Maddeler -->
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl space-y-3">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl space-y-3">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-lg font-bold text-white"><i class="fas fa-list-ol mr-2 text-green-400"></i>Kontrol Maddeleri</h2>
         </div>
         ${items.map((item, i) => `
-        <div class="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-xl flex items-center gap-3 group">
+        <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-3 rounded-xl flex items-center gap-3 group">
           <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">${item.item_no || i + 1}</div>
           <div class="flex-1 min-w-0">
             <div class="text-white font-medium">${this.esc(item.item_text)}</div>
@@ -1055,7 +1103,7 @@ const ProsedurOtpa = {
       const s = r.summary;
 
       out.innerHTML = `
-      <div class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl space-y-6 mt-4" id="po-report-content">
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl space-y-6 mt-4" id="po-report-content">
         <div class="text-center border-b border-white/10 pb-4">
           <h2 class="text-2xl font-bold text-white">OTPA Genel Raporu</h2>
           <p class="text-gray-400">${this.esc(otpa.otpa_no)} — ${this.esc(otpa.project_name || '')}</p>
@@ -1064,10 +1112,10 @@ const ProsedurOtpa = {
 
         <!-- Özet -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-blue-400">${otpa.battery_count || 0}</div><div class="text-xs text-gray-400">Batarya</div></div>
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-green-400">${s.completedForms}/${s.totalForms}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold ${s.totalNonConform > 0 ? 'text-red-400' : 'text-green-400'}">${s.totalNonConform}</div><div class="text-xs text-gray-400">Uygunsuz</div></div>
-          <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-yellow-400">${s.fileCount}</div><div class="text-xs text-gray-400">Dosya</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-blue-400">${otpa.battery_count || 0}</div><div class="text-xs text-gray-400">Batarya</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-green-400">${s.completedForms}/${s.totalForms}</div><div class="text-xs text-gray-400">Tamamlanan Form</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold ${s.totalNonConform > 0 ? 'text-red-400' : 'text-green-400'}">${s.totalNonConform}</div><div class="text-xs text-gray-400">Uygunsuz</div></div>
+          <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 rounded-xl text-center"><div class="text-3xl font-bold text-yellow-400">${s.fileCount}</div><div class="text-xs text-gray-400">Dosya</div></div>
         </div>
 
         <!-- Genel Bilgiler -->
@@ -1112,7 +1160,7 @@ const ProsedurOtpa = {
           <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-paperclip mr-2 text-yellow-400"></i>Eklenen Dosyalar (${files.length})</h3>
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             ${files.map(f => `
-            <div class="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-lg text-center">
+            <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-2 rounded-lg text-center">
               <i class="fas ${(f.file_original_name || '').match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'fa-image text-green-400' : 'fa-file-alt text-blue-400'} text-2xl mb-1 block"></i>
               <div class="text-xs text-white truncate">${this.esc(f.file_original_name || 'dosya')}</div>
               <div class="text-xs text-gray-500">${this.esc(f.file_category)}</div>
@@ -1140,6 +1188,388 @@ const ProsedurOtpa = {
     `);
     win.document.close();
     setTimeout(() => { win.print(); }, 500);
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BATARYA DETAY RAPORU — Giriş/Proses/Final tüm formlar
+  // ═══════════════════════════════════════════════════════════════════
+  async openBatteryReport(otpaId, batteryNo) {
+    try {
+      this.viewingBatteryReport = await api.request(`/prosedur-otpa/otpa/${otpaId}/battery/${batteryNo}/report`);
+      this.render();
+    } catch (e) { alert('Rapor hatası: ' + e.message); }
+  },
+
+  renderBatteryReport(c) {
+    const d = this.viewingBatteryReport;
+    if (!d) { this.render(); return; }
+    const otpa = d.otpa;
+    const batteryNo = d.batteryNo;
+    const forms = d.forms || [];
+
+    const totalItems = forms.reduce((s, f) => s + (f.summary?.totalItems || 0), 0);
+    const totalOk = forms.reduce((s, f) => s + (f.summary?.okItems || 0), 0);
+    const totalNok = forms.reduce((s, f) => s + (f.summary?.nokItems || 0), 0);
+    const allCompleted = forms.length > 0 && forms.every(f => f.status === 'completed');
+
+    c.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-6">
+      <!-- Header -->
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-6 rounded-2xl">
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
+          <div class="flex items-center gap-4">
+            <button onclick="ProsedurOtpa.viewingBatteryReport=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+            <div>
+              <h1 class="text-2xl font-bold text-white">
+                <i class="fas fa-battery-full mr-2 text-blue-400"></i>Batarya ${batteryNo} — Detay Raporu
+              </h1>
+              <p class="text-gray-300 mt-1">${this.esc(otpa.otpa_no)} • ${this.esc(otpa.project_name || '')}</p>
+            </div>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="ProsedurOtpa.printBatteryReport()" class="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-300 text-sm hover:bg-blue-500/30 font-semibold"><i class="fas fa-print mr-1"></i>Yazdır</button>
+            <button onclick="ProsedurOtpa.downloadBatteryReport()" class="px-4 py-2 rounded-lg bg-green-500/20 text-green-300 text-sm hover:bg-green-500/30 font-semibold"><i class="fas fa-download mr-1"></i>İndir (HTML)</button>
+          </div>
+        </div>
+        <!-- Özet kartlar -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
+          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
+            <div class="text-sm text-gray-400">Batarya No</div>
+            <div class="text-2xl font-bold text-blue-400">B${batteryNo}</div>
+          </div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
+            <div class="text-sm text-gray-400">Form Sayısı</div>
+            <div class="text-2xl font-bold text-white">${forms.length}</div>
+          </div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
+            <div class="text-sm text-gray-400">Toplam Madde</div>
+            <div class="text-2xl font-bold text-white">${totalItems}</div>
+          </div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
+            <div class="text-sm text-gray-400">OK</div>
+            <div class="text-2xl font-bold text-green-400">${totalOk}</div>
+          </div>
+          <div class="bg-gray-800/70 border border-gray-600/20 p-3 rounded-xl text-center">
+            <div class="text-sm text-gray-400">NOK</div>
+            <div class="text-2xl font-bold ${totalNok > 0 ? 'text-red-400' : 'text-green-400'}">${totalNok}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Genel bilgi -->
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-5 rounded-2xl">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div><span class="text-gray-400">Sorumlu:</span> <span class="text-white font-semibold">${this.esc(otpa.responsible_tech || '-')}</span></div>
+          <div><span class="text-gray-400">Üretim Tarihi:</span> <span class="text-white font-semibold">${this.fmtDate(otpa.production_date)}</span></div>
+          <div><span class="text-gray-400">Durum:</span> ${allCompleted ? '<span class="text-green-400 font-semibold">Tamamlandı</span>' : '<span class="text-yellow-400 font-semibold">Devam Ediyor</span>'}</div>
+          <div><span class="text-gray-400">Genel Sonuç:</span> ${totalNok === 0 && totalOk > 0 ? '<span class="text-green-400 font-bold"><i class="fas fa-check-circle mr-1"></i>UYGUN</span>' : totalNok > 0 ? '<span class="text-red-400 font-bold"><i class="fas fa-times-circle mr-1"></i>UYGUNSUZ (' + totalNok + ')</span>' : '<span class="text-gray-500">Bekliyor</span>'}</div>
+        </div>
+      </div>
+
+      <!-- Her form türü için detay -->
+      ${forms.length === 0 ? '<div class="text-center py-12 text-gray-500"><i class="fas fa-clipboard text-4xl mb-3 block"></i><p>Bu batarya için henüz form oluşturulmamış.</p></div>' : ''}
+      ${forms.map((f, fi) => {
+        const items = f.items || [];
+        const okCount = items.filter(i => i.answer_value === 'evet').length;
+        const nokCount = items.filter(i => i.answer_value === 'hayir' || i.answer_value === 'nok').length;
+        const answeredCount = items.filter(i => i.answer_value != null).length;
+        return `
+      <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 rounded-2xl overflow-hidden">
+        <!-- Form başlığı -->
+        <div class="p-5 border-b border-gray-600/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div class="flex items-center gap-3">
+            ${this.formTypeBadge(f.form_type)}
+            <h3 class="text-lg font-bold text-white">${this.esc(f.form_name || 'Form')}</h3>
+            ${this.statusBadge(f.status)}
+          </div>
+          <div class="flex gap-4 text-sm">
+            <span class="text-gray-400"><i class="fas fa-user mr-1"></i>Dolduran: <span class="text-white font-semibold">${this.esc(f.filled_by_name || 'Henüz doldurulmadı')}</span></span>
+            ${f.filled_at ? `<span class="text-gray-400"><i class="fas fa-clock mr-1"></i>${this.fmtDateTime(f.filled_at)}</span>` : ''}
+          </div>
+        </div>
+        <!-- Sonuç özet bar -->
+        <div class="px-5 py-3 bg-gray-800/50 flex items-center gap-4 text-sm">
+          <span class="text-gray-400">Sonuç:</span>
+          <span class="text-green-400 font-semibold"><i class="fas fa-check mr-1"></i>${okCount} OK</span>
+          <span class="text-red-400 font-semibold"><i class="fas fa-times mr-1"></i>${nokCount} NOK</span>
+          <span class="text-gray-400">${answeredCount}/${items.length} cevaplanmış</span>
+          <div class="flex-1"></div>
+          ${f.status !== 'completed' ? `<button onclick="ProsedurOtpa.openFormFiller(${f.id})" class="px-3 py-1 rounded-lg bg-blue-500/20 text-blue-300 text-xs hover:bg-blue-500/30"><i class="fas fa-edit mr-1"></i>Formu Doldur</button>` : ''}
+        </div>
+        <!-- Madde tablosu -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-800/60 text-gray-400 text-xs uppercase">
+              <tr>
+                <th class="px-4 py-3 w-12 text-center">No</th>
+                <th class="px-4 py-3 text-left">Kontrol Maddesi</th>
+                <th class="px-4 py-3 w-32 text-center">Sonuç</th>
+                <th class="px-4 py-3 text-left">Yorum</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700/30">
+              ${items.map((item, i) => {
+                let resultHtml = '<span class="text-gray-500">—</span>';
+                if (item.answer_value === 'evet') {
+                  resultHtml = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 text-green-300 font-bold text-xs"><i class="fas fa-check-circle"></i> OK</span>';
+                } else if (item.answer_value === 'hayir' || item.answer_value === 'nok') {
+                  resultHtml = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 text-red-300 font-bold text-xs"><i class="fas fa-times-circle"></i> NOK</span>';
+                } else if (item.answer_value != null) {
+                  resultHtml = '<span class="text-white">' + this.esc(item.answer_value) + '</span>';
+                }
+                if (item.numeric_value != null && item.numeric_value !== '') {
+                  resultHtml += ' <span class="text-blue-300 text-xs">(' + item.numeric_value + ')</span>';
+                }
+                return `
+              <tr class="hover:bg-gray-800/30 ${(item.answer_value === 'hayir' || item.answer_value === 'nok') ? 'bg-red-500/5' : ''}">
+                <td class="px-4 py-3 text-center text-gray-400 font-mono">${item.item_no || i + 1}</td>
+                <td class="px-4 py-3 text-white">${this.esc(item.item_text)} ${item.is_required ? '<span class="text-red-400 text-xs">*</span>' : ''}</td>
+                <td class="px-4 py-3 text-center">${resultHtml}</td>
+                <td class="px-4 py-3 text-gray-400">${this.esc(item.comment || '-')}</td>
+              </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ${f.notes ? `<div class="px-5 py-3 border-t border-gray-600/20 text-sm"><span class="text-gray-400">Form Notu:</span> <span class="text-white">${this.esc(f.notes)}</span></div>` : ''}
+      </div>`;
+      }).join('')}
+    </div>`;
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // TEMSA MARKALI YAZDIR / İNDİR
+  // ═══════════════════════════════════════════════════════════════════
+  _temsaReportHtml() {
+    const d = this.viewingBatteryReport;
+    if (!d) return '';
+    const otpa = d.otpa;
+    const batteryNo = d.batteryNo;
+    const forms = d.forms || [];
+    const now = new Date().toLocaleString('tr-TR');
+    const totalOk = forms.reduce((s, f) => s + (f.summary?.okItems || 0), 0);
+    const totalNok = forms.reduce((s, f) => s + (f.summary?.nokItems || 0), 0);
+    const allCompleted = forms.length > 0 && forms.every(f => f.status === 'completed');
+
+    const formTypeLabel = (t) => ({ giris: 'GİRİŞ KALİTE KONTROL', proses: 'PROSES KALİTE KONTROL', final: 'FİNAL KALİTE KONTROL' }[t] || (t || '').toUpperCase());
+
+    return `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>TEMSA — Batarya ${batteryNo} Kalite Raporu — ${this.esc(otpa.otpa_no)}</title>
+<style>
+  @page { margin: 15mm 12mm; size: A4; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1a1a2e; font-size: 12px; line-height: 1.4; }
+
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 20px; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-placeholder { width: 80px; height: 40px; background: linear-gradient(135deg, #1e3a5f, #2563eb); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; letter-spacing: 2px; }
+  .header-title { font-size: 14px; font-weight: 700; color: #1e3a5f; }
+  .header-subtitle { font-size: 10px; color: #666; }
+  .header-right { text-align: right; font-size: 10px; color: #666; }
+  .doc-code { background: #1e3a5f; color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; display: inline-block; margin-bottom: 4px; }
+
+  /* Info Box */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .info-item { background: #f0f4f8; border: 1px solid #d1d9e6; border-radius: 6px; padding: 8px 10px; }
+  .info-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600; }
+  .info-value { font-size: 13px; font-weight: 700; color: #1e3a5f; margin-top: 2px; }
+
+  /* Result Banner */
+  .result-banner { padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; text-align: center; font-weight: 700; font-size: 14px; }
+  .result-ok { background: #d1fae5; color: #065f46; border: 2px solid #34d399; }
+  .result-nok { background: #fee2e2; color: #991b1b; border: 2px solid #f87171; }
+  .result-pending { background: #fef3c7; color: #92400e; border: 2px solid #fbbf24; }
+
+  /* Form Section */
+  .form-section { margin-bottom: 20px; page-break-inside: avoid; }
+  .form-header { background: linear-gradient(135deg, #1e3a5f, #2563eb); color: white; padding: 10px 14px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .form-header h3 { font-size: 13px; font-weight: 700; }
+  .form-meta { font-size: 10px; opacity: 0.85; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; border: 1px solid #d1d9e6; }
+  th { background: #e5e9f0; color: #1e3a5f; padding: 8px 10px; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; border: 1px solid #d1d9e6; text-align: left; }
+  td { padding: 7px 10px; font-size: 11px; border: 1px solid #d1d9e6; }
+  tr:nth-child(even) { background: #f8fafc; }
+  tr.nok-row { background: #fef2f2; }
+  .result-ok-badge { background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 12px; font-weight: 700; font-size: 10px; display: inline-block; }
+  .result-nok-badge { background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 12px; font-weight: 700; font-size: 10px; display: inline-block; }
+  .result-na { color: #9ca3af; font-style: italic; }
+  .tech-info { margin-top: 6px; padding: 8px 14px; background: #f0f4f8; border: 1px solid #d1d9e6; border-top: none; border-radius: 0 0 8px 8px; font-size: 10px; color: #6b7280; }
+
+  /* Footer */
+  .footer { margin-top: 30px; border-top: 2px solid #1e3a5f; padding-top: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .sign-box { border: 1px solid #d1d9e6; border-radius: 6px; padding: 10px; min-height: 70px; }
+  .sign-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600; }
+  .sign-name { font-size: 12px; font-weight: 700; color: #1e3a5f; margin-top: 4px; }
+  .sign-line { border-bottom: 1px solid #9ca3af; margin-top: 30px; }
+
+  .watermark { text-align: center; font-size: 8px; color: #9ca3af; margin-top: 16px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-placeholder">TEMSA</div>
+      <div>
+        <div class="header-title">KALİTE KONTROL RAPORU</div>
+        <div class="header-subtitle">Batarya Bazlı Kalite Değerlendirme Formu</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="doc-code">${this.esc(otpa.otpa_no)} / B${batteryNo}</div>
+      <div>Rapor Tarihi: ${now}</div>
+      <div>Sayfa: 1</div>
+    </div>
+  </div>
+
+  <!-- Bilgi Kutuları -->
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="info-label">OTPA No</div>
+      <div class="info-value">${this.esc(otpa.otpa_no)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Proje / Paket</div>
+      <div class="info-value">${this.esc(otpa.project_name || '-')}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Batarya No</div>
+      <div class="info-value">Batarya ${batteryNo}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Sorumlu Tekniker</div>
+      <div class="info-value">${this.esc(otpa.responsible_tech || '-')}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Üretim Tarihi</div>
+      <div class="info-value">${this.fmtDate(otpa.production_date)}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Toplam Kontrol</div>
+      <div class="info-value">${totalOk + totalNok} madde</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Uygun (OK)</div>
+      <div class="info-value" style="color:#065f46">${totalOk}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Uygunsuz (NOK)</div>
+      <div class="info-value" style="color:${totalNok > 0 ? '#991b1b' : '#065f46'}">${totalNok}</div>
+    </div>
+  </div>
+
+  <!-- Genel Sonuç -->
+  <div class="result-banner ${totalNok === 0 && totalOk > 0 ? 'result-ok' : totalNok > 0 ? 'result-nok' : 'result-pending'}">
+    ${totalNok === 0 && totalOk > 0 ? '✓ TÜM KONTROLLER UYGUN — BATARYA KABUL EDİLDİ' : totalNok > 0 ? '✗ UYGUNSUZLUK TESPİT EDİLDİ — ' + totalNok + ' MADDE NOK' : '◷ KONTROLLER HENÜZ TAMAMLANMADI'}
+  </div>
+
+  <!-- Form Detayları -->
+  ${forms.map(f => {
+    const items = f.items || [];
+    return `
+  <div class="form-section">
+    <div class="form-header">
+      <h3>${formTypeLabel(f.form_type)} — ${this.esc(f.form_name || '')}</h3>
+      <div class="form-meta">${f.status === 'completed' ? 'Tamamlandı' : 'Taslak'} • ${f.summary?.okItems || 0} OK / ${f.summary?.nokItems || 0} NOK</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40px;text-align:center">NO</th>
+          <th>KONTROL MADDESİ</th>
+          <th style="width:80px;text-align:center">SONUÇ</th>
+          <th style="width:180px">YORUM</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map((item, i) => {
+          let resultHtml = '<span class="result-na">—</span>';
+          if (item.answer_value === 'evet') resultHtml = '<span class="result-ok-badge">✓ OK</span>';
+          else if (item.answer_value === 'hayir' || item.answer_value === 'nok') resultHtml = '<span class="result-nok-badge">✗ NOK</span>';
+          else if (item.answer_value != null) resultHtml = item.answer_value;
+          if (item.numeric_value != null && item.numeric_value !== '') resultHtml += ' <small>(' + item.numeric_value + ')</small>';
+          const isNok = item.answer_value === 'hayir' || item.answer_value === 'nok';
+          return `
+        <tr class="${isNok ? 'nok-row' : ''}">
+          <td style="text-align:center;font-weight:600">${item.item_no || i + 1}</td>
+          <td>${this.esc(item.item_text)}${item.is_required ? ' <small style="color:#dc2626">*</small>' : ''}</td>
+          <td style="text-align:center">${resultHtml}</td>
+          <td style="color:#6b7280">${this.esc(item.comment || '-')}</td>
+        </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <div class="tech-info">
+      <strong>Dolduran:</strong> ${this.esc(f.filled_by_name || 'Henüz doldurulmadı')}
+      ${f.filled_at ? ' &nbsp;|&nbsp; <strong>Tarih:</strong> ' + this.fmtDateTime(f.filled_at) : ''}
+      ${f.notes ? ' &nbsp;|&nbsp; <strong>Not:</strong> ' + this.esc(f.notes) : ''}
+    </div>
+  </div>`;
+  }).join('')}
+
+  <!-- İmza Alanları -->
+  <div class="footer">
+    <div class="sign-box">
+      <div class="sign-label">Hazırlayan Tekniker</div>
+      <div class="sign-name">${this.esc(forms.find(f => f.filled_by_name)?.filled_by_name || '-')}</div>
+      <div class="sign-line"></div>
+      <div style="font-size:9px;color:#9ca3af;margin-top:4px">İmza / Tarih</div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-label">Kalite Kontrol Onayı</div>
+      <div class="sign-name">&nbsp;</div>
+      <div class="sign-line"></div>
+      <div style="font-size:9px;color:#9ca3af;margin-top:4px">İmza / Tarih</div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-label">Üretim Müdürü Onayı</div>
+      <div class="sign-name">&nbsp;</div>
+      <div class="sign-line"></div>
+      <div style="font-size:9px;color:#9ca3af;margin-top:4px">İmza / Tarih</div>
+    </div>
+  </div>
+
+  <div class="watermark">
+    Bu rapor TEMSA Kalite Yönetim Sistemi tarafından otomatik oluşturulmuştur. — ${now}
+  </div>
+</body>
+</html>`;
+  },
+
+  printBatteryReport() {
+    const html = this._temsaReportHtml();
+    if (!html) return;
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => { win.print(); }, 600);
+  },
+
+  downloadBatteryReport() {
+    const html = this._temsaReportHtml();
+    if (!html) return;
+    const d = this.viewingBatteryReport;
+    const filename = `TEMSA_Kalite_Raporu_${(d.otpa?.otpa_no || '').replace(/[^a-zA-Z0-9-]/g, '_')}_B${d.batteryNo}_${new Date().toISOString().slice(0, 10)}.html`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };
 

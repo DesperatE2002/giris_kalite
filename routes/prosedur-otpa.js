@@ -609,4 +609,60 @@ router.get('/otpa/:id/report', authenticateToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Rapor hatası' }); }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 7) BATARYA DETAY RAPORU — Bir bataryaya ait tüm form ve cevaplar
+// ═══════════════════════════════════════════════════════════════════════════════
+router.get('/otpa/:id/battery/:batteryNo/report', authenticateToken, async (req, res) => {
+  try {
+    const otpaR = await pool.query(
+      'SELECT o.*, u.full_name as created_by_name FROM po_otpa o LEFT JOIN users u ON o.created_by = u.id WHERE o.id=?',
+      [req.params.id]
+    );
+    if (!otpaR.rows.length) return res.status(404).json({ error: 'OTPA bulunamadı' });
+
+    // Bu batarya numarasına ait tüm formları getir
+    const formsR = await pool.query(`
+      SELECT f.*, t.form_name, t.form_type, u.full_name as filled_by_name
+      FROM po_otpa_forms f
+      LEFT JOIN po_form_templates t ON f.template_id = t.id
+      LEFT JOIN users u ON f.filled_by = u.id
+      WHERE f.otpa_id=? AND f.battery_no=?
+      ORDER BY t.form_type, f.id
+    `, [req.params.id, req.params.batteryNo]);
+
+    // Her form için maddeleri ve cevapları getir
+    const formsWithItems = [];
+    for (const form of formsR.rows) {
+      const itemsR = await pool.query(`
+        SELECT i.item_no, i.item_text, i.control_type, i.is_required,
+               a.answer_value, a.numeric_value, a.comment
+        FROM po_form_items i
+        LEFT JOIN po_form_answers a ON a.form_item_id = i.id AND a.otpa_form_id = ?
+        WHERE i.template_id = ?
+        ORDER BY i.sort_order, i.item_no
+      `, [form.id, form.template_id]);
+
+      const totalItems = itemsR.rows.length;
+      const answeredItems = itemsR.rows.filter(i => i.answer_value != null).length;
+      const okItems = itemsR.rows.filter(i => i.answer_value === 'evet').length;
+      const nokItems = itemsR.rows.filter(i => i.answer_value === 'hayir' || i.answer_value === 'nok').length;
+
+      formsWithItems.push({
+        ...form,
+        items: itemsR.rows,
+        summary: { totalItems, answeredItems, okItems, nokItems }
+      });
+    }
+
+    res.json({
+      otpa: otpaR.rows[0],
+      batteryNo: parseInt(req.params.batteryNo),
+      forms: formsWithItems
+    });
+  } catch (e) {
+    console.error('Battery report error:', e);
+    res.status(500).json({ error: 'Batarya rapor hatası' });
+  }
+});
+
 export default router;
