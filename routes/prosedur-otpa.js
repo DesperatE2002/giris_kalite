@@ -41,7 +41,11 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowed = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, allowed.includes(ext));
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Desteklenmeyen dosya türü: ${ext}. İzin verilen: ${allowed.join(', ')}`));
+    }
   }
 });
 
@@ -179,6 +183,28 @@ export async function migrateProsedurOtpa() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_po_answers_form ON po_form_answers(otpa_form_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_po_files_otpa ON po_otpa_files(otpa_id)');
 
+    // ── Duplikasyon önleme: UNIQUE constraint'ler ──
+    try { await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_po_form_items_unique ON po_form_items(template_id, item_no)'); } catch(e) { /* zaten mevcut */ }
+    try { await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_po_otpa_forms_unique ON po_otpa_forms(otpa_id, template_id, battery_no)'); } catch(e) { /* zaten mevcut */ }
+
+    // ── Mevcut duplikatları temizle ──
+    try {
+      await pool.query(`
+        DELETE FROM po_form_items WHERE id NOT IN (
+          SELECT MIN(id) FROM po_form_items GROUP BY template_id, item_no
+        )
+      `);
+      console.log('✅ po_form_items duplikatları temizlendi');
+    } catch(e) { /* ignore */ }
+    try {
+      await pool.query(`
+        DELETE FROM po_otpa_forms WHERE id NOT IN (
+          SELECT MIN(id) FROM po_otpa_forms GROUP BY otpa_id, template_id, COALESCE(battery_no, -1)
+        )
+      `);
+      console.log('✅ po_otpa_forms duplikatları temizlendi');
+    } catch(e) { /* ignore */ }
+
     console.log('✅ Prosedür-OTPA tabloları hazır (po_documents, po_otpa, po_form_templates, vb.)');
   } catch (e) {
     if (!e.message?.includes('already exists')) {
@@ -207,7 +233,12 @@ router.get('/documents', authenticateToken, async (req, res) => {
 });
 
 // Doküman yükle
-router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, upload.single('file'), async (req, res) => {
+router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
   try {
     const { doc_name, doc_code, revision_no, publish_date, department, doc_type, description } = req.body;
     if (!doc_name?.trim()) return res.status(400).json({ error: 'Doküman adı zorunlu' });
@@ -223,7 +254,12 @@ router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res,
 });
 
 // Doküman güncelle
-router.put('/documents/:id', authenticateToken, authorizeRoles('admin'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, upload.single('file'), async (req, res) => {
+router.put('/documents/:id', authenticateToken, authorizeRoles('admin'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
   try {
     const { doc_name, doc_code, revision_no, publish_date, department, doc_type, description } = req.body;
 
@@ -422,9 +458,25 @@ router.post('/form-templates/:id/items', authenticateToken, authorizeRoles('admi
   try {
     const { item_no, item_text, control_type, is_required, sort_order } = req.body;
     if (!item_text?.trim()) return res.status(400).json({ error: 'Madde metni zorunlu' });
+    const itemNum = item_no || 1;
+
+    // Aynı template + item_no varsa güncelle, yoksa ekle
+    const existing = await pool.query(
+      'SELECT id FROM po_form_items WHERE template_id=? AND item_no=?',
+      [req.params.id, itemNum]
+    );
+    if (existing.rows.length) {
+      await pool.query(
+        'UPDATE po_form_items SET item_text=?, control_type=?, is_required=?, sort_order=? WHERE template_id=? AND item_no=?',
+        [item_text.trim(), control_type || 'evet_hayir', is_required !== false, sort_order || 0, req.params.id, itemNum]
+      );
+      const r = await pool.query('SELECT * FROM po_form_items WHERE template_id=? AND item_no=?', [req.params.id, itemNum]);
+      return res.json(r.rows[0]);
+    }
+
     const r = await pool.query(
       'INSERT INTO po_form_items (template_id, item_no, item_text, control_type, is_required, sort_order) VALUES (?,?,?,?,?,?) RETURNING *',
-      [req.params.id, item_no || 1, item_text.trim(), control_type || 'evet_hayir', is_required !== false, sort_order || 0]
+      [req.params.id, itemNum, item_text.trim(), control_type || 'evet_hayir', is_required !== false, sort_order || 0]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: 'Ekleme hatası' }); }
@@ -501,11 +553,12 @@ router.get('/otpa-forms/:formId', authenticateToken, async (req, res) => {
       WHERE f.id=?`, [req.params.formId]);
     if (!formR.rows.length) return res.status(404).json({ error: 'Form bulunamadı' });
 
+    // DISTINCT ON item_no ile aynı madde numarasından sadece birini al (duplikasyon önleme)
     const itemsR = await pool.query(`
-      SELECT i.*, a.answer_value, a.numeric_value, a.comment, a.id as answer_id
+      SELECT DISTINCT ON (i.item_no) i.*, a.answer_value, a.numeric_value, a.comment, a.id as answer_id
       FROM po_form_items i LEFT JOIN po_form_answers a ON a.form_item_id = i.id AND a.otpa_form_id = ?
       WHERE i.template_id = ?
-      ORDER BY i.sort_order, i.item_no
+      ORDER BY i.item_no, i.sort_order, i.id
     `, [req.params.formId, formR.rows[0].template_id]);
 
     res.json({ form: formR.rows[0], items: itemsR.rows });

@@ -901,7 +901,7 @@ const ProsedurOtpa = {
         </div>
         <div>
           <label class="block text-sm text-gray-400 mb-1">Dosya ${isEdit ? '(değiştirmek için seçin)' : ''}</label>
-          <input type="file" id="po-d-file" accept=".pdf,.doc,.docx,.xls,.xlsx" class="text-sm text-gray-400 file:bg-blue-500/20 file:text-blue-300 file:border-0 file:rounded-lg file:px-3 file:py-2 file:mr-3 file:cursor-pointer">
+          <input type="file" id="po-d-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp" class="text-sm text-gray-400 file:bg-blue-500/20 file:text-blue-300 file:border-0 file:rounded-lg file:px-3 file:py-2 file:mr-3 file:cursor-pointer">
           ${isEdit && data?.file_original_name ? `<div class="text-xs text-gray-500 mt-1">Mevcut: ${this.esc(data.file_original_name)}</div>` : ''}
         </div>
         <div class="sm:col-span-2">
@@ -1131,9 +1131,12 @@ const ProsedurOtpa = {
     </div>`;
   },
 
+  _addingItem: false,
   async addItem(templateId) {
+    if (this._addingItem) return; // çift tıklama koruması
     const text = document.getElementById('po-i-text').value.trim();
     if (!text) return alert('Madde metni zorunlu!');
+    this._addingItem = true;
     try {
       await api.request(`/prosedur-otpa/form-templates/${templateId}/items`, {
         method: 'POST',
@@ -1146,6 +1149,7 @@ const ProsedurOtpa = {
       });
       this.openTemplateEditor(templateId);
     } catch (e) { alert('Hata: ' + e.message); }
+    this._addingItem = false;
   },
 
   editItem(data) {
