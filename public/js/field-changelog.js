@@ -311,7 +311,7 @@ const FieldChangelog = {
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div class="flex items-center gap-3 sm:gap-4">
-            <button onclick="FieldChangelog.viewingTimeline=null;FieldChangelog.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
             <div>
               <h1 class="text-lg sm:text-2xl font-bold text-white"><i class="fas fa-car mr-2 text-blue-400"></i>${this.esc(otpaNo)}</h1>
               <p class="text-gray-400 text-sm mt-1">${logs.length} müdahale kaydı</p>
@@ -441,7 +441,7 @@ const FieldChangelog = {
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div class="flex items-center gap-3 sm:gap-4">
-            <button onclick="FieldChangelog.viewingLog=null;FieldChangelog.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
             <div>
               <h1 class="text-lg sm:text-2xl font-bold text-white"><i class="fas fa-wrench mr-2 text-blue-400"></i>${this.esc(l.otpa_no)}</h1>
               <p class="text-gray-400 text-sm">${this.fmtDate(l.start_date)}${l.end_date ? ' → ' + this.fmtDate(l.end_date) : ''} • Kayıt #${l.id}</p>
@@ -591,7 +591,7 @@ const FieldChangelog = {
     <div class="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex items-center gap-3 sm:gap-4 mb-4">
-          <button onclick="FieldChangelog.editingLog=null;FieldChangelog.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+          <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
           <h1 class="text-base sm:text-xl font-bold text-white"><i class="fas ${isNew ? 'fa-plus-circle' : 'fa-edit'} mr-2 text-blue-400"></i>${isNew ? 'Yeni Saha Değişiklik Kaydı' : 'Kaydı Düzenle'}</h1>
         </div>
 
@@ -668,7 +668,7 @@ const FieldChangelog = {
 
       <!-- Kaydet -->
       <div class="flex gap-3 justify-end">
-        <button onclick="FieldChangelog.editingLog=null;FieldChangelog.render();" class="px-5 py-2.5 rounded-xl bg-gray-700 text-gray-300 hover:bg-gray-600">İptal</button>
+        <button onclick="history.back()" class="px-5 py-2.5 rounded-xl bg-gray-700 text-gray-300 hover:bg-gray-600">İptal</button>
         <button onclick="FieldChangelog.saveLog()" class="gradient-btn px-5 py-2.5 rounded-xl text-white font-semibold"><i class="fas fa-save mr-1"></i>${isNew ? 'Oluştur' : 'Güncelle'}</button>
       </div>
     </div>`;

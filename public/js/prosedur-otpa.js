@@ -301,7 +301,7 @@ const ProsedurOtpa = {
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
           <div class="flex items-center gap-3 sm:gap-4">
-            <button onclick="ProsedurOtpa.viewingOtpa=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
             <div>
               <h1 class="text-lg sm:text-2xl font-bold text-white"><i class="fas fa-folder-open mr-2 text-blue-400"></i>${this.esc(otpa.otpa_no)}</h1>
               <p class="text-gray-400 mt-1">${this.esc(otpa.project_name || '')} ${this.statusBadge(otpa.status)}</p>
@@ -551,7 +551,7 @@ const ProsedurOtpa = {
     <div class="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex items-center gap-3 sm:gap-4 mb-4">
-          <button onclick="ProsedurOtpa.fillingForm=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+          <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
           <div class="flex-1 min-w-0">
             <h1 class="text-base sm:text-xl font-bold text-white">
               ${this.esc(form.form_name)} ${this.formTypeBadge(form.form_type)}
@@ -586,7 +586,7 @@ const ProsedurOtpa = {
       </div>
 
       <div class="flex gap-3 justify-end">
-        <button onclick="ProsedurOtpa.fillingForm=null;ProsedurOtpa.render();" class="px-5 py-2.5 rounded-xl bg-gray-700 text-gray-300 hover:bg-gray-600">İptal</button>
+        <button onclick="history.back()" class="px-5 py-2.5 rounded-xl bg-gray-700 text-gray-300 hover:bg-gray-600">İptal</button>
         <button onclick="ProsedurOtpa.saveFormAnswers()" class="gradient-btn px-5 py-2.5 rounded-xl text-white font-semibold"><i class="fas fa-save mr-1"></i>Kaydet & Tamamla</button>
       </div>
     </div>`;
@@ -1067,7 +1067,7 @@ const ProsedurOtpa = {
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-            <button onclick="ProsedurOtpa.viewingTemplate=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl flex-shrink-0"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl flex-shrink-0"><i class="fas fa-arrow-left"></i></button>
             <div class="min-w-0">
               <h1 class="text-base sm:text-xl font-bold text-white truncate">${this.esc(t.form_name)} ${this.formTypeBadge(t.form_type)}</h1>
               <p class="text-gray-400 text-xs sm:text-sm mt-1">${this.esc(t.description || '')} • ${items.length} madde</p>
@@ -1332,7 +1332,7 @@ const ProsedurOtpa = {
       <div class="bg-gray-900/80 backdrop-blur-md border border-gray-600/30 p-4 sm:p-6 rounded-2xl">
         <div class="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
           <div class="flex items-center gap-3 sm:gap-4">
-            <button onclick="ProsedurOtpa.viewingBatteryReport=null;ProsedurOtpa.render();" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="history.back()" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-arrow-left"></i></button>
             <div>
               <h1 class="text-lg sm:text-2xl font-bold text-white">
                 <i class="fas fa-battery-full mr-2 text-blue-400"></i>Batarya ${batteryNo} — Detay Raporu
