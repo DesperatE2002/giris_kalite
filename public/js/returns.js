@@ -11,16 +11,16 @@ const ReturnsPage = {
     container.innerHTML = `
       <div class="max-w-7xl mx-auto">
         <div class="mb-6">
-          <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+          <h1 class="text-3xl font-bold text-gray-200 flex items-center">
             <i class="fas fa-undo mr-3 text-blue-600"></i>
             İade Yönetimi
           </h1>
-          <p class="text-gray-600 mt-2">Malzeme iade işlemlerini buradan yönetin</p>
+          <p class="text-gray-400 mt-2">Malzeme iade işlemlerini buradan yönetin</p>
         </div>
 
         <!-- Tab Navigation -->
-        <div class="bg-white rounded-lg shadow mb-6">
-          <div class="border-b border-gray-200">
+        <div class="glass-card rounded-2xl mb-6">
+          <div class="border-b border-white/5">
             <nav class="flex -mb-px">
               <button onclick="ReturnsPage.switchTab('create')" 
                 class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-blue-500 text-blue-600" 
@@ -28,17 +28,17 @@ const ReturnsPage = {
                 <i class="fas fa-plus-circle mr-2"></i>İade Oluştur
               </button>
               <button onclick="ReturnsPage.switchTab('receipt')" 
-                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" 
                 data-tab="receipt">
                 <i class="fas fa-dolly mr-2"></i>İade Girişi
               </button>
               <button onclick="ReturnsPage.switchTab('history')" 
-                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" 
                 data-tab="history">
                 <i class="fas fa-history mr-2"></i>İade Geçmişi
               </button>
               <button onclick="ReturnsPage.switchTab('statistics')" 
-                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                class="return-tab-btn px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" 
                 data-tab="statistics">
                 <i class="fas fa-chart-bar mr-2"></i>İstatistikler
               </button>
@@ -63,11 +63,11 @@ const ReturnsPage = {
     // Tab butonlarını güncelle
     document.querySelectorAll('.return-tab-btn').forEach(btn => {
       if (btn.dataset.tab === tabName) {
-        btn.classList.remove('border-transparent', 'text-gray-500');
+        btn.classList.remove('border-transparent', 'text-gray-400');
         btn.classList.add('border-blue-500', 'text-blue-600');
       } else {
         btn.classList.remove('border-blue-500', 'text-blue-600');
-        btn.classList.add('border-transparent', 'text-gray-500');
+        btn.classList.add('border-transparent', 'text-gray-400');
       }
     });
 
@@ -93,7 +93,7 @@ const ReturnsPage = {
     const container = document.getElementById('createReturnTab');
     
     container.innerHTML = `
-      <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="glass-card rounded-2xl p-6">
         <h2 class="text-xl font-bold mb-6 flex items-center">
           <i class="fas fa-plus-circle mr-2 text-blue-600"></i>
           Yeni İade Oluştur
@@ -102,25 +102,25 @@ const ReturnsPage = {
         <form id="returnForm" class="space-y-6">
           <!-- OTPA Seçimi -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
               <i class="fas fa-file-alt mr-2"></i>OTPA Seç
             </label>
             <input type="text" 
               id="returnOtpaId" 
               list="otpaReturnList" 
               placeholder="OTPA numarası yazarak arayın..." 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
               autocomplete="off">
             <datalist id="otpaReturnList"></datalist>
           </div>
 
           <!-- Component Seçimi -->
           <div id="componentSection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
               <i class="fas fa-microchip mr-2"></i>Komponent Seç
             </label>
             <select id="returnComponentType" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium text-white">
               <option value="">Seçiniz...</option>
               <option value="batarya">🔋 Batarya</option>
               <option value="vccu">⚡ VCCU</option>
@@ -131,44 +131,44 @@ const ReturnsPage = {
 
           <!-- Malzeme Seçimi -->
           <div id="materialSection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
               <i class="fas fa-boxes mr-2"></i>Malzeme Seç
             </label>
             <input type="text" 
               id="returnMaterialCode" 
               list="materialReturnList" 
               placeholder="Malzeme kodu yazarak arayın..." 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"
               autocomplete="off">
             <datalist id="materialReturnList"></datalist>
             
-            <div id="materialInfo" style="display:none;" class="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div class="font-medium text-blue-900 mb-1">Mevcut Stok</div>
-              <div id="stockQuantity" class="text-2xl font-bold text-blue-600">0</div>
+            <div id="materialInfo" style="display:none;" class="mt-3 p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+              <div class="font-medium text-blue-400 mb-1">Mevcut Stok</div>
+              <div id="stockQuantity" class="text-2xl font-bold text-blue-400">0</div>
             </div>
           </div>
 
           <!-- Miktar -->
           <div id="quantitySection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
               <i class="fas fa-calculator mr-2"></i>İade Miktarı
             </label>
             <input type="number" 
               id="returnQuantity" 
               min="0" 
               step="0.01"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"
               placeholder="İade edilecek miktar">
           </div>
 
           <!-- Sebep -->
           <div id="reasonSection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-300 mb-2">
               <i class="fas fa-comment-dots mr-2"></i>İade Sebebi
             </label>
             <textarea id="returnReason" 
               rows="3"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"
               placeholder="İade sebebini açıklayın..."></textarea>
           </div>
 
@@ -196,17 +196,17 @@ const ReturnsPage = {
     const container = document.getElementById('receiptReturnTab');
     
     container.innerHTML = `
-      <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="glass-card rounded-2xl p-6">
         <h2 class="text-xl font-bold mb-6 flex items-center">
           <i class="fas fa-dolly mr-2 text-green-600"></i>
           İade Malzemesi Giriş Yap
         </h2>
         
-        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <div class="bg-blue-500/10 border-l-4 border-blue-500 p-4 mb-6">
           <div class="flex">
-            <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+            <i class="fas fa-info-circle text-blue-400 mt-1 mr-3"></i>
             <div>
-              <p class="text-sm text-blue-700">
+              <p class="text-sm text-blue-300">
                 İade edilen malzemeleri tekrar stoka almak için bu formu kullanın. 
                 Sistem otomatik olarak iade havuzundan düşecektir.
               </p>
@@ -217,18 +217,18 @@ const ReturnsPage = {
         <form id="receiptReturnForm" class="space-y-6">
           <!-- OTPA -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">OTPA</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">OTPA</label>
             <select id="receiptOtpaId" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-green-500 text-white">
               <option value="">OTPA Seçiniz...</option>
             </select>
           </div>
 
           <!-- Component -->
           <div id="receiptComponentSection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Komponent</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Komponent</label>
             <select id="receiptComponentType" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-green-500 text-white">
               <option value="">Seçiniz...</option>
               <option value="batarya">🔋 Batarya</option>
               <option value="vccu">⚡ VCCU</option>
@@ -239,35 +239,35 @@ const ReturnsPage = {
 
           <!-- Malzeme -->
           <div id="receiptMaterialSection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Malzeme</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Malzeme</label>
             <select id="receiptMaterialCode" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-green-500 text-white">
               <option value="">Malzeme Seçiniz...</option>
             </select>
             
-            <div id="rejectedInfo" style="display:none;" class="mt-3 p-4 bg-red-50 rounded-lg border border-red-200">
-              <div class="font-medium text-red-900 mb-1">İade Havuzu</div>
-              <div id="rejectedQuantity" class="text-2xl font-bold text-red-600">0</div>
+            <div id="rejectedInfo" style="display:none;" class="mt-3 p-4 bg-red-500/10 rounded-lg border border-red-500/30">
+              <div class="font-medium text-red-400 mb-1">İade Havuzu</div>
+              <div id="rejectedQuantity" class="text-2xl font-bold text-red-400">0</div>
             </div>
           </div>
 
           <!-- Gelen Miktar -->
           <div id="receiptQuantitySection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Gelen Miktar</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Gelen Miktar</label>
             <input type="number" 
               id="receiptQuantity" 
               min="0" 
               step="0.01"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-green-500 text-white"
               placeholder="Gelen miktar">
           </div>
 
           <!-- Açıklama -->
           <div id="receiptNoteSection" style="display:none;">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Açıklama (Opsiyonel)</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Açıklama (Opsiyonel)</label>
             <input type="text" 
               id="receiptNote"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              class="w-full px-4 py-3 border border-white/10 bg-white/5 rounded-lg focus:ring-2 focus:ring-green-500 text-white"
               placeholder="Ek not...">
           </div>
 
@@ -314,7 +314,7 @@ const ReturnsPage = {
       }).length;
       
       container.innerHTML = `
-        <div class="bg-white rounded-lg shadow">
+        <div class="glass-card rounded-2xl">
           <div class="px-6 py-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 class="text-lg font-semibold flex items-center">
               <i class="fas fa-history mr-2"></i>İade Geçmişi
@@ -325,34 +325,34 @@ const ReturnsPage = {
                 Tümü (${countAll})
               </button>
               <button onclick="ReturnsPage.filterHistory('waiting')" data-filter="waiting"
-                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-500/15 text-gray-400 hover:bg-white/5">
                 <i class="fas fa-clock mr-1 text-red-500"></i>İade Bekliyor (${countWaiting})
               </button>
               <button onclick="ReturnsPage.filterHistory('partial')" data-filter="partial"
-                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-500/15 text-gray-400 hover:bg-white/5">
                 <i class="fas fa-adjust mr-1 text-yellow-500"></i>Kısmi Geldi (${countPartial})
               </button>
               <button onclick="ReturnsPage.filterHistory('done')" data-filter="done"
-                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200">
+                class="return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-500/15 text-gray-400 hover:bg-white/5">
                 <i class="fas fa-check mr-1 text-green-500"></i>İade Geldi (${countDone})
               </button>
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-white/5">
+              <thead>
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Miktarı</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Havuzda Kalan</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sebep</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İade Kesen</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Tarih</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">OTPA</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">İade Miktarı</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Havuzda Kalan</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Durum</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Sebep</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">İade Kesen</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody class="divide-y divide-white/5">
                 ${returns.length === 0 ? `
                   <tr>
                     <td colspan="8" class="px-6 py-8 text-center text-gray-500">
@@ -369,18 +369,18 @@ const ReturnsPage = {
                   let statusBadge = '';
                   let filterClass = '';
                   if (isReplaced) {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>İade Geldi</span>';
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400"><i class="fas fa-check-circle mr-1"></i>İade Geldi</span>';
                     filterClass = 'filter-done';
                   } else if (isPartiallyReplaced) {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-adjust mr-1"></i>Kısmi Geldi</span>';
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400"><i class="fas fa-adjust mr-1"></i>Kısmi Geldi</span>';
                     filterClass = 'filter-partial';
                   } else {
-                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-clock mr-1"></i>İade Bekliyor</span>';
+                    statusBadge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-400"><i class="fas fa-clock mr-1"></i>İade Bekliyor</span>';
                     filterClass = 'filter-waiting';
                   }
                   
                   return `
-                  <tr class="hover:bg-gray-50 return-history-row ${filterClass}">
+                  <tr class="hover:bg-white/[0.03] return-history-row ${filterClass}">
                     <td class="px-6 py-4 whitespace-nowrap text-sm">${item.decision_date ? new Date(item.decision_date).toLocaleString('tr-TR') : '-'}</td>
                     <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
                     <td class="px-6 py-4">
@@ -390,10 +390,10 @@ const ReturnsPage = {
                     <td class="px-6 py-4 text-right font-bold text-red-600">${Math.round(totalReturned)}</td>
                     <td class="px-6 py-4 text-right font-bold ${currentRejected > 0 ? 'text-orange-600' : 'text-green-600'}">${Math.round(currentRejected)}</td>
                     <td class="px-6 py-4 text-sm">${statusBadge}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${item.reason || '-'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-400">${item.reason || '-'}</td>
                     <td class="px-6 py-4 text-sm">
                       ${item.returned_by_name || item.decision_by_name 
-                        ? `<span class="font-medium text-blue-700"><i class="fas fa-user mr-1"></i>${item.returned_by_name || item.decision_by_name}</span>` 
+                        ? `<span class="font-medium text-blue-400"><i class="fas fa-user mr-1"></i>${item.returned_by_name || item.decision_by_name}</span>` 
                         : '<span class="text-gray-400 italic">Kullanıcı bilgisi yok</span>'}
                     </td>
                   </tr>
@@ -405,7 +405,7 @@ const ReturnsPage = {
       `;
     } catch (error) {
       container.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded">
           Hata: ${error.message}
         </div>
       `;
@@ -420,7 +420,7 @@ const ReturnsPage = {
       if (btn.dataset.filter === type) {
         btn.className = 'return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white';
       } else {
-        btn.className = 'return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-100 text-gray-600 hover:bg-gray-200';
+        btn.className = 'return-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-gray-500/15 text-gray-400 hover:bg-white/5';
       }
     });
     
@@ -627,7 +627,7 @@ const ReturnsPage = {
       const response = await api.quality.createReturn(payload);
 
       document.getElementById('returnResult').innerHTML = `
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+        <div class="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg">
           <i class="fas fa-check-circle mr-2"></i>
           <strong>Başarılı!</strong> ${response.message}
           <div class="mt-2 text-sm">
@@ -650,7 +650,7 @@ const ReturnsPage = {
       }, 5000);
     } catch (error) {
       document.getElementById('returnResult').innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
           <i class="fas fa-exclamation-circle mr-2"></i>
           <strong>Hata!</strong> ${error.message}
         </div>
@@ -757,7 +757,7 @@ const ReturnsPage = {
       });
 
       document.getElementById('receiptResult').innerHTML = `
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+        <div class="bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg">
           <i class="fas fa-check-circle mr-2"></i>
           <strong>Başarılı!</strong> İade girişi yapıldı ve kalite kontrolüne gönderildi.
         </div>
@@ -775,7 +775,7 @@ const ReturnsPage = {
       }, 5000);
     } catch (error) {
       document.getElementById('receiptResult').innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg">
           <i class="fas fa-exclamation-circle mr-2"></i>
           <strong>Hata!</strong> ${error.message}
         </div>
@@ -791,12 +791,12 @@ const ReturnsPage = {
     container.innerHTML = `
       <div class="space-y-6">
         <!-- Kümülatif Bilgi -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
           <div class="flex items-center">
-            <i class="fas fa-info-circle text-blue-600 mr-3 text-lg"></i>
+            <i class="fas fa-info-circle text-blue-400 mr-3 text-lg"></i>
             <div>
-              <h3 class="font-semibold text-blue-900">Kümülatif İade İstatistikleri</h3>
-              <p class="text-sm text-blue-700 mt-1">Bu istatistikler tüm zamanların toplam iade sayılarını gösterir. Yerine yenisi gelse bile iade sayıları düşmez, böylece kalite takibi doğru yapılabilir.</p>
+              <h3 class="font-semibold text-blue-300">Kümülatif İade İstatistikleri</h3>
+              <p class="text-sm text-blue-400 mt-1">Bu istatistikler tüm zamanların toplam iade sayılarını gösterir. Yerine yenisi gelse bile iade sayıları düşmez, böylece kalite takibi doğru yapılabilir.</p>
             </div>
           </div>
         </div>
@@ -818,10 +818,10 @@ const ReturnsPage = {
         ` : ''}
         
         <!-- Filtre -->
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="glass-card rounded-2xl p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Zaman Dilimi</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Zaman Dilimi</label>
               <select id="statisticPeriod" class="w-full px-4 py-2 border rounded-lg">
                 <option value="">Tüm Zamanlar</option>
                 <option value="1month">Son 1 Ay</option>
@@ -830,7 +830,7 @@ const ReturnsPage = {
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Malzeme Ara</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Malzeme Ara</label>
               <div class="flex gap-2">
                 <input type="text" id="materialSearch" placeholder="Malzeme kodu girin..." 
                   class="flex-1 px-4 py-2 border rounded-lg">
@@ -878,27 +878,27 @@ const ReturnsPage = {
         </div>
 
         <!-- Malzeme Detayı -->
-        <div id="materialDetailSection" style="display:none;" class="bg-white rounded-lg shadow p-6">
+        <div id="materialDetailSection" style="display:none;" class="glass-card rounded-2xl p-6">
           <h3 class="text-lg font-bold mb-4">Malzeme Detayı</h3>
           <div id="materialDetailContent"></div>
         </div>
 
         <!-- En Çok İade Edilen Malzemeler -->
-        <div class="bg-white rounded-lg shadow">
+        <div class="glass-card rounded-2xl">
           <div class="px-6 py-4 border-b">
             <h3 class="text-lg font-semibold">En Çok İade Edilen Malzemeler (Top 10)</h3>
           </div>
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-white/5">
+              <thead>
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Kodu</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme Adı</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">İade Kesilen Adet</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">#</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme Kodu</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme Adı</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">İade Kesilen Adet</th>
                 </tr>
               </thead>
-              <tbody id="topMaterialsTable" class="divide-y divide-gray-200">
+              <tbody id="topMaterialsTable" class="divide-y divide-white/5">
                 <tr>
                   <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
@@ -952,23 +952,23 @@ const ReturnsPage = {
         document.getElementById('materialDetailContent').innerHTML = `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p class="text-sm text-gray-600">Malzeme Kodu</p>
+              <p class="text-sm text-gray-400">Malzeme Kodu</p>
               <p class="text-lg font-bold">${stats.materialDetail.material_code}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Malzeme Adı</p>
+              <p class="text-sm text-gray-400">Malzeme Adı</p>
               <p class="text-lg font-bold">${stats.materialDetail.material_name || '-'}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Toplam İade Kesilen</p>
+              <p class="text-sm text-gray-400">Toplam İade Kesilen</p>
               <p class="text-3xl font-bold text-red-600">${Math.round(stats.materialDetail.total_return_quantity || 0)} adet</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">İlk İade</p>
+              <p class="text-sm text-gray-400">İlk İade</p>
               <p class="font-medium">${new Date(stats.materialDetail.first_return).toLocaleDateString('tr-TR')}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Son İade</p>
+              <p class="text-sm text-gray-400">Son İade</p>
               <p class="font-medium">${new Date(stats.materialDetail.last_return).toLocaleDateString('tr-TR')}</p>
             </div>
           </div>
@@ -990,7 +990,7 @@ const ReturnsPage = {
         `;
       } else {
         tableBody.innerHTML = stats.topMaterials.map((item, index) => `
-          <tr class="hover:bg-gray-50 cursor-pointer" onclick="document.getElementById('materialSearch').value='${item.material_code}'; ReturnsPage.loadStatistics();">
+          <tr class="hover:bg-white/[0.03] cursor-pointer" onclick="document.getElementById('materialSearch').value='${item.material_code}'; ReturnsPage.loadStatistics();">
             <td class="px-6 py-4 text-sm font-bold text-gray-500">${index + 1}</td>
             <td class="px-6 py-4 font-medium text-blue-600">${item.material_code}</td>
             <td class="px-6 py-4 text-sm">${item.material_name || '-'}</td>

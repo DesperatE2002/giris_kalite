@@ -5,7 +5,7 @@ const qualityPage = {
   async render() {
     if (!authManager.isKalite()) {
       document.getElementById('content').innerHTML = `
-        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+        <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded">
           <i class="fas fa-exclamation-triangle mr-2"></i> Bu sayfaya erişim yetkiniz yok.
         </div>
       `;
@@ -47,10 +47,10 @@ const qualityPage = {
     document.querySelectorAll('.quality-tab').forEach(btn => {
       if (btn.dataset.tab === tab) {
         btn.classList.add('gradient-btn', 'shadow-lg');
-        btn.classList.remove('text-gray-600', 'hover:text-gray-900');
+        btn.classList.remove('text-gray-400', 'hover:text-white');
       } else {
         btn.classList.remove('gradient-btn', 'shadow-lg');
-        btn.classList.add('text-gray-600', 'hover:text-gray-900');
+        btn.classList.add('text-gray-400', 'hover:text-white');
       }
     });
 
@@ -70,14 +70,14 @@ const qualityPage = {
       const pending = await api.quality.pending();
 
       container.innerHTML = `
-        <div class="bg-white rounded-lg shadow">
-          <div class="px-6 py-4 border-b border-gray-200">
+        <div class="glass-card rounded-2xl">
+          <div class="px-6 py-4 border-b border-white/5">
             <div class="flex justify-between items-center">
-              <h2 class="text-xl font-semibold text-gray-900">
+              <h2 class="text-xl font-semibold text-white">
                 <i class="fas fa-list-check mr-2"></i> Kalite Bekleyen Kayıtlar
               </h2>
               <div class="flex items-center gap-3">
-                <div class="text-sm text-gray-600">
+                <div class="text-sm text-gray-400">
                   <i class="fas fa-clock mr-1"></i> ${pending.length} kayıt bekliyor
                 </div>
                 ${pending.length > 0 ? `
@@ -92,8 +92,8 @@ const qualityPage = {
             ${pending.length === 0 ? `
               <div class="text-center py-12">
                 <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">Tüm kayıtlar işlendi!</h3>
-                <p class="text-gray-600">Şu anda kalite bekleyen giriş kaydı bulunmuyor.</p>
+                <h3 class="text-xl font-semibold text-white mb-2">Tüm kayıtlar işlendi!</h3>
+                <p class="text-gray-400">Şu anda kalite bekleyen giriş kaydı bulunmuyor.</p>
               </div>
             ` : `
               <div class="space-y-4">
@@ -105,7 +105,7 @@ const qualityPage = {
       `;
     } catch (error) {
       container.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded">
           <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
         </div>
       `;
@@ -128,48 +128,48 @@ const qualityPage = {
       'pdu': 'PDU'
     };
     const componentColors = {
-      'batarya': 'bg-green-100 text-green-800',
-      'vccu': 'bg-yellow-100 text-yellow-800',
-      'junction_box': 'bg-blue-100 text-blue-800',
-      'pdu': 'bg-purple-100 text-purple-800'
+      'batarya': 'bg-emerald-500/15 text-emerald-400',
+      'vccu': 'bg-amber-500/15 text-amber-400',
+      'junction_box': 'bg-blue-500/15 text-blue-400',
+      'pdu': 'bg-purple-500/15 text-purple-400'
     };
     
     return `
       <div class="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${
-        item.component_type === 'batarya' ? 'border-green-200 bg-green-50/30' :
-        item.component_type === 'vccu' ? 'border-yellow-200 bg-yellow-50/30' :
-        item.component_type === 'junction_box' ? 'border-blue-200 bg-blue-50/30' :
-        item.component_type === 'pdu' ? 'border-purple-200 bg-purple-50/30' : 'border-gray-200'
+        item.component_type === 'batarya' ? 'border-green-500/30 bg-green-500/10' :
+        item.component_type === 'vccu' ? 'border-yellow-500/30 bg-yellow-500/10' :
+        item.component_type === 'junction_box' ? 'border-blue-500/30 bg-blue-500/10' :
+        item.component_type === 'pdu' ? 'border-purple-500/30 bg-purple-500/10' : 'border-white/10'
       }">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <!-- Item Info -->
           <div class="flex-1">
             <div class="flex items-center mb-3 flex-wrap gap-2">
-              <span class="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-900 rounded-full text-sm font-bold">
+              <span class="px-3 py-1 bg-blue-500/15 text-blue-400 rounded-full text-sm font-bold">
                 ${item.otpa_number}
               </span>
-              <span class="px-3 py-1 ${componentColors[item.component_type] || 'bg-gray-100 text-gray-800'} rounded-full text-sm font-bold">
+              <span class="px-3 py-1 ${componentColors[item.component_type] || 'bg-gray-500/15 text-gray-400'} rounded-full text-sm font-bold">
                 ${componentIcons[item.component_type] || '❓'} ${componentLabels[item.component_type] || item.component_type}
               </span>
-              <span class="text-gray-600 text-sm">${item.project_name}</span>
+              <span class="text-gray-400 text-sm">${item.project_name}</span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
               <div>
-                <div class="text-sm text-gray-500">Malzeme</div>
-                <div class="font-bold text-gray-900">${item.material_code}</div>
-                <div class="text-xs text-gray-600">${item.material_name}</div>
+                <div class="text-sm text-gray-400">Malzeme</div>
+                <div class="font-bold text-white">${item.material_code}</div>
+                <div class="text-xs text-gray-400">${item.material_name}</div>
               </div>
               <div>
-                <div class="text-sm text-gray-500">Gelen Miktar</div>
+                <div class="text-sm text-gray-400">Gelen Miktar</div>
                 <div class="font-bold text-2xl gradient-text">${item.received_quantity} ${item.unit}</div>
               </div>
               <div>
-                <div class="text-sm text-gray-500">Giriş Tarihi</div>
-                <div class="text-sm text-gray-900">${new Date(item.receipt_date).toLocaleString('tr-TR')}</div>
+                <div class="text-sm text-gray-400">Giriş Tarihi</div>
+                <div class="text-sm text-white">${new Date(item.receipt_date).toLocaleString('tr-TR')}</div>
               </div>
               <div>
-                <div class="text-sm text-gray-500">Kaydeden</div>
-                <div class="text-sm text-gray-900">${item.created_by_name}</div>
+                <div class="text-sm text-gray-400">Kaydeden</div>
+                <div class="text-sm text-white">${item.created_by_name}</div>
               </div>
             </div>
           </div>
@@ -190,29 +190,29 @@ const qualityPage = {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+      <div class="glass-card rounded-2xl shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
         <div class="p-6">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold gradient-text">
               <i class="fas fa-clipboard-check mr-2"></i> Kalite Kararı
             </h2>
             <button onclick="this.closest('.fixed').remove()" 
-              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
               <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
 
-          <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div class="font-medium text-gray-900 mb-1">${materialCode}</div>
-            <div class="text-sm text-gray-600 mb-2">${materialName}</div>
+          <div class="mb-6 p-4 bg-gray-800/50 rounded-lg">
+            <div class="font-medium text-white mb-1">${materialCode}</div>
+            <div class="text-sm text-gray-400 mb-2">${materialName}</div>
             <div class="text-lg font-bold text-blue-600">Gelen Miktar: ${receivedQty}</div>
           </div>
 
           <form id="qualityDecisionForm" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Kalite Durumu *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Kalite Durumu *</label>
               <select id="qualityStatus" required 
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg">
+                class="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 text-lg bg-gray-800/50 text-white">
                 <option value="">Durum seçin...</option>
                 <option value="kabul">✅ Kabul</option>
                 <option value="iade">↩️ İade</option>
@@ -221,21 +221,21 @@ const qualityPage = {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Kabul Miktarı</label>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Kabul Miktarı</label>
                 <input type="number" id="acceptedQty" step="0.01" value="${receivedQty}" min="0" max="${receivedQty}"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg">
+                  class="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 text-lg bg-gray-800/50 text-white">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">İade Miktarı</label>
+                <label class="block text-sm font-medium text-gray-300 mb-2">İade Miktarı</label>
                 <input type="number" id="rejectedQty" step="0.01" value="0" min="0" max="${receivedQty}"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-lg">
+                  class="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 text-lg bg-gray-800/50 text-white">
               </div>
             </div>
 
             <div id="reasonSection" class="hidden">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Açıklama / Red Nedeni *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Açıklama / Red Nedeni *</label>
               <textarea id="reason" rows="4" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                class="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-800/50 text-white"
                 placeholder="Detaylı açıklama girin..."></textarea>
             </div>
 
@@ -245,7 +245,7 @@ const qualityPage = {
                 <i class="fas fa-check mr-2"></i> Kararı Kaydet
               </button>
               <button type="button" onclick="this.closest('.fixed').remove()" 
-                class="px-6 py-3 bg-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-400 transition">
+                class="px-6 py-3 bg-gray-700 text-gray-300 font-medium rounded-lg hover:bg-gray-600 transition">
                 İptal
               </button>
             </div>
@@ -369,33 +369,33 @@ const qualityPage = {
                   <p>Henüz iade kaydı bulunmuyor</p>
                 </div>
               ` : `
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gradient-to-r from-red-50 to-pink-50">
+                <table class="min-w-full divide-y divide-white/5">
+                  <thead>
                     <tr>
-                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tarih</th>
-                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">OTPA</th>
-                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Proje</th>
-                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Malzeme</th>
-                      <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">İade Miktarı</th>
-                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Sebep</th>
-                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">İade Eden</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Tarih</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">OTPA</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Proje</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Malzeme</th>
+                      <th class="px-6 py-4 text-right text-xs font-bold text-gray-300 uppercase tracking-wider">İade Miktarı</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Sebep</th>
+                      <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">İade Eden</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-200">
+                  <tbody class="divide-y divide-white/5">
                     ${returns.map(item => `
-                      <tr class="hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${new Date(item.decision_date || item.created_at).toLocaleString('tr-TR')}</td>
-                        <td class="px-6 py-4 font-semibold text-gray-900">${item.otpa_number}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-700">${item.project_name || ''}</td>
+                      <tr class="hover:bg-white/[0.03] transition-all duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${new Date(item.decision_date || item.created_at).toLocaleString('tr-TR')}</td>
+                        <td class="px-6 py-4 font-semibold text-white">${item.otpa_number}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-300">${item.project_name || ''}</td>
                         <td class="px-6 py-4">
-                          <div class="font-semibold text-gray-900">${item.material_code}</div>
-                          <div class="text-xs text-gray-600">${item.material_name || ''}</div>
+                          <div class="font-semibold text-white">${item.material_code}</div>
+                          <div class="text-xs text-gray-400">${item.material_name || ''}</div>
                         </td>
                         <td class="px-6 py-4 text-right">
-                          <span class="font-bold text-red-600 text-lg">${item.rejected_quantity} ${item.unit || ''}</span>
+                          <span class="font-bold text-red-400 text-lg">${item.rejected_quantity} ${item.unit || ''}</span>
                         </td>
-                        <td class="px-6 py-4 text-sm max-w-xs truncate font-medium text-gray-700" title="${item.reason || ''}">${item.reason || '-'}</td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-700">${item.decision_by_name || 'Sistem'}</td>
+                        <td class="px-6 py-4 text-sm max-w-xs truncate font-medium text-gray-300" title="${item.reason || ''}">${item.reason || '-'}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-300">${item.decision_by_name || 'Sistem'}</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -441,15 +441,15 @@ const qualityPage = {
                 <i class="fas fa-undo mr-2"></i> Yeni İade Oluştur
               </h2>
               <button onclick="this.closest('.fixed').remove()" 
-                class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+                class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
                 <i class="fas fa-times text-3xl"></i>
               </button>
             </div>
-            <p class="text-sm text-gray-600 mb-6">Montaj veya diğer sebeplerle kabul edilmiş bir malzemeyi iade edin</p>
+            <p class="text-sm text-gray-400 mb-6">Montaj veya diğer sebeplerle kabul edilmiş bir malzemeyi iade edin</p>
             
             <form id="createReturnForm" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">OTPA Seç *</label>
+                <label class="block text-sm font-medium text-gray-300 mb-2">OTPA Seç *</label>
                 <select id="returnOtpaId" required 
                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500">
                   <option value="">-- OTPA Seçin --</option>

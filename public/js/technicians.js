@@ -38,11 +38,11 @@ const TechPage = {
       <div class="max-w-7xl mx-auto">
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+            <h1 class="text-3xl font-bold text-white flex items-center">
               <i class="fas fa-hard-hat mr-3 text-indigo-600"></i>
               ${this.isAdmin ? 'İş Takip & Performans' : 'Görevlerim'}
             </h1>
-            <p class="text-gray-600 mt-1">${this.isAdmin ? 'Tekniker atama, süre takibi ve performans yönetimi' : 'Atanmış görevlerinizi takip edin'}</p>
+            <p class="text-gray-400 mt-1">${this.isAdmin ? 'Tekniker atama, süre takibi ve performans yönetimi' : 'Atanmış görevlerinizi takip edin'}</p>
           </div>
           ${this.isAdmin ? `
             <button onclick="TechPage.showAssignmentForm()" 
@@ -57,7 +57,7 @@ const TechPage = {
           ${tabs.map(t => `
             <button onclick="TechPage.switchTab('${t.id}')" 
               class="tech-tab flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all
-                ${this.currentTab === t.id ? 'gradient-btn text-white shadow-lg' : 'glass-card text-gray-600 hover:bg-gray-100'}">
+                ${this.currentTab === t.id ? 'gradient-btn text-white shadow-lg' : 'glass-card text-gray-400 hover:bg-white/5'}">
               <i class="${t.icon}"></i>${t.label}
             </button>
           `).join('')}
@@ -77,9 +77,9 @@ const TechPage = {
     document.querySelectorAll('.tech-tab').forEach(btn => {
       const id = btn.textContent.trim();
       if (btn.onclick.toString().includes(tab)) {
-        btn.className = btn.className.replace('glass-card text-gray-600 hover:bg-gray-100', 'gradient-btn text-white shadow-lg');
+        btn.className = btn.className.replace('glass-card text-gray-400 hover:bg-white/5', 'gradient-btn text-white shadow-lg');
       } else {
-        btn.className = btn.className.replace('gradient-btn text-white shadow-lg', 'glass-card text-gray-600 hover:bg-gray-100');
+        btn.className = btn.className.replace('gradient-btn text-white shadow-lg', 'glass-card text-gray-400 hover:bg-white/5');
       }
     });
     this.renderTab();
@@ -99,7 +99,7 @@ const TechPage = {
 
   renderBoard(container) {
     const statuses = [
-      { id: 'pending', label: 'Bekliyor', icon: 'fas fa-clock', color: 'gray', bgColor: 'bg-gray-50' },
+      { id: 'pending', label: 'Bekliyor', icon: 'fas fa-clock', color: 'gray', bgColor: 'bg-white/[0.03]' },
       { id: 'active', label: 'Çalışılıyor', icon: 'fas fa-play', color: 'blue', bgColor: 'bg-blue-50' },
       { id: 'paused', label: 'Pause', icon: 'fas fa-pause-circle', color: 'purple', bgColor: 'bg-purple-50' },
       { id: 'blocked', label: 'Bloke', icon: 'fas fa-ban', color: 'orange', bgColor: 'bg-orange-50' },
@@ -115,7 +115,7 @@ const TechPage = {
             <div class="glass-card rounded-xl p-4 border-l-4 border-${s.color}-500">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-xs text-gray-500 font-medium">${s.label}</p>
+                  <p class="text-xs text-gray-400 font-medium">${s.label}</p>
                   <p class="text-2xl font-bold text-${s.color}-600">${count}</p>
                 </div>
                 <i class="${s.icon} text-2xl text-${s.color}-300"></i>
@@ -175,9 +175,9 @@ const TechPage = {
     }
 
     return `
-      <div class="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-all border border-gray-100">
+      <div class="bg-white/5 rounded-lg p-3 hover:bg-white/[0.06] transition-all border border-white/10">
         <div class="flex items-start justify-between mb-2">
-          <h4 class="font-bold text-gray-800 text-sm leading-tight flex-1">${a.title}</h4>
+          <h4 class="font-bold text-white text-sm leading-tight flex-1">${a.title}</h4>
           ${this.isAdmin ? `
             <div class="flex gap-0.5 ml-1 flex-shrink-0">
               <button onclick="TechPage.showAssignmentForm(${a.id})" class="text-gray-300 hover:text-blue-500 p-0.5"><i class="fas fa-edit text-xs"></i></button>
@@ -186,20 +186,20 @@ const TechPage = {
           ` : ''}
         </div>
         
-        ${a.description ? `<p class="text-xs text-gray-500 mb-2 line-clamp-2">${a.description}</p>` : ''}
+        ${a.description ? `<p class="text-xs text-gray-400 mb-2 line-clamp-2">${a.description}</p>` : ''}
         
         <div class="flex flex-wrap gap-1.5 mb-2 text-xs">
-          <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"><i class="fas fa-user mr-1"></i>${a.assigned_to_name || '—'}</span>
+          <span class="bg-white/10 text-gray-400 px-2 py-0.5 rounded-full"><i class="fas fa-user mr-1"></i>${a.assigned_to_name || '—'}</span>
           <span class="${difficultyColors[a.difficulty || 3]} font-medium" title="Zorluk: ${a.difficulty}/5">${difficultyStars}</span>
         </div>
 
-        ${durationText ? `<div class="text-xs text-gray-500 mb-2"><i class="fas fa-stopwatch mr-1 text-indigo-400"></i>${durationText}</div>` : ''}
+        ${durationText ? `<div class="text-xs text-gray-400 mb-2"><i class="fas fa-stopwatch mr-1 text-indigo-400"></i>${durationText}</div>` : ''}
         
         ${a.performance_score ? `<div class="text-xs mb-2"><span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">Puan: ${a.performance_score}</span></div>` : ''}
         
         ${a.blocked_reason && a.status === 'blocked' ? `<div class="text-xs text-orange-600 mb-2 bg-orange-50 rounded px-2 py-1"><i class="fas fa-exclamation-triangle mr-1"></i>${a.blocked_reason}</div>` : ''}
         
-        ${a.notes ? `<div class="text-xs text-gray-500 mb-2 bg-gray-50 rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${a.notes}</div>` : ''}
+        ${a.notes ? `<div class="text-xs text-gray-400 mb-2 bg-white/[0.03] rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${a.notes}</div>` : ''}
 
         ${a.deadline && a.status !== 'completed' ? (() => {
           const deadlineDate = new Date(a.deadline + 'T23:59:59');
@@ -212,7 +212,7 @@ const TechPage = {
           const label = isOverdue ? `${Math.abs(diffDays)} gün gecikmiş!` : diffDays === 0 ? 'Bugün son gün!' : `${diffDays} gün kaldı`;
           return `<div class="text-xs mb-2 ${cls} rounded px-2 py-1 font-medium"><i class="fas ${icon} mr-1"></i>${new Date(a.deadline).toLocaleDateString('tr-TR')} — ${label}</div>`;
         })() : ''}
-        ${a.deadline && a.status === 'completed' ? `<div class="text-xs mb-2 bg-gray-50 text-gray-400 rounded px-2 py-1"><i class="fas fa-calendar-check mr-1"></i>Deadline: ${new Date(a.deadline).toLocaleDateString('tr-TR')}</div>` : ''}
+        ${a.deadline && a.status === 'completed' ? `<div class="text-xs mb-2 bg-white/[0.03] text-gray-500 rounded px-2 py-1"><i class="fas fa-calendar-check mr-1"></i>Deadline: ${new Date(a.deadline).toLocaleDateString('tr-TR')}</div>` : ''}
 
         ${actions ? `<div class="mt-2">${actions}</div>` : ''}
       </div>
@@ -241,8 +241,8 @@ const TechPage = {
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center font-bold text-green-700">${w.full_name.charAt(0)}</div>
                     <div>
-                      <p class="font-semibold text-gray-800 text-sm">${w.full_name}</p>
-                      <p class="text-xs text-gray-500">Bugün ${w.completed_today} görev tamamladı</p>
+                      <p class="font-semibold text-white text-sm">${w.full_name}</p>
+                      <p class="text-xs text-gray-400">Bugün ${w.completed_today} görev tamamladı</p>
                     </div>
                   </div>
                   <button onclick="TechPage.showAssignmentForm(null, ${w.id})" class="bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg"><i class="fas fa-plus mr-1"></i>Ata</button>
@@ -264,8 +264,8 @@ const TechPage = {
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center font-bold text-blue-700">${w.full_name.charAt(0)}</div>
                     <div>
-                      <p class="font-semibold text-gray-800 text-sm">${w.full_name}</p>
-                      <p class="text-xs text-gray-500">${w.active_tasks} aktif, ${w.pending_tasks} bekliyor</p>
+                      <p class="font-semibold text-white text-sm">${w.full_name}</p>
+                      <p class="text-xs text-gray-400">${w.active_tasks} aktif, ${w.pending_tasks} bekliyor</p>
                     </div>
                   </div>
                   <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Meşgul</span>
@@ -287,8 +287,8 @@ const TechPage = {
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-red-200 rounded-full flex items-center justify-center font-bold text-red-700">${w.full_name.charAt(0)}</div>
                     <div>
-                      <p class="font-semibold text-gray-800 text-sm">${w.full_name}</p>
-                      <p class="text-xs text-gray-500">${w.active_tasks} aktif, ${w.pending_tasks} bekliyor</p>
+                      <p class="font-semibold text-white text-sm">${w.full_name}</p>
+                      <p class="text-xs text-gray-400">${w.active_tasks} aktif, ${w.pending_tasks} bekliyor</p>
                     </div>
                   </div>
                   <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-exclamation mr-1"></i>Yoğun</span>
@@ -318,10 +318,10 @@ const TechPage = {
     container.innerHTML = `
       <div class="glass-card rounded-xl p-5 mb-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-calendar-day mr-2 text-indigo-600"></i>Günlük Faaliyet Raporu</h3>
+          <h3 class="font-bold text-white text-lg"><i class="fas fa-calendar-day mr-2 text-indigo-600"></i>Günlük Faaliyet Raporu</h3>
           <div class="flex items-center gap-3">
             <input type="date" id="dailyDatePicker" value="${date}" onchange="TechPage.renderTab()" 
-              class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+              class="px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
             <button onclick="TechPage.generateDailyWordReport()" 
               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 whitespace-nowrap">
               <i class="fas fa-file-word"></i>Rapor Oluştur
@@ -355,7 +355,7 @@ const TechPage = {
 
         <!-- İş Bazlı Özet -->
         ${(report.task_grouped || []).length > 0 ? `
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-tasks mr-2 text-indigo-500"></i>İş Bazlı Özet</h4>
+          <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-tasks mr-2 text-indigo-500"></i>İş Bazlı Özet</h4>
           <div class="space-y-2 mb-6">
             ${report.task_grouped.map(g => {
               const durText = g.total_minutes < 60 ? `${g.total_minutes} dk` : `${Math.floor(g.total_minutes/60)}s ${g.total_minutes%60}dk`;
@@ -381,7 +381,7 @@ const TechPage = {
 
         <!-- Kişi Bazlı Özet -->
         ${report.person_summary.length > 0 ? `
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-users mr-2"></i>Kişi Bazlı</h4>
+          <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-users mr-2"></i>Kişi Bazlı</h4>
           <div class="overflow-x-auto mb-6">
             <table class="w-full text-sm">
               <thead>
@@ -397,7 +397,7 @@ const TechPage = {
                   const hrs = Math.floor(p.total_minutes / 60);
                   const mins = p.total_minutes % 60;
                   return `
-                    <tr class="border-b border-gray-50 hover:bg-gray-50">
+                    <tr class="border-b border-white/5 hover:bg-white/[0.03]">
                       <td class="py-2 font-medium">${p.full_name}</td>
                       <td class="py-2 text-center font-bold">${p.task_count}</td>
                       <td class="py-2 text-center">${hrs}s ${mins}dk</td>
@@ -412,7 +412,7 @@ const TechPage = {
 
         <!-- Tamamlanan İşler -->
         ${report.completed.length > 0 ? `
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Tamamlanan İşler</h4>
+          <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-check-circle text-green-500 mr-2"></i>Tamamlanan İşler</h4>
           <div class="space-y-2 mb-6">
             ${report.completed.map(a => {
               const mins = a.actual_duration_minutes || 0;
@@ -435,7 +435,7 @@ const TechPage = {
 
         <!-- Yarına Kalan İşler -->
         ${(report.paused || []).length > 0 ? `
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-pause-circle text-purple-500 mr-2"></i>Pause Edilen İşler</h4>
+          <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-pause-circle text-purple-500 mr-2"></i>Pause Edilen İşler</h4>
           <div class="space-y-2 mb-6">
             ${report.paused.map(a => `
               <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg text-sm">
@@ -451,7 +451,7 @@ const TechPage = {
 
         <!-- Blokajlar -->
         ${report.blocked.length > 0 ? `
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i>Blokajlar</h4>
+          <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i>Blokajlar</h4>
           <div class="space-y-2">
             ${report.blocked.map(a => `
               <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg text-sm">
@@ -482,9 +482,9 @@ const TechPage = {
     container.innerHTML = `
       <div class="glass-card rounded-xl p-5">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-trophy mr-2 text-yellow-500"></i>Liderlik Tablosu</h3>
+          <h3 class="font-bold text-white text-lg"><i class="fas fa-trophy mr-2 text-yellow-500"></i>Liderlik Tablosu</h3>
           <select id="lbPeriod" onchange="TechPage.renderTab()" 
-            class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm">
+            class="px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm">
             <option value="week" ${period === 'week' ? 'selected' : ''}>Bu Hafta</option>
             <option value="month" ${period === 'month' ? 'selected' : ''}>Bu Ay</option>
             <option value="all" ${period === 'all' ? 'selected' : ''}>Tüm Zamanlar</option>
@@ -510,7 +510,7 @@ const TechPage = {
                   <div class="text-center flex-1 max-w-[140px]">
                     <div class="${sizes[idx]} mb-2">${medals[idx]}</div>
                     <div class="w-14 h-14 mx-auto bg-gradient-to-br from-indigo-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">${d.full_name.charAt(0)}</div>
-                    <p class="font-bold text-gray-800 text-sm truncate">${d.full_name}</p>
+                    <p class="font-bold text-white text-sm truncate">${d.full_name}</p>
                     <p class="text-indigo-600 font-bold text-lg">${parseFloat(d.total_score).toFixed(1)}</p>
                     <p class="text-xs text-gray-500">${d.total_tasks} görev</p>
                     <div class="bg-gradient-to-t from-indigo-200 to-indigo-100 rounded-t-lg mt-2 ${heights[idx]}"></div>
@@ -540,7 +540,7 @@ const TechPage = {
                   const hrs = Math.floor(d.total_minutes / 60);
                   const mins = d.total_minutes % 60;
                   return `
-                    <tr class="border-b border-gray-50 hover:bg-gray-50 ${i < 3 ? 'font-medium' : ''}">
+                    <tr class="border-b border-white/5 hover:bg-white/[0.03] ${i < 3 ? 'font-medium' : ''}">
                       <td class="py-3">${i < 3 ? medals[i] : i + 1}</td>
                       <td class="py-3">
                         <div class="flex items-center gap-2">
@@ -573,26 +573,26 @@ const TechPage = {
     const formArea = document.getElementById('techFormArea');
     formArea.innerHTML = `
       <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) document.getElementById('techFormArea').innerHTML=''">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-          <h3 class="font-bold text-gray-800 text-lg mb-4">
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+          <h3 class="font-bold text-white text-lg mb-4">
             <i class="fas fa-${task ? 'edit' : 'plus'} mr-2 text-indigo-600"></i>
             ${task ? 'Görevi Düzenle' : 'Yeni Görev Ata'}
           </h3>
           <form id="assignForm" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Görev Adı *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Görev Adı *</label>
               <input type="text" id="af_title" value="${task?.title || ''}" required
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Ne yapılacak?">
+                class="w-full px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Ne yapılacak?">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
-              <textarea id="af_desc" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Detaylı açıklama...">${task?.description || ''}</textarea>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Açıklama</label>
+              <textarea id="af_desc" rows="2" class="w-full px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Detaylı açıklama...">${task?.description || ''}</textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">${task ? 'Tekniker *' : 'Tekniker(ler) *'}</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">${task ? 'Tekniker *' : 'Tekniker(ler) *'}</label>
                 ${task ? `
-                  <select id="af_tech" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <select id="af_tech" required class="w-full px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-indigo-500">
                     <option value="">Seçin...</option>
                     ${this.technicians.map(t => {
                       const wf = this.workforce.find(w => w.id === t.id);
@@ -602,12 +602,12 @@ const TechPage = {
                     }).join('')}
                   </select>
                 ` : `
-                  <div id="af_tech_multi" class="border rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
+                  <div id="af_tech_multi" class="border border-white/10 bg-gray-800/50 rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
                     ${this.technicians.map(t => {
                       const wf = this.workforce.find(w => w.id === t.id);
                       const badge = wf ? (wf.availability === 'free' ? '🟢' : wf.availability === 'busy' ? '🔵' : '🔴') : '';
                       const checked = preselectedTech === t.id ? 'checked' : '';
-                      return `<label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-indigo-50 cursor-pointer transition-all">
+                      return `<label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition-all">
                         <input type="checkbox" name="af_techs" value="${t.id}" ${checked} class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
                         <span class="text-sm font-medium">${t.full_name}</span>
                         <span class="text-xs">${badge}</span>
@@ -618,7 +618,7 @@ const TechPage = {
                 `}
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Zorluk (1-5)</label>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Zorluk (1-5)</label>
                 <div class="flex items-center gap-1 mt-1">
                   ${[1,2,3,4,5].map(n => `
                     <button type="button" onclick="document.getElementById('af_difficulty').value=${n};document.querySelectorAll('.diff-star').forEach((s,i)=>s.classList.toggle('text-yellow-400',i<${n}))" 
@@ -629,13 +629,13 @@ const TechPage = {
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-sticky-note text-yellow-500 mr-1"></i>Notlar</label>
-              <textarea id="af_notes" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Ek notlar...">${task?.notes || ''}</textarea>
+              <label class="block text-sm font-medium text-gray-300 mb-1"><i class="fas fa-sticky-note text-yellow-500 mr-1"></i>Notlar</label>
+              <textarea id="af_notes" rows="2" class="w-full px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Ek notlar...">${task?.notes || ''}</textarea>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-calendar-times text-red-400 mr-1"></i>Son Tarih (Deadline)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1"><i class="fas fa-calendar-times text-red-400 mr-1"></i>Son Tarih (Deadline)</label>
               <input type="date" id="af_deadline" value="${task?.deadline || ''}"
-                class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                class="w-full px-3 py-2 border border-white/10 bg-gray-800/50 text-white rounded-lg focus:ring-2 focus:ring-indigo-500">
               <p class="text-xs text-gray-400 mt-1">Opsiyonel — belirlenirse kart üzerinde geri sayım gösterilir</p>
             </div>
             <div class="flex gap-3 pt-2">
@@ -643,7 +643,7 @@ const TechPage = {
                 <i class="fas fa-save mr-1"></i>${task ? 'Güncelle' : 'Ata'}
               </button>
               <button type="button" onclick="document.getElementById('techFormArea').innerHTML=''" 
-                class="px-6 py-2.5 border rounded-lg text-gray-600 hover:bg-gray-50">İptal</button>
+                class="px-6 py-2.5 border border-white/10 rounded-lg text-gray-400 hover:bg-white/5">İptal</button>
             </div>
           </form>
         </div>
@@ -711,17 +711,17 @@ const TechPage = {
     const formArea = document.getElementById('techFormArea');
     formArea.innerHTML = `
       <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) document.getElementById('techFormArea').innerHTML=''">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-check-circle text-green-500 mr-2"></i>Görevi Tamamla</h3>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-check-circle text-green-500 mr-2"></i>Görevi Tamamla</h3>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tamamlama Notu (opsiyonel)</label>
-            <textarea id="tp_completeNote" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none" placeholder="Not ekleyin..."></textarea>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Tamamlama Notu (opsiyonel)</label>
+            <textarea id="tp_completeNote" rows="3" class="w-full px-4 py-3 border-2 border-white/10 bg-gray-800/50 text-white rounded-xl focus:border-green-500 focus:outline-none" placeholder="Not ekleyin..."></textarea>
           </div>
           <div class="flex gap-3">
             <button id="tp_confirmComplete" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md">
               <i class="fas fa-check mr-2"></i>Tamamla
             </button>
-            <button onclick="document.getElementById('techFormArea').innerHTML=''" class="px-6 py-3 border rounded-xl text-gray-600 hover:bg-gray-50">İptal</button>
+            <button onclick="document.getElementById('techFormArea').innerHTML=''" class="px-6 py-3 border border-white/10 rounded-xl text-gray-400 hover:bg-white/5">İptal</button>
           </div>
         </div>
       </div>
@@ -744,17 +744,17 @@ const TechPage = {
     const formArea = document.getElementById('techFormArea');
     formArea.innerHTML = `
       <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onclick="if(event.target===this) document.getElementById('techFormArea').innerHTML=''">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-          <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-ban text-orange-500 mr-2"></i>Görevi Bloke Et</h3>
+        <div class="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <h3 class="text-lg font-bold text-white mb-4"><i class="fas fa-ban text-orange-500 mr-2"></i>Görevi Bloke Et</h3>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Bloke Sebebi *</label>
-            <textarea id="tp_blockReason" rows="3" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:outline-none" placeholder="Neden bloke edildi?"></textarea>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Bloke Sebebi *</label>
+            <textarea id="tp_blockReason" rows="3" class="w-full px-4 py-3 border-2 border-white/10 bg-gray-800/50 text-white rounded-xl focus:border-orange-500 focus:outline-none" placeholder="Neden bloke edildi?"></textarea>
           </div>
           <div class="flex gap-3">
             <button id="tp_confirmBlock" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md">
               <i class="fas fa-ban mr-2"></i>Bloke Et
             </button>
-            <button onclick="document.getElementById('techFormArea').innerHTML=''" class="px-6 py-3 border rounded-xl text-gray-600 hover:bg-gray-50">İptal</button>
+            <button onclick="document.getElementById('techFormArea').innerHTML=''" class="px-6 py-3 border border-white/10 rounded-xl text-gray-400 hover:bg-white/5">İptal</button>
           </div>
         </div>
       </div>

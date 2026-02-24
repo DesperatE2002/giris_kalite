@@ -27,10 +27,10 @@ const goodsReceiptPage = {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               ${otpaList.filter(o => o.status !== 'kapali').map(otpa => `
                 <button onclick="goodsReceiptPage.selectOtpa(${otpa.id})" 
-                  class="p-5 border-2 rounded-2xl hover:shadow-xl transition-all duration-200 text-left hover-lift ${this.selectedOtpaId === otpa.id ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-blue-50 shadow-lg' : 'border-gray-200 bg-white hover:border-purple-400'}">
+                  class="p-5 border-2 rounded-2xl hover:shadow-xl transition-all duration-200 text-left hover-lift ${this.selectedOtpaId === otpa.id ? 'border-purple-500 bg-purple-500/10 shadow-lg' : 'border-white/10 hover:border-purple-400'}">
                   <div class="font-bold text-xl gradient-text">${otpa.otpa_number}</div>
-                  <div class="text-sm text-gray-700 mt-2 font-medium">${otpa.project_name}</div>
-                  <div class="mt-3 text-xs text-gray-600">
+                  <div class="text-sm text-gray-300 mt-2 font-medium">${otpa.project_name}</div>
+                  <div class="mt-3 text-xs text-gray-400">
                     <i class="fas fa-clipboard-list mr-1"></i> ${otpa.total_items || 0} malzeme
                   </div>
                 </button>
@@ -42,7 +42,7 @@ const goodsReceiptPage = {
           <div id="entrySection" class="hidden space-y-6">
             <!-- BOM Summary -->
             <div class="glass-card rounded-2xl shadow-xl">
-              <div class="px-6 py-4 border-b border-gray-200">
+              <div class="px-6 py-4 border-b border-white/5">
                 <h2 class="text-2xl font-bold gradient-text">
                   <i class="fas fa-clipboard-list mr-2"></i> Malzeme Listesi
                 </h2>
@@ -57,9 +57,9 @@ const goodsReceiptPage = {
               </h2>
               <form id="receiptForm" class="space-y-4">
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Komponent *</label>
+                  <label class="block text-sm font-semibold text-gray-300 mb-2">Komponent *</label>
                   <select id="componentType" required 
-                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-lg bg-gradient-to-r from-blue-50 to-purple-50 font-medium">
+                    class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-lg bg-gray-800/50 text-white font-medium">
                     <option value="">Komponent seçin...</option>
                     <option value="batarya">🔋 Batarya</option>
                     <option value="vccu">⚡ VCCU</option>
@@ -69,53 +69,53 @@ const goodsReceiptPage = {
                 </div>
 
                 <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">Malzeme Kodu</label>
+                  <label class="block text-sm font-semibold text-gray-300 mb-2">Malzeme Kodu</label>
                   <select id="materialCode" required size="1"
-                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-lg font-medium">
+                    class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-lg font-medium bg-gray-800/50 text-white">
                     <option value="">Önce komponent seçin...</option>
                   </select>
                 </div>
 
                 <div id="materialInfo" class="hidden glass-card rounded-xl p-4 border-2 border-blue-300">
-                  <h3 class="font-bold text-gray-900 mb-2 text-lg">Malzeme Bilgisi</h3>
+                  <h3 class="font-bold text-white mb-2 text-lg">Malzeme Bilgisi</h3>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span class="text-gray-600">Malzeme Adı:</span>
+                      <span class="text-gray-400">Malzeme Adı:</span>
                       <div id="infoName" class="font-medium"></div>
                     </div>
                     <div>
-                      <span class="text-gray-600">Gereken:</span>
+                      <span class="text-gray-400">Gereken:</span>
                       <div id="infoRequired" class="font-medium"></div>
                     </div>
                     <div>
-                      <span class="text-gray-600">Kalan:</span>
+                      <span class="text-gray-400">Kalan:</span>
                       <div id="infoMissing" class="font-medium text-red-600"></div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Gelen Miktar</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Gelen Miktar</label>
                   <input type="number" id="quantity" step="0.01" required 
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                    class="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg bg-gray-800/50 text-white"
                     placeholder="Örn: 100">
                 </div>
 
-                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                   <label class="flex items-center space-x-3 cursor-pointer">
                     <input type="checkbox" id="returnOfRejected" 
                       class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <div>
-                      <span class="font-medium text-gray-900">İade Dönüşü</span>
-                      <p class="text-xs text-gray-600 mt-1">Bu malzeme daha önce iade edilmiş ve şimdi geri geliyor</p>
+                      <span class="font-medium text-white">İade Dönüşü</span>
+                      <p class="text-xs text-gray-400 mt-1">Bu malzeme daha önce iade edilmiş ve şimdi geri geliyor</p>
                     </div>
                   </label>
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Not (Opsiyonel)</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Not (Opsiyonel)</label>
                   <textarea id="notes" rows="3"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-4 py-3 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-800/50 text-white"
                     placeholder="Varsa not ekleyin..."></textarea>
                 </div>
 
@@ -127,9 +127,9 @@ const goodsReceiptPage = {
             </div>
 
             <!-- Recent Entries -->
-            <div class="bg-white rounded-lg shadow">
-              <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-900">
+            <div class="glass-card rounded-2xl">
+              <div class="px-6 py-4 border-b border-white/5">
+                <h2 class="text-xl font-semibold text-white">
                   <i class="fas fa-history mr-2"></i> Son Girişler
                 </h2>
               </div>
@@ -140,7 +140,7 @@ const goodsReceiptPage = {
       `;
     } catch (error) {
       content.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded">
           <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
         </div>
       `;
@@ -192,7 +192,7 @@ const goodsReceiptPage = {
         <div class="mb-4">
           <div class="relative">
             <input type="text" id="bomSearchInput" placeholder="Malzeme kodu veya adı ile ara..." 
-              class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              class="w-full px-4 py-2 pl-10 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-800/50 text-white">
             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
           </div>
         </div>
@@ -203,12 +203,12 @@ const goodsReceiptPage = {
             const hasMissing = parseFloat(item.missing_quantity) > 0;
             
             return `
-              <div class="bom-item border rounded-lg p-4 ${isComplete ? 'bg-green-50 border-green-300' : hasMissing ? 'bg-yellow-50 border-yellow-300' : 'border-gray-200'}" data-code="${item.material_code}" data-name="${item.material_name}">
+              <div class="bom-item border rounded-lg p-4 ${isComplete ? 'bg-green-50 border-green-300' : hasMissing ? 'bg-yellow-50 border-yellow-300' : 'border-white/10'}" data-code="${item.material_code}" data-name="${item.material_name}">
                 <div class="flex justify-between items-start mb-2">
-                  <div class="font-bold text-gray-900">${item.material_code}</div>
+                  <div class="font-bold text-white">${item.material_code}</div>
                   ${isComplete ? '<i class="fas fa-check-circle text-green-600"></i>' : hasMissing ? '<i class="fas fa-exclamation-triangle text-yellow-600"></i>' : ''}
                 </div>
-                <div class="text-sm text-gray-600 mb-3">${item.material_name}</div>
+                <div class="text-sm text-gray-400 mb-3">${item.material_name}</div>
                 <div class="space-y-1 text-sm">
                   <div class="flex justify-between">
                     <span>Gereken:</span>
@@ -220,15 +220,15 @@ const goodsReceiptPage = {
                   </div>
                   <div class="flex justify-between">
                     <span>Eksik:</span>
-                    <span class="font-medium ${hasMissing ? 'text-red-600' : 'text-gray-900'}">${item.missing_quantity || item.required_quantity} ${item.unit}</span>
+                    <span class="font-medium ${hasMissing ? 'text-red-600' : 'text-white'}">${item.missing_quantity || item.required_quantity} ${item.unit}</span>
                   </div>
                 </div>
                 <div class="mt-3">
-                  <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="w-full bg-gray-700/50 rounded-full h-2">
                     <div class="h-2 rounded-full ${isComplete ? 'bg-green-600' : 'bg-blue-600'}" 
                       style="width: ${Math.min(percentage, 100)}%"></div>
                   </div>
-                  <div class="text-xs text-center mt-1 ${isComplete ? 'text-green-600 font-bold' : 'text-gray-600'}">${percentage}%</div>
+                  <div class="text-xs text-center mt-1 ${isComplete ? 'text-green-600 font-bold' : 'text-gray-400'}">${percentage}%</div>
                 </div>
               </div>
             `;
@@ -378,19 +378,19 @@ const goodsReceiptPage = {
       }
 
       container.innerHTML = `
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-white/5">
+          <thead>
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Miktar</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kalite</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kaydeden</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Tarih</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Miktar</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Kalite</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Kaydeden</th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="divide-y divide-white/5">
             ${receipts.map(r => `
-              <tr class="hover:bg-gray-50">
+              <tr class="hover:bg-white/[0.03]">
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${new Date(r.receipt_date).toLocaleString('tr-TR')}</td>
                 <td class="px-6 py-4">
                   <div class="text-sm font-medium">${r.material_code}</div>
@@ -411,9 +411,9 @@ const goodsReceiptPage = {
 
   getQualityBadge(status) {
     const statusMap = {
-      'kabul': { class: 'bg-green-100 text-green-800', text: 'Kabul', icon: 'fa-check' },
-      'iade': { class: 'bg-amber-100 text-amber-800', text: 'İade', icon: 'fa-undo' },
-      'bekliyor': { class: 'bg-gray-100 text-gray-800', text: 'Bekliyor', icon: 'fa-clock' }
+      'kabul': { class: 'bg-emerald-500/15 text-emerald-400', text: 'Kabul', icon: 'fa-check' },
+      'iade': { class: 'bg-amber-500/15 text-amber-400', text: 'İade', icon: 'fa-undo' },
+      'bekliyor': { class: 'bg-gray-500/15 text-gray-400', text: 'Bekliyor', icon: 'fa-clock' }
     };
     const s = statusMap[status] || statusMap['bekliyor'];
     return `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${s.class}">

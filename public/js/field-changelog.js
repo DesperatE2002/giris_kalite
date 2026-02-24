@@ -804,6 +804,14 @@ const FieldChangelog = {
 
     const body = { otpa_no, start_date, end_date, performed_by, checked_by, fault_info, description, categories, parts, software };
 
+    // Kaydetme butonu — loading göster
+    const saveBtn = document.querySelector('[onclick*="saveLog"]');
+    const origBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Oluşturuluyor...';
+    }
+
     try {
       if (isNew) {
         await api.request('/field-changelog/logs', { method: 'POST', body: JSON.stringify(body) });
@@ -812,8 +820,11 @@ const FieldChangelog = {
       }
       this.editingLog = null;
       this.viewingLog = null;
+      this.tab = 'archive';
+      this.page = 0;
       this.render();
     } catch (e) {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = origBtnHtml; }
       alert('Hata: ' + e.message);
     }
   },

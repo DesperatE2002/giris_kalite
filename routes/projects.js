@@ -385,7 +385,8 @@ router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req
     
     const scheduledTasks = scheduleTasks(tasksResult.rows, project.start_date);
     
-    const today = formatDate(new Date());
+    // Client tarafından gelen bugünün tarihini kullan (timezone uyumu için)
+    const today = req.query.today || formatDate(new Date());
     
     res.json({
       project: {
@@ -406,7 +407,7 @@ router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req
         dependency: t.depends_on_task_id ? scheduledTasks.find(x => x.id === t.depends_on_task_id)?.title || '-' : '-',
         blocked_reason: t.blocked_reason || '-',
         deadline: t.deadline || null,
-        is_overdue: t.status !== 'done' && t.calculated_end_date < today
+        is_overdue: t.status !== 'done' && !!t.calculated_end_date && t.calculated_end_date < today
       })),
       summary: {
         total_tasks: scheduledTasks.length,
@@ -414,7 +415,7 @@ router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req
         doing: scheduledTasks.filter(t => t.status === 'doing').length,
         blocked: scheduledTasks.filter(t => t.status === 'blocked').length,
         backlog: scheduledTasks.filter(t => t.status === 'backlog').length,
-        overdue: scheduledTasks.filter(t => t.status !== 'done' && t.calculated_end_date < today).length
+        overdue: scheduledTasks.filter(t => t.status !== 'done' && !!t.calculated_end_date && t.calculated_end_date < today).length
       }
     });
   } catch (error) {

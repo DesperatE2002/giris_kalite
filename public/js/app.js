@@ -176,8 +176,8 @@ const app = {
     content.innerHTML = `
       <div class="flex items-center justify-center h-64">
         <div class="text-center">
-          <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
-          <p class="text-gray-600">Sayfa yükleniyor...</p>
+          <i class="fas fa-spinner fa-spin text-4xl text-indigo-500 mb-4"></i>
+          <p class="text-gray-400">Sayfa yükleniyor...</p>
         </div>
       </div>
     `;
@@ -186,10 +186,10 @@ const app = {
     document.querySelectorAll('.nav-btn').forEach(btn => {
       if (btn.dataset.page === page) {
         btn.classList.add('gradient-btn', 'shadow-lg', 'text-white');
-        btn.classList.remove('text-gray-600', 'border-transparent', 'hover:bg-gray-100');
+        btn.classList.remove('text-gray-400', 'border-transparent');
       } else {
         btn.classList.remove('gradient-btn', 'shadow-lg', 'text-white');
-        btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+        btn.classList.add('text-gray-400');
       }
     });
 
@@ -264,27 +264,27 @@ const app = {
           <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <i class="fas fa-hand-sparkles text-3xl text-white"></i>
           </div>
-          <h1 class="text-3xl font-bold text-gray-800 mb-3">Hoş Geldiniz, ${user ? user.full_name : ''}!</h1>
-          <p class="text-gray-500 text-lg mb-2">E-LAB Süreç Kontrol Sistemine başarıyla kayıt oldunuz.</p>
-          <div class="inline-flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 rounded-xl text-sm font-medium mt-2">
+          <h1 class="text-3xl font-bold text-white mb-3">Hoş Geldiniz, ${user ? user.full_name : ''}!</h1>
+          <p class="text-gray-400 text-lg mb-2">E-LAB Süreç Kontrol Sistemine başarıyla kayıt oldunuz.</p>
+          <div class="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-2 rounded-xl text-sm font-medium mt-2">
             <i class="fas fa-clock"></i>
             Hesabınız henüz bir role atanmamıştır. Yöneticiniz en kısa sürede rolünüzü belirleyecektir.
           </div>
         </div>
 
         <!-- Sistem Tanıtım -->
-        <h2 class="text-xl font-bold text-gray-700 mb-4"><i class="fas fa-info-circle mr-2 text-indigo-500"></i>Sistemde Neler Yapabilirsiniz?</h2>
+        <h2 class="text-xl font-bold text-gray-300 mb-4"><i class="fas fa-info-circle mr-2 text-indigo-500"></i>Sistemde Neler Yapabilirsiniz?</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <!-- Malzeme Giriş -->
           <div class="glass-card rounded-xl p-5 border-l-4 border-blue-500">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-box text-blue-600"></i>
+              <div class="w-10 h-10 bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-box text-blue-400"></i>
               </div>
               <div>
-                <h3 class="font-bold text-gray-800">Malzeme Girişi</h3>
-                <p class="text-sm text-gray-500 mt-1">Gelen malzemelerin sisteme kaydedilmesi, sipariş numarası ve OTPA bilgileri ile takip.</p>
+                <h3 class="font-bold text-white">Malzeme Girişi</h3>
+                <p class="text-sm text-gray-400 mt-1">Gelen malzemelerin sisteme kaydedilmesi, sipariş numarası ve OTPA bilgileri ile takip.</p>
               </div>
             </div>
           </div>
@@ -292,12 +292,12 @@ const app = {
           <!-- Kalite Kontrol -->
           <div class="glass-card rounded-xl p-5 border-l-4 border-green-500">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-check-circle text-green-600"></i>
+              <div class="w-10 h-10 bg-green-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-check-circle text-green-400"></i>
               </div>
               <div>
-                <h3 class="font-bold text-gray-800">Kalite Kontrol</h3>
-                <p class="text-sm text-gray-500 mt-1">Gelen malzemelerin kalite muayenesi, kabul/ret kararları ve iade işlemleri.</p>
+                <h3 class="font-bold text-white">Kalite Kontrol</h3>
+                <p class="text-sm text-gray-400 mt-1">Gelen malzemelerin kalite muayenesi, kabul/ret kararları ve iade işlemleri.</p>
               </div>
             </div>
           </div>
@@ -305,12 +305,12 @@ const app = {
           <!-- İş Takip -->
           <div class="glass-card rounded-xl p-5 border-l-4 border-purple-500">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-hard-hat text-purple-600"></i>
+              <div class="w-10 h-10 bg-purple-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-hard-hat text-purple-400"></i>
               </div>
               <div>
-                <h3 class="font-bold text-gray-800">Tekniker İş Takip</h3>
-                <p class="text-sm text-gray-500 mt-1">Teknikerlere iş atama, görev durumu takibi, performans puanlaması ve günlük raporlar.</p>
+                <h3 class="font-bold text-white">Tekniker İş Takip</h3>
+                <p class="text-sm text-gray-400 mt-1">Teknikerlere iş atama, görev durumu takibi, performans puanlaması ve günlük raporlar.</p>
               </div>
             </div>
           </div>
@@ -318,12 +318,12 @@ const app = {
           <!-- Proje Takip -->
           <div class="glass-card rounded-xl p-5 border-l-4 border-orange-500">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-project-diagram text-orange-600"></i>
+              <div class="w-10 h-10 bg-orange-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-project-diagram text-orange-400"></i>
               </div>
               <div>
-                <h3 class="font-bold text-gray-800">Proje Takip</h3>
-                <p class="text-sm text-gray-500 mt-1">Projelerin planlanması, görev atamaları, Gantt şeması ve ilerleme takibi.</p>
+                <h3 class="font-bold text-white">Proje Takip</h3>
+                <p class="text-sm text-gray-400 mt-1">Projelerin planlanması, görev atamaları, Gantt şeması ve ilerleme takibi.</p>
               </div>
             </div>
           </div>
@@ -331,12 +331,12 @@ const app = {
           <!-- Paket Analiz -->
           <div class="glass-card rounded-xl p-5 border-l-4 border-teal-500">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-cubes text-teal-600"></i>
+              <div class="w-10 h-10 bg-teal-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-cubes text-teal-400"></i>
               </div>
               <div>
-                <h3 class="font-bold text-gray-800">Paket Analiz</h3>
-                <p class="text-sm text-gray-500 mt-1">Ürün paket analizleri, maliyet hesaplamaları, tedarikçi karşılaştırmaları ve detaylı raporlar.</p>
+                <h3 class="font-bold text-white">Paket Analiz</h3>
+                <p class="text-sm text-gray-400 mt-1">Ürün paket analizleri, maliyet hesaplamaları, tedarikçi karşılaştırmaları ve detaylı raporlar.</p>
               </div>
             </div>
           </div>
@@ -344,20 +344,20 @@ const app = {
           <!-- Raporlar -->
           <div class="glass-card rounded-xl p-5 border-l-4 border-indigo-500">
             <div class="flex items-start gap-3">
-              <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-chart-bar text-indigo-600"></i>
+              <div class="w-10 h-10 bg-indigo-500/15 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-chart-bar text-indigo-400"></i>
               </div>
               <div>
-                <h3 class="font-bold text-gray-800">Dashboard & Raporlar</h3>
-                <p class="text-sm text-gray-500 mt-1">Genel bakış, istatistikler, Word/Excel rapor çıktıları ve performans analizleri.</p>
+                <h3 class="font-bold text-white">Dashboard & Raporlar</h3>
+                <p class="text-sm text-gray-400 mt-1">Genel bakış, istatistikler, Word/Excel rapor çıktıları ve performans analizleri.</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="glass-card rounded-xl p-5 bg-gradient-to-r from-indigo-50 to-purple-50 text-center">
+        <div class="glass-card rounded-xl p-5 text-center">
           <i class="fas fa-headset text-2xl text-indigo-400 mb-2"></i>
-          <p class="text-gray-600 text-sm">Sorularınız için yöneticinize başvurabilirsiniz. Rolünüz atandıktan sonra ilgili modüllere erişebileceksiniz.</p>
+          <p class="text-gray-400 text-sm">Sorularınız için yöneticinize başvurabilirsiniz. Rolünüz atandıktan sonra ilgili modüllere erişebileceksiniz.</p>
         </div>
       </div>
     `;

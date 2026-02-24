@@ -8,128 +8,161 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    /* Modern Gradient Background */
+    /* ═══════ PROFESSIONAL DARK CORPORATE THEME ═══════ */
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --bg-card-hover: rgba(30, 41, 59, 0.9);
+      --border-color: rgba(99, 102, 241, 0.15);
+      --border-hover: rgba(99, 102, 241, 0.35);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-primary: #6366f1;
+      --accent-secondary: #8b5cf6;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
     body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--bg-primary);
+      background-image: 
+        radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
       background-attachment: fixed;
       min-height: 100vh;
+      color: var(--text-primary);
     }
     
-    /* Glassmorphism Effect */
+    /* Glass Card — Dark */
     .glass-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .glass-card:hover {
+      border-color: var(--border-hover);
     }
     
-    /* Animated Gradient Buttons */
+    /* Gradient Buttons */
     .gradient-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
       background-size: 200% auto;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px var(--accent-glow);
     }
-    
     .gradient-btn:hover {
       background-position: right center;
       transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 8px 25px var(--accent-glow);
     }
     
-    /* Pulse Animation */
+    /* Pulse */
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
-    
     .animate-pulse-slow {
       animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
     
-    /* Smooth Fade In */
+    /* Fade In */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    
     .fade-in {
-      animation: fadeIn 0.5s ease-out;
+      animation: fadeIn 0.4s ease-out;
     }
     
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
     ::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 4px;
+      background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 3px;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
     
-    /* Loading spinner with gradient */
+    /* Spinner */
     .spinner {
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top: 3px solid #667eea;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top: 3px solid var(--accent-primary);
       border-radius: 50%;
       width: 40px;
       height: 40px;
       animation: spin 1s linear infinite;
     }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    /* Hover Effects */
+    /* Hover Lift */
     .hover-lift {
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
     .hover-lift:hover {
       transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      border-color: var(--border-hover);
     }
     
     /* Gradient Text */
     .gradient-text {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c084fc 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    /* Mobile friendly table */
+    /* Mobile table */
     @media (max-width: 768px) {
-      .mobile-card {
-        display: block;
-      }
-      .mobile-card td {
-        display: block;
-        text-align: right;
-        padding: 8px;
-      }
-      .mobile-card td:before {
-        content: attr(data-label);
-        float: left;
-        font-weight: bold;
-      }
+      .mobile-card { display: block; }
+      .mobile-card td { display: block; text-align: right; padding: 8px; }
+      .mobile-card td:before { content: attr(data-label); float: left; font-weight: bold; }
     }
+
+    /* Nav sidebar active state */
+    .nav-btn {
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover {
+      color: var(--text-primary);
+      background: rgba(99, 102, 241, 0.08);
+    }
+    .nav-btn.active-nav {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      color: white;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* Table styles — dark */
+    table th { color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+    table td { color: var(--text-primary); border-color: rgba(255,255,255,0.05); }
+    table tr:hover td { background: rgba(99, 102, 241, 0.04); }
+
+    /* Input fields dark */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    select, textarea {
+      color-scheme: dark;
+    }
+
+    /* Status indicator glow */
+    .status-glow { box-shadow: 0 0 8px currentColor; }
   </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-[#0a0e1a]">
   
   <!-- Loading Screen -->
-  <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center hidden">
+  <div id="loadingScreen" class="fixed inset-0 bg-[#0a0e1a] z-50 flex items-center justify-center hidden">
     <div class="text-center">
       <div class="spinner mx-auto mb-4"></div>
-      <p class="text-gray-600">Yükleniyor...</p>
+      <p class="text-gray-400">Yükleniyor...</p>
     </div>
   </div>
 
@@ -137,36 +170,36 @@
   <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4">
     <div class="max-w-md w-full space-y-8 fade-in">
       <div class="text-center">
-        <div class="mx-auto h-24 w-24 gradient-btn rounded-full flex items-center justify-center mb-6 animate-pulse-slow">
+        <div class="mx-auto h-24 w-24 gradient-btn rounded-2xl flex items-center justify-center mb-6 animate-pulse-slow shadow-2xl">
           <i class="fas fa-clipboard-check text-white text-4xl"></i>
         </div>
         <h2 class="text-4xl font-bold gradient-text mb-2">E-LAB Süreç Kontrol</h2>
-        <p class="mt-2 text-gray-100 text-lg">Sisteme giriş yapın</p>
+        <p class="mt-2 text-gray-400 text-lg">Sisteme giriş yapın</p>
       </div>
       <form id="loginForm" class="mt-8 space-y-6 glass-card p-8 rounded-2xl">
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              <i class="fas fa-user mr-2"></i>Kullanıcı Adı
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <i class="fas fa-user mr-2 text-indigo-400"></i>Kullanıcı Adı
             </label>
             <input type="text" id="username" required 
-              class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              class="appearance-none relative block w-full px-4 py-3 border border-white/10 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="Kullanıcı adınızı girin">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Şifre</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2"><i class="fas fa-lock mr-2 text-indigo-400"></i>Şifre</label>
             <input type="password" id="password" required
-              class="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="appearance-none relative block w-full px-4 py-3 border border-white/10 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="Şifrenizi girin">
           </div>
         </div>
-        <div id="loginError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg"></div>
+        <div id="loginError" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg"></div>
         <button type="submit" 
           class="w-full flex justify-center py-3 px-4 border-0 text-lg font-semibold rounded-xl text-white gradient-btn shadow-lg">
           <i class="fas fa-sign-in-alt mr-2 mt-1"></i> Giriş Yap
         </button>
         <div class="text-center mt-4">
-          <button type="button" id="showRegisterBtn" class="gradient-text hover:opacity-80 font-semibold transition-opacity">
+          <button type="button" id="showRegisterBtn" class="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
             Hesabınız yok mu? Kayıt olun
           </button>
         </div>
@@ -176,40 +209,40 @@
       <form id="registerForm" class="mt-8 space-y-6 glass-card p-8 rounded-2xl hidden">
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              <i class="fas fa-user-circle mr-2"></i>Ad Soyad
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              <i class="fas fa-user-circle mr-2 text-indigo-400"></i>Ad Soyad
             </label>
             <input type="text" id="registerFullName" required 
-              class="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+              class="appearance-none relative block w-full px-4 py-3 border border-white/10 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="Ad ve soyadınızı girin">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Kullanıcı Adı</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2"><i class="fas fa-user mr-2 text-indigo-400"></i>Kullanıcı Adı</label>
             <input type="text" id="registerUsername" required 
-              class="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="appearance-none relative block w-full px-4 py-3 border border-white/10 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="Kullanıcı adınızı girin">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Şifre</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2"><i class="fas fa-lock mr-2 text-indigo-400"></i>Şifre</label>
             <input type="password" id="registerPassword" required minlength="6"
-              class="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="appearance-none relative block w-full px-4 py-3 border border-white/10 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="En az 6 karakter">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Şifre Tekrar</label>
+            <label class="block text-sm font-medium text-gray-300 mb-2"><i class="fas fa-lock mr-2 text-indigo-400"></i>Şifre Tekrar</label>
             <input type="password" id="registerPasswordConfirm" required minlength="6"
-              class="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="appearance-none relative block w-full px-4 py-3 border border-white/10 placeholder-gray-500 text-white bg-gray-800/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="Şifrenizi tekrar girin">
           </div>
         </div>
-        <div id="registerError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"></div>
-        <div id="registerSuccess" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded"></div>
+        <div id="registerError" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg"></div>
+        <div id="registerSuccess" class="hidden bg-green-500/10 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg"></div>
         <button type="submit" 
-          class="w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition">
+          class="w-full flex justify-center py-3 px-4 border-0 text-lg font-semibold rounded-xl text-white bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition shadow-lg">
           <i class="fas fa-user-plus mr-2 mt-1"></i> Kayıt Ol
         </button>
         <div class="text-center mt-4">
-          <button type="button" id="showLoginBtn" class="text-blue-600 hover:text-blue-700 font-medium">
+          <button type="button" id="showLoginBtn" class="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
             Zaten hesabınız var mı? Giriş yapın
           </button>
         </div>
@@ -221,20 +254,20 @@
   <div id="mainApp" class="hidden">
     
     <!-- Top Navigation -->
-    <nav class="glass-card shadow-xl sticky top-0 z-50">
+    <nav class="glass-card shadow-2xl sticky top-0 z-50 border-b border-indigo-500/10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <button onclick="app.navigate('dashboard')" class="flex-shrink-0 flex items-center hover:opacity-80 transition-all hover:scale-105 cursor-pointer">
-              <div class="h-12 w-12 gradient-btn rounded-xl flex items-center justify-center mr-3 shadow-lg">
-                <i class="fas fa-clipboard-check text-white text-xl"></i>
+            <button onclick="app.navigate('dashboard')" class="flex-shrink-0 flex items-center hover:opacity-90 transition-all hover:scale-105 cursor-pointer">
+              <div class="h-11 w-11 gradient-btn rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                <i class="fas fa-clipboard-check text-white text-lg"></i>
               </div>
-              <span class="font-bold text-2xl gradient-text">E-LAB Süreç Kontrol</span>
+              <span class="font-bold text-xl gradient-text tracking-tight">E-LAB Süreç Kontrol</span>
             </button>
           </div>
           <div class="flex items-center space-x-4">
-            <span id="userInfo" class="text-gray-700 font-semibold hidden sm:block"></span>
-            <button id="logoutBtn" class="px-4 py-2 rounded-lg gradient-btn text-white hover-lift">
+            <span id="userInfo" class="text-gray-300 font-medium text-sm hidden sm:block"></span>
+            <button id="logoutBtn" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/20 transition-all text-sm font-medium">
               <i class="fas fa-sign-out-alt mr-1"></i> Çıkış
             </button>
           </div>
@@ -243,7 +276,7 @@
     </nav>
 
     <!-- Mobile Menu -->
-    <div class="glass-card border-b sm:hidden">
+    <div class="glass-card border-b border-indigo-500/10 sm:hidden">
       <div class="flex overflow-x-auto">
         <button data-page="dashboard" class="nav-btn flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent">
           <i class="fas fa-home"></i> Ana Sayfa
@@ -281,40 +314,40 @@
     <!-- Desktop Sidebar + Content -->
     <div class="flex min-h-screen">
       <!-- Sidebar (Desktop) -->
-      <aside class="hidden sm:block w-64 glass-card shadow-xl min-h-screen">
-        <nav class="mt-5 px-3 space-y-2">
-          <button data-page="dashboard" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift">
-            <i class="fas fa-home mr-3 text-lg"></i> Ana Sayfa
+      <aside class="hidden sm:block w-64 glass-card shadow-2xl min-h-screen border-r border-indigo-500/10">
+        <nav class="mt-5 px-3 space-y-1">
+          <button data-page="dashboard" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all">
+            <i class="fas fa-home mr-3 text-base w-5 text-center"></i> Ana Sayfa
           </button>
-          <button data-page="goods-receipt" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift">
-            <i class="fas fa-box mr-3 text-lg"></i> Malzeme Girişi
+          <button data-page="goods-receipt" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all">
+            <i class="fas fa-box mr-3 text-base w-5 text-center"></i> Malzeme Girişi
           </button>
-          <button data-page="returns" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift">
-            <i class="fas fa-undo mr-3 text-lg"></i> İade
+          <button data-page="returns" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all">
+            <i class="fas fa-undo mr-3 text-base w-5 text-center"></i> İade
           </button>
-          <button data-page="quality" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift" style="display:none;">
-            <i class="fas fa-check-circle mr-3 text-lg"></i> Kalite Kontrol
+          <button data-page="quality" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all" style="display:none;">
+            <i class="fas fa-check-circle mr-3 text-base w-5 text-center"></i> Kalite Kontrol
           </button>
-          <button data-page="admin" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift" style="display:none;">
-            <i class="fas fa-cog mr-3 text-lg"></i> Yönetim
+          <button data-page="admin" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all" style="display:none;">
+            <i class="fas fa-cog mr-3 text-base w-5 text-center"></i> Yönetim
           </button>
-          <button data-page="projects" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift" style="display:none;">
-            <i class="fas fa-project-diagram mr-3 text-lg"></i> Proje Takip
+          <button data-page="projects" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all" style="display:none;">
+            <i class="fas fa-project-diagram mr-3 text-base w-5 text-center"></i> Proje Takip
           </button>
-          <button data-page="technicians" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift">
-            <i class="fas fa-hard-hat mr-3 text-lg"></i> İş Takip
+          <button data-page="technicians" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all">
+            <i class="fas fa-hard-hat mr-3 text-base w-5 text-center"></i> İş Takip
           </button>
-          <button data-page="taskboard" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift">
-            <i class="fas fa-tv mr-3 text-lg"></i> Görev Ekranı
+          <button data-page="taskboard" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all">
+            <i class="fas fa-tv mr-3 text-base w-5 text-center"></i> Görev Ekranı
           </button>
-          <button data-page="paket-analiz" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift" style="display:none;">
-            <i class="fas fa-cubes mr-3 text-lg"></i> Paket-Analiz
+          <button data-page="paket-analiz" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all" style="display:none;">
+            <i class="fas fa-cubes mr-3 text-base w-5 text-center"></i> Paket-Analiz
           </button>
-          <button data-page="prosedur-otpa" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift" style="display:none;">
-            <i class="fas fa-file-alt mr-3 text-lg"></i> Prosedür & OTPA
+          <button data-page="prosedur-otpa" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all" style="display:none;">
+            <i class="fas fa-file-alt mr-3 text-base w-5 text-center"></i> Prosedür & OTPA
           </button>
-          <button data-page="field-changelog" class="nav-btn w-full group flex items-center px-4 py-3 text-base font-semibold rounded-xl transition-all hover-lift" style="display:none;">
-            <i class="fas fa-history mr-3 text-lg"></i> Saha Değişiklik
+          <button data-page="field-changelog" class="nav-btn w-full group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all" style="display:none;">
+            <i class="fas fa-history mr-3 text-base w-5 text-center"></i> Saha Değişiklik
           </button>
         </nav>
       </aside>

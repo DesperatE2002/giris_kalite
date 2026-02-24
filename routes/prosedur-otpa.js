@@ -14,6 +14,7 @@ import pool from '../db/database.js';
 const router = express.Router();
 
 // ─── Upload Config ──────────────────────────────────────────────────
+// Dosyalar PostgreSQL veritabanında base64 olarak saklanır (Vercel ephemeral disk sorunu çözümü)
 const uploadsDir = process.env.VERCEL ? '/tmp/uploads/prosedur-otpa' : './uploads/prosedur-otpa';
 if (!process.env.VERCEL) {
   ['documents', 'otpa-files'].forEach(sub => {
@@ -22,22 +23,12 @@ if (!process.env.VERCEL) {
   });
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const sub = req.uploadSubDir || 'documents';
-    const dir = path.join(uploadsDir, sub);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e6);
-    const ext = path.extname(file.originalname);
-    cb(null, uniqueSuffix + ext);
-  }
-});
+// memoryStorage: dosya buffer'da tutulur, DB'ye base64 olarak yazılır
+// Vercel serverless body limiti ~4.5MB, bu yüzden limit ayarlandı
+const maxFileSize = process.env.VERCEL ? 4 * 1024 * 1024 : 20 * 1024 * 1024; // Vercel: 4MB, Local: 20MB
 const upload = multer({
-  storage,
-  limits: { fileSize: 20 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: maxFileSize },
   fileFilter: (req, file, cb) => {
     const allowed = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
@@ -66,6 +57,7 @@ export async function migrateProsedurOtpa() {
         file_path TEXT,
         file_original_name TEXT,
         file_size INTEGER DEFAULT 0,
+        file_data TEXT,
         created_by INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -81,6 +73,7 @@ export async function migrateProsedurOtpa() {
         change_description TEXT,
         file_path TEXT,
         file_original_name TEXT,
+        file_data TEXT,
         revised_by INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -169,6 +162,7 @@ export async function migrateProsedurOtpa() {
         file_path TEXT NOT NULL,
         file_original_name TEXT,
         file_size INTEGER DEFAULT 0,
+        file_data TEXT,
         description TEXT,
         uploaded_by INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -206,6 +200,14 @@ export async function migrateProsedurOtpa() {
     } catch(e) { /* ignore */ }
 
     console.log('✅ Prosedür-OTPA tabloları hazır (po_documents, po_otpa, po_form_templates, vb.)');
+
+    // ── file_data sütunlarını ekle (mevcut tablolara) ──
+    try { await pool.query('ALTER TABLE po_documents ADD COLUMN IF NOT EXISTS file_data TEXT'); } catch(e) { /* zaten mevcut */ }
+    try { await pool.query('ALTER TABLE po_document_revisions ADD COLUMN IF NOT EXISTS file_data TEXT'); } catch(e) { /* zaten mevcut */ }
+    try { await pool.query('ALTER TABLE po_otpa_files ADD COLUMN IF NOT EXISTS file_data TEXT'); } catch(e) { /* zaten mevcut */ }
+    // file_path artık zorunlu değil (DB'de file_data var)
+    try { await pool.query('ALTER TABLE po_otpa_files ALTER COLUMN file_path DROP NOT NULL'); } catch(e) { /* ignore */ }
+
   } catch (e) {
     if (!e.message?.includes('already exists')) {
       console.error('⚠️ Prosedür-OTPA migration:', e.message);
@@ -221,7 +223,7 @@ export async function migrateProsedurOtpa() {
 router.get('/documents', authenticateToken, async (req, res) => {
   try {
     const { search, department, doc_type } = req.query;
-    let q = `SELECT d.*, u.full_name as created_by_name FROM po_documents d LEFT JOIN users u ON d.created_by = u.id WHERE 1=1`;
+    let q = `SELECT d.id, d.doc_name, d.doc_code, d.revision_no, d.publish_date, d.department, d.doc_type, d.description, d.file_path, d.file_original_name, d.file_size, d.created_by, d.created_at, d.updated_at, u.full_name as created_by_name FROM po_documents d LEFT JOIN users u ON d.created_by = u.id WHERE 1=1`;
     const p = [];
     if (search) { q += ` AND (d.doc_name ILIKE ? OR d.doc_code ILIKE ? OR d.description ILIKE ?)`; p.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     if (department) { q += ` AND d.department = ?`; p.push(department); }
@@ -243,13 +245,18 @@ router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res,
     const { doc_name, doc_code, revision_no, publish_date, department, doc_type, description } = req.body;
     if (!doc_name?.trim()) return res.status(400).json({ error: 'Doküman adı zorunlu' });
 
-    const filePath = req.file ? req.file.path : null;
+    // Dosya verisi base64 olarak DB'ye kaydedilir (Vercel ephemeral disk çözümü)
+    const fileData = req.file ? req.file.buffer.toString('base64') : null;
+    const filePath = req.file ? `db://${Date.now()}-${req.file.originalname}` : null;
     const r = await pool.query(
-      `INSERT INTO po_documents (doc_name, doc_code, revision_no, publish_date, department, doc_type, description, file_path, file_original_name, file_size, created_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING *`,
-      [doc_name.trim(), doc_code || null, revision_no || '0', publish_date || null, department || null, doc_type || 'prosedur', description || null, filePath, req.file?.originalname || null, req.file?.size || 0, req.user.id]
+      `INSERT INTO po_documents (doc_name, doc_code, revision_no, publish_date, department, doc_type, description, file_path, file_original_name, file_size, file_data, created_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *`,
+      [doc_name.trim(), doc_code || null, revision_no || '0', publish_date || null, department || null, doc_type || 'prosedur', description || null, filePath, req.file?.originalname || null, req.file?.size || 0, fileData, req.user.id]
     );
-    res.json(r.rows[0]);
+    // Yanıtta file_data göndermemek için çıkar
+    const row = r.rows[0];
+    delete row.file_data;
+    res.json(row);
   } catch (e) { res.status(500).json({ error: 'Yükleme hatası: ' + e.message }); }
 });
 
@@ -270,20 +277,21 @@ router.put('/documents/:id', authenticateToken, authorizeRoles('admin'), (req, r
 
     if (revision_no && revision_no !== oldDoc.revision_no) {
       await pool.query(
-        `INSERT INTO po_document_revisions (document_id, revision_no, change_description, file_path, file_original_name, revised_by) VALUES (?,?,?,?,?,?)`,
-        [req.params.id, oldDoc.revision_no, `Rev ${oldDoc.revision_no} → ${revision_no}`, oldDoc.file_path, oldDoc.file_original_name, req.user.id]
+        `INSERT INTO po_document_revisions (document_id, revision_no, change_description, file_path, file_original_name, file_data, revised_by) VALUES (?,?,?,?,?,?,?)`,
+        [req.params.id, oldDoc.revision_no, `Rev ${oldDoc.revision_no} → ${revision_no}`, oldDoc.file_path, oldDoc.file_original_name, oldDoc.file_data || null, req.user.id]
       );
     }
 
-    const filePath = req.file ? req.file.path : oldDoc.file_path;
+    const fileData = req.file ? req.file.buffer.toString('base64') : oldDoc.file_data;
+    const filePath = req.file ? `db://${Date.now()}-${req.file.originalname}` : oldDoc.file_path;
     const fileName = req.file ? req.file.originalname : oldDoc.file_original_name;
     const fileSize = req.file ? req.file.size : oldDoc.file_size;
 
     await pool.query(
-      `UPDATE po_documents SET doc_name=?, doc_code=?, revision_no=?, publish_date=?, department=?, doc_type=?, description=?, file_path=?, file_original_name=?, file_size=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-      [doc_name || oldDoc.doc_name, doc_code ?? oldDoc.doc_code, revision_no || oldDoc.revision_no, publish_date || oldDoc.publish_date, department || oldDoc.department, doc_type || oldDoc.doc_type, description ?? oldDoc.description, filePath, fileName, fileSize, req.params.id]
+      `UPDATE po_documents SET doc_name=?, doc_code=?, revision_no=?, publish_date=?, department=?, doc_type=?, description=?, file_path=?, file_original_name=?, file_size=?, file_data=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+      [doc_name || oldDoc.doc_name, doc_code ?? oldDoc.doc_code, revision_no || oldDoc.revision_no, publish_date || oldDoc.publish_date, department || oldDoc.department, doc_type || oldDoc.doc_type, description ?? oldDoc.description, filePath, fileName, fileSize, fileData, req.params.id]
     );
-    const r = await pool.query('SELECT * FROM po_documents WHERE id=?', [req.params.id]);
+    const r = await pool.query('SELECT doc_name, doc_code, revision_no, publish_date, department, doc_type, description, file_path, file_original_name, file_size, id, created_by, created_at, updated_at FROM po_documents WHERE id=?', [req.params.id]);
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: 'Güncelleme hatası: ' + e.message }); }
 });
@@ -310,31 +318,44 @@ router.get('/documents/:id/revisions', authenticateToken, async (req, res) => {
 // Doküman indir
 router.get('/documents/:id/download', authenticateToken, async (req, res) => {
   try {
-    const r = await pool.query('SELECT file_path, file_original_name FROM po_documents WHERE id=?', [req.params.id]);
-    if (!r.rows.length || !r.rows[0].file_path) return res.status(404).json({ error: 'Dosya bulunamadı' });
+    const r = await pool.query('SELECT file_path, file_original_name, file_data FROM po_documents WHERE id=?', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Dosya bulunamadı' });
     const doc = r.rows[0];
-    // Önce doğrudan kayıtlı path'i dene (req.file.path ile kaydedilen)
-    let absPath = path.isAbsolute(doc.file_path) ? doc.file_path : path.resolve(doc.file_path);
-    // Eğer bulunamazsa eski format ile dene (hardcoded /uploads/... → relative)
-    if (!fs.existsSync(absPath)) {
-      absPath = path.resolve(doc.file_path.replace(/^\//, ''));
+
+    const mimeTypes = { '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.xls': 'application/vnd.ms-excel', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+    const ext = path.extname(doc.file_original_name || '').toLowerCase();
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+    const fileName = doc.file_original_name || 'document';
+
+    // 1) DB'den base64 ile serve et (öncelikli)
+    if (doc.file_data) {
+      const buffer = Buffer.from(doc.file_data, 'base64');
+      if (req.query.preview === '1') {
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+      } else {
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+      }
+      res.setHeader('Content-Length', buffer.length);
+      return res.end(buffer);
     }
-    // Hâlâ bulunamazsa uploadsDir ile birleştir
+
+    // 2) Eski dosyalar için disk fallback
+    if (!doc.file_path) return res.status(404).json({ error: 'Dosya verisi bulunamadı' });
+    let absPath = path.isAbsolute(doc.file_path) ? doc.file_path : path.resolve(doc.file_path);
+    if (!fs.existsSync(absPath)) absPath = path.resolve(doc.file_path.replace(/^\//, ''));
     if (!fs.existsSync(absPath)) {
       const fname = path.basename(doc.file_path);
       absPath = path.resolve(uploadsDir, 'documents', fname);
     }
-    if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya sunucuda bulunamadı. Dosya yeniden yüklenmelidir.' });
-    // İndirme mi yoksa önizleme mi?
+    if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya sunucuda bulunamadı. Dosyayı tekrar yükleyin.' });
     if (req.query.preview === '1') {
-      const mimeTypes = { '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.xls': 'application/vnd.ms-excel', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
-      const ext = path.extname(doc.file_original_name || absPath).toLowerCase();
-      const contentType = mimeTypes[ext] || 'application/octet-stream';
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.file_original_name || 'document')}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
       return fs.createReadStream(absPath).pipe(res);
     }
-    res.download(absPath, doc.file_original_name || 'document');
+    res.download(absPath, fileName);
   } catch (e) { res.status(500).json({ error: 'İndirme hatası: ' + e.message }); }
 });
 
@@ -365,7 +386,7 @@ router.get('/otpa/:id', authenticateToken, async (req, res) => {
       pool.query(`SELECT f.*, t.form_name, t.form_type, u.full_name as filled_by_name
         FROM po_otpa_forms f LEFT JOIN po_form_templates t ON f.template_id = t.id LEFT JOIN users u ON f.filled_by = u.id
         WHERE f.otpa_id=? ORDER BY t.form_type, f.battery_no`, [req.params.id]),
-      pool.query('SELECT * FROM po_otpa_files WHERE otpa_id=? ORDER BY created_at DESC', [req.params.id])
+      pool.query('SELECT id, otpa_id, file_type, file_category, file_path, file_original_name, file_size, description, uploaded_by, created_at FROM po_otpa_files WHERE otpa_id=? ORDER BY created_at DESC', [req.params.id])
     ]);
     if (!otpaR.rows.length) return res.status(404).json({ error: 'OTPA bulunamadı' });
     res.json({ otpa: otpaR.rows[0], forms: formsR.rows, files: filesR.rows });
@@ -602,11 +623,15 @@ router.post('/otpa/:id/files', authenticateToken, (req, res, next) => { req.uplo
     const { file_type, file_category, description } = req.body;
     const uploaded = [];
     for (const f of (req.files || [])) {
+      const fileData = f.buffer.toString('base64');
+      const filePath = `db://${Date.now()}-${f.originalname}`;
       const r = await pool.query(
-        'INSERT INTO po_otpa_files (otpa_id, file_type, file_category, file_path, file_original_name, file_size, description, uploaded_by) VALUES (?,?,?,?,?,?,?,?) RETURNING *',
-        [req.params.id, file_type || 'image', file_category || 'genel', f.path, f.originalname, f.size, description || '', req.user.id]
+        'INSERT INTO po_otpa_files (otpa_id, file_type, file_category, file_path, file_original_name, file_size, file_data, description, uploaded_by) VALUES (?,?,?,?,?,?,?,?,?) RETURNING *',
+        [req.params.id, file_type || 'image', file_category || 'genel', filePath, f.originalname, f.size, fileData, description || '', req.user.id]
       );
-      uploaded.push(r.rows[0]);
+      const row = r.rows[0];
+      delete row.file_data;
+      uploaded.push(row);
     }
     res.json({ success: true, uploaded });
   } catch (e) { res.status(500).json({ error: 'Yükleme hatası' }); }
@@ -622,19 +647,34 @@ router.delete('/otpa-files/:id', authenticateToken, async (req, res) => {
 // Dosya indir
 router.get('/otpa-files/:id/download', authenticateToken, async (req, res) => {
   try {
-    const r = await pool.query('SELECT file_path, file_original_name FROM po_otpa_files WHERE id=?', [req.params.id]);
-    if (!r.rows.length || !r.rows[0].file_path) return res.status(404).json({ error: 'Dosya bulunamadı' });
+    const r = await pool.query('SELECT file_path, file_original_name, file_data FROM po_otpa_files WHERE id=?', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Dosya bulunamadı' });
     const f = r.rows[0];
-    let absPath = path.isAbsolute(f.file_path) ? f.file_path : path.resolve(f.file_path);
-    if (!fs.existsSync(absPath)) {
-      absPath = path.resolve(f.file_path.replace(/^\//, ''));
+
+    const mimeTypes = { '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.xls': 'application/vnd.ms-excel', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+    const ext = path.extname(f.file_original_name || '').toLowerCase();
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+    const fileName = f.file_original_name || 'file';
+
+    // 1) DB'den base64 ile serve et
+    if (f.file_data) {
+      const buffer = Buffer.from(f.file_data, 'base64');
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+      res.setHeader('Content-Length', buffer.length);
+      return res.end(buffer);
     }
+
+    // 2) Eski dosyalar için disk fallback
+    if (!f.file_path) return res.status(404).json({ error: 'Dosya verisi bulunamadı' });
+    let absPath = path.isAbsolute(f.file_path) ? f.file_path : path.resolve(f.file_path);
+    if (!fs.existsSync(absPath)) absPath = path.resolve(f.file_path.replace(/^\//, ''));
     if (!fs.existsSync(absPath)) {
       const fname = path.basename(f.file_path);
       absPath = path.resolve(uploadsDir, 'otpa-files', fname);
     }
     if (!fs.existsSync(absPath)) return res.status(404).json({ error: 'Dosya sunucuda bulunamadı' });
-    res.download(absPath, f.file_original_name || 'file');
+    res.download(absPath, fileName);
   } catch (e) { res.status(500).json({ error: 'İndirme hatası' }); }
 });
 
@@ -671,7 +711,7 @@ router.get('/otpa/:id/report', authenticateToken, async (req, res) => {
         FROM po_otpa_forms f LEFT JOIN po_form_templates t ON f.template_id = t.id LEFT JOIN users u ON f.filled_by = u.id
         WHERE f.otpa_id=? ORDER BY t.form_type, f.battery_no
       `, [req.params.id]),
-      pool.query('SELECT * FROM po_otpa_files WHERE otpa_id=? ORDER BY file_category, created_at', [req.params.id])
+      pool.query('SELECT id, otpa_id, file_type, file_category, file_path, file_original_name, file_size, description, uploaded_by, created_at FROM po_otpa_files WHERE otpa_id=? ORDER BY file_category, created_at', [req.params.id])
     ]);
     if (!otpaR.rows.length) return res.status(404).json({ error: 'OTPA bulunamadı' });
 

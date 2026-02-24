@@ -5,7 +5,7 @@ const adminPage = {
   async render() {
     if (!authManager.isAdmin()) {
       document.getElementById('content').innerHTML = `
-        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+        <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded">
           <i class="fas fa-exclamation-triangle mr-2"></i> Bu sayfaya erişim yetkiniz yok.
         </div>
       `;
@@ -65,7 +65,7 @@ const adminPage = {
       <div class="flex items-center justify-center h-64">
         <div class="text-center glass-card rounded-2xl p-8">
           <i class="fas fa-spinner fa-spin text-5xl gradient-text mb-4"></i>
-          <p class="text-gray-700 font-medium">Yükleniyor...</p>
+          <p class="text-gray-300 font-medium">Yükleniyor...</p>
         </div>
       </div>
     `;
@@ -74,10 +74,10 @@ const adminPage = {
     document.querySelectorAll('.admin-tab').forEach(btn => {
       if (btn.dataset.tab === tab) {
         btn.classList.add('gradient-btn', 'shadow-lg');
-        btn.classList.remove('text-gray-600', 'hover:text-gray-900');
+        btn.classList.remove('text-gray-400', 'hover:text-white');
       } else {
         btn.classList.remove('gradient-btn', 'shadow-lg');
-        btn.classList.add('text-gray-600', 'hover:text-gray-900');
+        btn.classList.add('text-gray-400', 'hover:text-white');
       }
     });
 
@@ -120,33 +120,33 @@ const adminPage = {
 
           <!-- OTPA List -->
           <div class="glass-card rounded-2xl shadow-xl overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
+            <table class="min-w-full divide-y divide-white/5">
+              <thead class="bg-gradient-to-r from-purple-900/30 to-blue-900/30">
                 <tr>
-                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">OTPA</th>
-                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Proje</th>
-                  <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Paket</th>
-                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Durum</th>
-                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">BOM</th>
-                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">İşlemler</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">OTPA</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Proje</th>
+                  <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase tracking-wider">Paket</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Durum</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">BOM</th>
+                  <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">İşlemler</th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="divide-y divide-white/5">
                 ${otpaList.map(otpa => `
-                  <tr class="hover:bg-gray-50">
+                  <tr class="hover:bg-white/[0.03]">
                     <td class="px-6 py-4 font-medium">${otpa.otpa_number}</td>
                     <td class="px-6 py-4">
                       <div>${otpa.project_name}</div>
                       ${otpa.customer_info ? `<div class="text-xs text-gray-500">${otpa.customer_info}</div>` : ''}
                     </td>
                     <td class="px-6 py-4 text-center">
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/15 text-purple-400">
                         📦 ${otpa.battery_pack_count || 1}
                       </span>
                     </td>
                     <td class="px-6 py-4">${this.getStatusBadge(otpa.status)}</td>
                     <td class="px-6 py-4">
-                      <span class="text-sm text-gray-600">${otpa.total_items || 0} malzeme</span>
+                      <span class="text-sm text-gray-400">${otpa.total_items || 0} malzeme</span>
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">
                       <button onclick="adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
@@ -171,7 +171,7 @@ const adminPage = {
       `;
     } catch (error) {
       container.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded">
           ${error.message}
         </div>
       `;
@@ -198,59 +198,59 @@ const adminPage = {
               <i class="fas fa-plus-circle mr-2"></i> Yeni OTPA Oluştur
             </h2>
             <button onclick="this.closest('.fixed').remove()" 
-              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
               <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
           <form id="createOtpaForm" class="space-y-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">OTPA Numarası *</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-2">OTPA Numarası *</label>
               <input type="text" id="otpaNumber" required 
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium"
+                class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 font-medium bg-gray-800/50 text-white"
                 placeholder="Örn: OA20489">
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Proje Adı *</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-2">Proje Adı *</label>
               <input type="text" id="projectName" required 
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-800/50 text-white"
                 placeholder="Örn: FRANSA-LİTVANYA">
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Müşteri Bilgisi</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-2">Müşteri Bilgisi</label>
               <input type="text" id="customerInfo" 
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-800/50 text-white"
                 placeholder="Örn: LİTVANYA MD9">
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Batarya Paket Sayısı *</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-2">Batarya Paket Sayısı *</label>
               <input type="number" id="batteryPackCount" required min="1" value="8"
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium text-lg">
-              <p class="text-xs text-gray-600 mt-1">
+                class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 font-medium text-lg bg-gray-800/50 text-white">
+              <p class="text-xs text-gray-400 mt-1">
                 <i class="fas fa-info-circle text-blue-500 mr-1"></i> Batarya BOM'daki miktarlar bu sayı ile çarpılır
               </p>
             </div>
             ${templates.length > 0 ? `
               <div class="glass-card rounded-xl p-4 border-2 border-purple-300">
-                <label class="block text-sm font-bold text-gray-900 mb-2">
-                  <i class="fas fa-rocket text-purple-600 mr-2"></i> BOM Şablonu Seç (Opsiyonel)
+                <label class="block text-sm font-bold text-white mb-2">
+                  <i class="fas fa-rocket text-purple-400 mr-2"></i> BOM Şablonu Seç (Opsiyonel)
                 </label>
                 <select id="templateSelect" 
-                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
+                  class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 font-medium bg-gray-800/50 text-white">
                   <option value="">Şablon seçme (sonra manuel yükle)</option>
                   ${templates.map(t => `
                     <option value="${t.id}">${t.template_name} (${t.item_count} malzeme)</option>
                   `).join('')}
                 </select>
-                <p class="text-xs text-gray-600 mt-2">
+                <p class="text-xs text-gray-400 mt-2">
                   <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
                   Şablon seçerseniz OTPA oluşturulurken otomatik BOM yüklenecek
                 </p>
               </div>
             ` : ''}
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">Durum</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-2">Durum</label>
               <select id="status" 
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
+                class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 font-medium bg-gray-800/50 text-white">
                 <option value="acik">Açık</option>
                 <option value="uretimde">Üretimde</option>
                 <option value="kapali">Kapalı</option>
@@ -261,7 +261,7 @@ const adminPage = {
                 <i class="fas fa-save mr-2"></i> OTPA Oluştur
               </button>
               <button type="button" onclick="this.closest('.fixed').remove()" 
-                class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+                class="px-6 py-3 bg-gray-700 text-gray-300 font-semibold rounded-xl hover:bg-gray-600 transition">
                 İptal
               </button>
             </div>
@@ -339,13 +339,13 @@ const adminPage = {
           <!-- Template Selection -->
           ${templates.length > 0 ? `
             <div class="glass-card rounded-xl p-4 mb-6 border-2 border-purple-300">
-              <h3 class="font-bold text-gray-900 mb-3">
-                <i class="fas fa-rocket text-purple-600 mr-2"></i> Hızlı Yükleme: Şablondan Seç
+              <h3 class="font-bold text-white mb-3">
+                <i class="fas fa-rocket text-purple-400 mr-2"></i> Hızlı Yükleme: Şablondan Seç
               </h3>
               <div class="flex gap-3 items-end">
                 <div class="flex-1">
                   <select id="templateSelect" 
-                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
+                    class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 font-medium bg-gray-800/50 text-white">
                     <option value="">Şablon seçin...</option>
                     ${templates.map(t => `
                       <option value="${t.id}">${t.template_name} (${t.item_count} malzeme)</option>
@@ -357,24 +357,24 @@ const adminPage = {
                   <i class="fas fa-bolt mr-2"></i> Şablonu Uygula
                 </button>
               </div>
-              <p class="text-xs text-gray-600 mt-2">
+              <p class="text-xs text-gray-400 mt-2">
                 <i class="fas fa-info-circle mr-1"></i> Şablon uygulandığında mevcut BOM silinip yerine şablon malzemeleri eklenecektir
               </p>
             </div>
             <div class="relative my-6">
               <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300"></div>
+                <div class="w-full border-t border-white/10"></div>
               </div>
               <div class="relative flex justify-center text-sm">
-                <span class="px-4 bg-white text-gray-500 font-medium">veya Excel'den yapıştır</span>
+                <span class="px-4 text-gray-400 font-medium">veya Excel'den yapıştır</span>
               </div>
             </div>
           ` : ''}
           
           <div class="glass-card rounded-xl p-4 mb-6">
-            <h3 class="font-semibold mb-2"><i class="fas fa-info-circle text-blue-600 mr-2"></i>4 Komponent İçin Ayrı Ayrı BOM Yükleyin</h3>
-            <p class="text-sm text-gray-700"><strong>Batarya:</strong> Paket sayısıyla çarpılır (örn: 8x veya 10x)</p>
-            <p class="text-sm text-gray-700"><strong>VCCU, Junction Box, PDU:</strong> Her zaman 1x (araçta 1'er adet)</p>
+            <h3 class="font-semibold mb-2"><i class="fas fa-info-circle text-blue-400 mr-2"></i>4 Komponent İçin Ayrı Ayrı BOM Yükleyin</h3>
+            <p class="text-sm text-gray-300"><strong>Batarya:</strong> Paket sayısıyla çarpılır (örn: 8x veya 10x)</p>
+            <p class="text-sm text-gray-300"><strong>VCCU, Junction Box, PDU:</strong> Her zaman 1x (araçta 1'er adet)</p>
           </div>
 
           <!-- Komponent Sekmeleri -->
@@ -404,32 +404,32 @@ const adminPage = {
             <input type="hidden" id="currentComponent" value="batarya">
             
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">BOM Verileri (Ctrl+V ile yapıştırın) *</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-2">BOM Verileri (Ctrl+V ile yapıştırın) *</label>
               <textarea id="bomData" rows="10" required placeholder="Excel'den kopyalanan verileri buraya yapıştırın...
 Örnek (TAB ile ayrılmış):
 MAT-001	Lityum Hücre 18650	100	adet
 MAT-002	BMS Kartı	10	adet
 MAT-003	Nikel Şerit	500	gr"
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm transition-all duration-200"></textarea>
-              <p class="text-xs text-gray-600 mt-2">
+                class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm transition-all duration-200 bg-gray-800/50 text-white"></textarea>
+              <p class="text-xs text-gray-400 mt-2">
                 <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
                 4 sütun: Malzeme Kodu | Malzeme Adı | Miktar | Birim
               </p>
             </div>
             
             <div id="previewContainer" class="hidden">
-              <h4 class="font-semibold mb-2 text-gray-900">Önizleme:</h4>
+              <h4 class="font-semibold mb-2 text-white">Önizleme:</h4>
               <div class="glass-card rounded-xl overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
+                <table class="min-w-full divide-y divide-white/5 text-sm">
+                  <thead class="bg-gradient-to-r from-purple-900/30 to-blue-900/30">
                     <tr>
-                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Kodu</th>
-                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Adı</th>
-                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Miktar</th>
-                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Birim</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Kodu</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Adı</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Miktar</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Birim</th>
                     </tr>
                   </thead>
-                  <tbody id="previewBody" class="bg-white divide-y divide-gray-200">
+                  <tbody id="previewBody" class="divide-y divide-white/5">
                   </tbody>
                 </table>
               </div>
@@ -443,7 +443,7 @@ MAT-003	Nikel Şerit	500	gr"
                 <i class="fas fa-upload mr-2"></i> <span id="uploadBtnText">Batarya BOM'u</span> Yükle
               </button>
               <button type="button" onclick="this.closest('.fixed').remove()" 
-                class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+                class="px-6 py-3 bg-gray-700 text-gray-300 font-semibold rounded-xl hover:bg-gray-600 transition">
                 İptal
               </button>
             </div>
@@ -613,10 +613,10 @@ MAT-003	Nikel Şerit	500	gr"
     document.querySelectorAll('.bom-tab').forEach(btn => {
       if (btn.dataset.tab === componentType) {
         btn.classList.add('gradient-btn', 'shadow-lg');
-        btn.classList.remove('text-gray-600', 'hover:text-gray-900');
+        btn.classList.remove('text-gray-400', 'hover:text-white');
       } else {
         btn.classList.remove('gradient-btn', 'shadow-lg');
-        btn.classList.add('text-gray-600', 'hover:text-gray-900');
+        btn.classList.add('text-gray-400', 'hover:text-white');
       }
     });
 
@@ -662,7 +662,7 @@ MAT-003	Nikel Şerit	500	gr"
       <h3 class="text-xl font-bold gradient-text mb-4">
         <i class="fas fa-cog mr-2"></i> Component Seçin
       </h3>
-      <p class="text-gray-700 mb-4">
+      <p class="text-gray-300 mb-4">
         BOM şablonu hangi component için yüklensin?
       </p>
       <div class="space-y-3">
@@ -678,7 +678,7 @@ MAT-003	Nikel Şerit	500	gr"
         <button data-component="pdu" class="component-btn w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:shadow-xl transition-all duration-200">
           🔌 PDU BOM
         </button>
-        <button class="cancel-btn w-full px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+        <button class="cancel-btn w-full px-6 py-3 bg-gray-700 text-gray-300 font-semibold rounded-xl hover:bg-gray-600 transition">
           ${isNewOtpa ? 'Manuel Yükle' : 'İptal'}
         </button>
       </div>
@@ -746,31 +746,31 @@ MAT-003	Nikel Şerit	500	gr"
         <div class="space-y-6">
           
           <!-- Eksik Malzemeler (Öncelikli) -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b bg-red-50">
-              <h3 class="text-lg font-semibold text-red-800">
+          <div class="glass-card rounded-2xl">
+            <div class="px-6 py-4 border-b bg-red-500/10">
+              <h3 class="text-lg font-semibold text-red-400">
                 <i class="fas fa-exclamation-triangle mr-2"></i>Eksik Malzemeler
               </h3>
-              <p class="text-sm text-red-600 mt-1">Acil tedarik gerektiren malzemeler</p>
+              <p class="text-sm text-red-400/80 mt-1">Acil tedarik gerektiren malzemeler</p>
             </div>
             
             <!-- Filtreleme ve Toplu İşlemler -->
-            <div class="px-6 py-4 bg-gray-50 border-b">
+            <div class="px-6 py-4 border-b">
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">OTPA Filtrele</label>
+                  <label class="block text-xs font-medium text-gray-400 mb-1">OTPA Filtrele</label>
                   <input type="text" id="filterMissingOtpa" placeholder="OTPA ara..." 
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    class="w-full px-3 py-2 border border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-gray-800/50 text-white">
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Proje Filtrele</label>
+                  <label class="block text-xs font-medium text-gray-400 mb-1">Proje Filtrele</label>
                   <input type="text" id="filterMissingProject" placeholder="Proje ara..." 
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    class="w-full px-3 py-2 border border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-gray-800/50 text-white">
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Component Filtrele</label>
+                  <label class="block text-xs font-medium text-gray-400 mb-1">Component Filtrele</label>
                   <select id="filterMissingComponent" 
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-medium">
+                    class="w-full px-3 py-2 border border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 font-medium bg-gray-800/50 text-white">
                     <option value="">Tümü</option>
                     <option value="batarya">🔋 Batarya</option>
                     <option value="vccu">⚡ VCCU</option>
@@ -779,9 +779,9 @@ MAT-003	Nikel Şerit	500	gr"
                   </select>
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-700 mb-1">Malzeme Filtrele</label>
+                  <label class="block text-xs font-medium text-gray-400 mb-1">Malzeme Filtrele</label>
                   <input type="text" id="filterMissingMaterial" placeholder="Malzeme kodu/adı ara..." 
-                    class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    class="w-full px-3 py-2 border border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-gray-800/50 text-white">
                 </div>
               </div>
               
@@ -796,7 +796,7 @@ MAT-003	Nikel Şerit	500	gr"
                   disabled>
                   <i class="fas fa-box-open mr-2"></i> Seçilenleri Giriş Yap (<span id="selectedCount">0</span>)
                 </button>
-                <span class="text-sm text-gray-600 ml-2">
+                <span class="text-sm text-gray-400 ml-2">
                   Seçilen malzemeler tam miktarıyla girilecek
                 </span>
               </div>
@@ -809,24 +809,24 @@ MAT-003	Nikel Şerit	500	gr"
                   <p>Tüm malzemeler tamamlandı! 🎉</p>
                 </div>
               ` : `
-                <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-white/5">
+                  <thead>
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">
                         <input type="checkbox" id="selectAllCheckbox" onclick="adminPage.toggleSelectAll()"
                           class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500">
                       </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Component</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gereken</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gelen</th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Eksik</th>
-                      <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Durum</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">OTPA</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Proje</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Component</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme</th>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Gereken</th>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Gelen</th>
+                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Eksik</th>
+                      <th class="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase">Durum</th>
                     </tr>
                   </thead>
-                  <tbody id="missingMaterialsTable" class="divide-y divide-gray-200">
+                  <tbody id="missingMaterialsTable" class="divide-y divide-white/5">
                     ${missing.map(item => {
                       const componentIcons = {
                         'batarya': '🔋',
@@ -841,7 +841,7 @@ MAT-003	Nikel Şerit	500	gr"
                         'pdu': 'PDU'
                       };
                       return `
-                      <tr class="hover:bg-gray-50" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-component="${item.component_type || ''}" data-material="${item.material_code} ${item.material_name}"
+                      <tr class="hover:bg-white/[0.03]" data-otpa="${item.otpa_number}" data-project="${item.project_name || ''}" data-component="${item.component_type || ''}" data-material="${item.material_code} ${item.material_name}"
                           data-otpa-id="${item.otpa_id}" data-material-code="${item.material_code}" data-component-type="${item.component_type}" data-required-quantity="${item.required_quantity}">
                         <td class="px-6 py-4">
                           <input type="checkbox" class="material-checkbox w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
@@ -851,10 +851,10 @@ MAT-003	Nikel Şerit	500	gr"
                         <td class="px-6 py-4 text-sm">${item.project_name || ''}</td>
                         <td class="px-6 py-4">
                           <span class="px-2 py-1 text-xs font-semibold rounded-full ${
-                            item.component_type === 'batarya' ? 'bg-green-100 text-green-800' :
-                            item.component_type === 'vccu' ? 'bg-yellow-100 text-yellow-800' :
-                            item.component_type === 'junction_box' ? 'bg-blue-100 text-blue-800' :
-                            item.component_type === 'pdu' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                            item.component_type === 'batarya' ? 'bg-emerald-500/15 text-emerald-400' :
+                            item.component_type === 'vccu' ? 'bg-amber-500/15 text-amber-400' :
+                            item.component_type === 'junction_box' ? 'bg-blue-500/15 text-blue-400' :
+                            item.component_type === 'pdu' ? 'bg-purple-500/15 text-purple-400' : 'bg-gray-500/15 text-gray-400'
                           }">
                             ${componentIcons[item.component_type] || '❓'} ${componentLabels[item.component_type] || item.component_type}
                           </span>
@@ -867,7 +867,7 @@ MAT-003	Nikel Şerit	500	gr"
                         <td class="px-6 py-4 text-right text-green-600">${item.accepted_quantity || 0} ${item.unit}</td>
                         <td class="px-6 py-4 text-right font-bold text-red-600">${item.missing_quantity} ${item.unit}</td>
                         <td class="px-6 py-4 text-center">
-                          <span class="px-2 py-1 text-xs rounded ${item.status === 'Hiç Gelmedi' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                          <span class="px-2 py-1 text-xs rounded ${item.status === 'Hiç Gelmedi' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}">
                             ${item.status || 'Bekliyor'}
                           </span>
                         </td>
@@ -880,12 +880,12 @@ MAT-003	Nikel Şerit	500	gr"
           </div>
 
           <!-- Malzeme Giriş Geçmişi -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b">
+          <div class="glass-card rounded-2xl">
+            <div class="px-6 py-4 border-b border-white/5">
               <h3 class="text-lg font-semibold">
                 <i class="fas fa-history mr-2"></i>Malzeme Giriş Geçmişi
               </h3>
-              <p class="text-sm text-gray-600 mt-1">Tüm malzeme girişleri ve kalite durumları</p>
+              <p class="text-sm text-gray-400 mt-1">Tüm malzeme girişleri ve kalite durumları</p>
             </div>
             <div class="overflow-x-auto">
               ${allReceipts.length === 0 ? `
@@ -893,25 +893,25 @@ MAT-003	Nikel Şerit	500	gr"
                   Henüz malzeme girişi yapılmamış
                 </div>
               ` : `
-                <table class="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-white/5 text-sm">
+                  <thead>
                     <tr>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-                      <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Giren Miktar</th>
-                      <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Kabul</th>
-                      <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Red</th>
-                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Kalite</th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giriş Yapan</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Tarih</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">OTPA</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme</th>
+                      <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Giren Miktar</th>
+                      <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Kabul</th>
+                      <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Red</th>
+                      <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase">Kalite</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Giriş Yapan</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-200">
+                  <tbody class="divide-y divide-white/5">
                     ${allReceipts.slice(0, 50).map(receipt => {
                       const statusColors = {
-                        'kabul': 'bg-green-100 text-green-800',
-                        'iade': 'bg-amber-100 text-amber-800',
-                        'bekliyor': 'bg-gray-100 text-gray-800'
+                        'kabul': 'bg-emerald-500/15 text-emerald-400',
+                        'iade': 'bg-amber-500/15 text-amber-400',
+                        'bekliyor': 'bg-gray-500/15 text-gray-400'
                       };
                       const statusLabels = {
                         'kabul': '✅ Kabul',
@@ -919,7 +919,7 @@ MAT-003	Nikel Şerit	500	gr"
                         'bekliyor': '⏳ Bekliyor'
                       };
                       return `
-                      <tr class="hover:bg-gray-50">
+                      <tr class="hover:bg-white/[0.03]">
                         <td class="px-4 py-3 whitespace-nowrap">${new Date(receipt.created_at).toLocaleString('tr-TR')}</td>
                         <td class="px-4 py-3 font-medium">${receipt.otpa_number || 'N/A'}</td>
                         <td class="px-4 py-3">
@@ -944,24 +944,24 @@ MAT-003	Nikel Şerit	500	gr"
           </div>
 
           <!-- OTPA Tamamlama Raporu -->
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b">
+          <div class="glass-card rounded-2xl">
+            <div class="px-6 py-4 border-b border-white/5">
               <h3 class="text-lg font-semibold">
                 <i class="fas fa-chart-pie mr-2"></i>OTPA Tamamlama Raporu
               </h3>
             </div>
             <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+              <table class="min-w-full divide-y divide-white/5">
+                <thead>
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proje</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Toplam</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Tamamlanan</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">%</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">OTPA</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Proje</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Toplam</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Tamamlanan</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">%</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-white/5">
                   ${completion.map(item => `
                     <tr>
                       <td class="px-6 py-4 font-medium">${item.otpa_number}</td>
@@ -988,28 +988,28 @@ MAT-003	Nikel Şerit	500	gr"
 
           <!-- Red/İade Kayıtları -->
           ${rejections.length > 0 ? `
-          <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b">
+          <div class="glass-card rounded-2xl">
+            <div class="px-6 py-4 border-b border-white/5">
               <h3 class="text-lg font-semibold">
                 <i class="fas fa-times-circle mr-2"></i>Red/İade Kayıtları
               </h3>
             </div>
             <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
+              <table class="min-w-full divide-y divide-white/5 text-sm">
+                <thead>
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">OTPA</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Malzeme</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Red Miktarı</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Neden</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Karar Veren</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Tarih</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">OTPA</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Durum</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Red Miktarı</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Neden</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Karar Veren</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-white/5">
                   ${rejections.slice(0, 20).map(item => `
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-white/[0.03]">
                       <td class="px-4 py-3 whitespace-nowrap">${new Date(item.decision_date).toLocaleString('tr-TR')}</td>
                       <td class="px-4 py-3 font-medium">${item.otpa_number}</td>
                       <td class="px-4 py-3">
@@ -1017,12 +1017,12 @@ MAT-003	Nikel Şerit	500	gr"
                         <div class="text-xs text-gray-500">${item.material_name}</div>
                       </td>
                       <td class="px-4 py-3">
-                        <span class="px-2 py-1 text-xs rounded ${item.status === 'red' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                        <span class="px-2 py-1 text-xs rounded ${item.status === 'red' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}">
                           ${item.status === 'red' ? '❌ Red' : '⚠️ Şartlı Kabul'}
                         </span>
                       </td>
                       <td class="px-4 py-3 text-right font-bold text-red-600">${item.rejected_quantity}</td>
-                      <td class="px-4 py-3 text-sm text-gray-600">${item.reason || '-'}</td>
+                      <td class="px-4 py-3 text-sm text-gray-400">${item.reason || '-'}</td>
                       <td class="px-4 py-3">${item.decision_by_name || 'Bilinmiyor'}</td>
                     </tr>
                   `).join('')}
@@ -1035,7 +1035,7 @@ MAT-003	Nikel Şerit	500	gr"
       `;
     } catch (error) {
       container.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded">
           ${error.message}
         </div>
       `;
@@ -1175,19 +1175,19 @@ MAT-003	Nikel Şerit	500	gr"
             </button>
           </div>
 
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+          <div class="glass-card rounded-2xl overflow-hidden">
+            <table class="min-w-full divide-y divide-white/5">
+              <thead>
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kullanıcı Adı</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ad Soyad</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Durum</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kayıt Tarihi</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">İşlem</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Kullanıcı Adı</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Ad Soyad</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Rol</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Durum</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Kayıt Tarihi</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">İşlem</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody class="divide-y divide-white/5">
                 ${users.map(user => `
                   <tr>
                     <td class="px-6 py-4 font-medium">${user.username}</td>
@@ -1214,7 +1214,7 @@ MAT-003	Nikel Şerit	500	gr"
       `;
     } catch (error) {
       container.innerHTML = `
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded">
           ${error.message}
         </div>
       `;
@@ -1227,7 +1227,7 @@ MAT-003	Nikel Şerit	500	gr"
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+      <div class="glass-card rounded-2xl shadow-xl max-w-lg w-full">
         <div class="p-6">
           <h2 class="text-2xl font-bold mb-4">Yeni Kullanıcı Ekle</h2>
           <form id="createUserForm" class="space-y-4">
@@ -1301,7 +1301,7 @@ MAT-003	Nikel Şerit	500	gr"
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+      <div class="glass-card rounded-2xl shadow-xl max-w-lg w-full">
         <div class="p-6">
           <h2 class="text-2xl font-bold mb-4"><i class="fas fa-user-edit mr-2 text-blue-600"></i>Kullanıcı Düzenle</h2>
           <form id="editUserForm" class="space-y-4">
@@ -1397,7 +1397,7 @@ MAT-003	Nikel Şerit	500	gr"
       const modal = document.createElement('div');
       modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
       modal.innerHTML = `
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div class="glass-card rounded-2xl shadow-xl max-w-lg w-full">
           <div class="p-6">
             <h2 class="text-2xl font-bold mb-4">OTPA Düzenle</h2>
             <form id="editOtpaForm" class="space-y-4">
@@ -1477,20 +1477,20 @@ MAT-003	Nikel Şerit	500	gr"
 
   getStatusBadge(status) {
     const map = {
-      'acik': 'bg-green-100 text-green-800',
-      'uretimde': 'bg-blue-100 text-blue-800',
-      'kapali': 'bg-gray-100 text-gray-800'
+      'acik': 'bg-emerald-500/15 text-emerald-400',
+      'uretimde': 'bg-blue-500/15 text-blue-400',
+      'kapali': 'bg-gray-500/15 text-gray-400'
     };
     return `<span class="px-2 py-1 text-xs rounded-full ${map[status] || map.acik}">${status}</span>`;
   },
 
   getRoleBadge(role) {
     const map = {
-      'viewer': { class: 'bg-gray-100 text-gray-800', text: 'Yeni Kullanıcı' },
-      'tekniker': { class: 'bg-blue-100 text-blue-800', text: 'Tekniker' },
-      'kalite': { class: 'bg-green-100 text-green-800', text: 'Kalite' },
-      'proje_yonetici': { class: 'bg-orange-100 text-orange-800', text: 'Proje Yöneticisi' },
-      'admin': { class: 'bg-purple-100 text-purple-800', text: 'Admin' }
+      'viewer': { class: 'bg-gray-500/15 text-gray-400', text: 'Yeni Kullanıcı' },
+      'tekniker': { class: 'bg-blue-500/15 text-blue-400', text: 'Tekniker' },
+      'kalite': { class: 'bg-emerald-500/15 text-emerald-400', text: 'Kalite' },
+      'proje_yonetici': { class: 'bg-orange-500/15 text-orange-400', text: 'Proje Yöneticisi' },
+      'admin': { class: 'bg-purple-500/15 text-purple-400', text: 'Admin' }
     };
     const r = map[role] || map.viewer;
     return `<span class="px-2 py-1 text-xs rounded-full ${r.class}">${r.text}</span>`;
@@ -1533,29 +1533,29 @@ MAT-003	Nikel Şerit	500	gr"
 
           <!-- Templates List -->
           <div class="glass-card rounded-2xl shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-6 py-4 border-b border-white/5">
               <h3 class="text-2xl font-bold gradient-text">
                 <i class="fas fa-copy mr-2"></i> Kayıtlı BOM Şablonları
               </h3>
-              <p class="text-sm text-gray-600 mt-1">Tekrar kullanılabilir malzeme listeleri</p>
+              <p class="text-sm text-gray-400 mt-1">Tekrar kullanılabilir malzeme listeleri</p>
             </div>
             <div class="p-6">
               ${templates.length === 0 ? `
                 <div class="text-center py-12">
                   <i class="fas fa-copy text-gray-300 text-6xl mb-4"></i>
-                  <h3 class="text-xl font-semibold text-gray-900 mb-2">Henüz şablon yok</h3>
-                  <p class="text-gray-600">BOM yükledikten sonra şablon olarak kaydedebilirsiniz</p>
+                  <h3 class="text-xl font-semibold text-white mb-2">Henüz şablon yok</h3>
+                  <p class="text-gray-400">BOM yükledikten sonra şablon olarak kaydedebilirsiniz</p>
                 </div>
               ` : `
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   ${templates.map(template => `
-                    <div class="glass-card rounded-xl p-5 hover-lift border-2 border-gray-200 hover:border-purple-400 transition-all duration-200">
+                    <div class="glass-card rounded-xl p-5 hover-lift border-2 border-white/10 hover:border-purple-400 transition-all duration-200">
                       <div class="flex items-start justify-between mb-3">
                         <div class="flex-1">
-                          <h4 class="text-lg font-bold text-gray-900 mb-1">${template.template_name}</h4>
-                          ${template.description ? `<p class="text-sm text-gray-600">${template.description}</p>` : ''}
+                          <h4 class="text-lg font-bold text-white mb-1">${template.template_name}</h4>
+                          ${template.description ? `<p class="text-sm text-gray-400">${template.description}</p>` : ''}
                         </div>
-                        <span class="ml-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 rounded-full text-xs font-semibold">
+                        <span class="ml-2 px-3 py-1 bg-purple-500/15 text-purple-400 rounded-full text-xs font-semibold">
                           ${template.item_count} malzeme
                         </span>
                       </div>
@@ -1610,47 +1610,47 @@ MAT-003	Nikel Şerit	500	gr"
 
         <form id="createTemplateForm" class="space-y-4">
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Şablon Adı *</label>
+            <label class="block text-sm font-semibold text-gray-300 mb-2">Şablon Adı *</label>
             <input type="text" id="templateName" required
               placeholder="Örn: MD9 Amphenol Batarya BOM"
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium">
+              class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium text-white">
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Açıklama</label>
+            <label class="block text-sm font-semibold text-gray-300 mb-2">Açıklama</label>
             <textarea id="templateDescription" rows="2"
               placeholder="Şablon hakkında not (opsiyonel)"
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"></textarea>
+              class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-white"></textarea>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-2">BOM Verileri (Excel'den Ctrl+V ile yapıştırın) *</label>
+            <label class="block text-sm font-semibold text-gray-300 mb-2">BOM Verileri (Excel'den Ctrl+V ile yapıştırın) *</label>
             <textarea id="templateBomData" rows="12" required 
               placeholder="Excel'den kopyalanan verileri buraya yapıştırın...
 Örnek (TAB ile ayrılmış):
 MAT-001	Lityum Hücre 18650	100	adet
 MAT-002	BMS Kartı	10	adet
 MAT-003	Nikel Şerit	500	gr"
-              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm transition-all duration-200"></textarea>
-            <p class="text-xs text-gray-600 mt-2">
+              class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm transition-all duration-200 text-white"></textarea>
+            <p class="text-xs text-gray-400 mt-2">
               <i class="fas fa-lightbulb text-yellow-500 mr-1"></i> 
               4 sütun: Malzeme Kodu | Malzeme Adı | Miktar | Birim
             </p>
           </div>
 
           <div id="templatePreviewContainer" class="hidden">
-            <h4 class="font-semibold mb-2 text-gray-900">Önizleme:</h4>
+            <h4 class="font-semibold mb-2 text-white">Önizleme:</h4>
             <div class="glass-card rounded-xl overflow-hidden">
-              <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
+              <table class="min-w-full divide-y divide-white/5 text-sm">
+                <thead>
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Kodu</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Adı</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Miktar</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Birim</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Kodu</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Adı</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Miktar</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Birim</th>
                   </tr>
                 </thead>
-                <tbody id="templatePreviewBody" class="bg-white divide-y divide-gray-200">
+                <tbody id="templatePreviewBody" class="divide-y divide-white/5">
                 </tbody>
               </table>
             </div>
@@ -1666,7 +1666,7 @@ MAT-003	Nikel Şerit	500	gr"
               <i class="fas fa-save mr-2"></i> Şablonu Kaydet
             </button>
             <button type="button" onclick="this.closest('.fixed').remove()" 
-              class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition">
+              class="px-6 py-3 bg-gray-700 text-gray-300 font-semibold rounded-xl hover:bg-gray-600 transition">
               İptal
             </button>
           </div>
@@ -1707,11 +1707,11 @@ MAT-003	Nikel Şerit	500	gr"
 
       const previewBody = document.getElementById('templatePreviewBody');
       previewBody.innerHTML = items.map(item => `
-        <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200">
-          <td class="px-4 py-3 font-semibold text-gray-900">${item.material_code}</td>
-          <td class="px-4 py-3 text-gray-700">${item.material_name}</td>
-          <td class="px-4 py-3 font-semibold text-gray-900">${item.quantity}</td>
-          <td class="px-4 py-3 text-gray-600">${item.unit}</td>
+        <tr class="hover:bg-white/[0.03] transition-all duration-200">
+          <td class="px-4 py-3 font-semibold text-white">${item.material_code}</td>
+          <td class="px-4 py-3 text-gray-300">${item.material_name}</td>
+          <td class="px-4 py-3 font-semibold text-white">${item.quantity}</td>
+          <td class="px-4 py-3 text-gray-400">${item.unit}</td>
         </tr>
       `).join('');
 
@@ -1795,22 +1795,22 @@ MAT-003	Nikel Şerit	500	gr"
           </div>
 
           <div class="glass-card rounded-xl p-4 mb-6">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gradient-to-r from-purple-50 to-blue-50">
+            <table class="min-w-full divide-y divide-white/5">
+              <thead>
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Kodu</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Malzeme Adı</th>
-                  <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase">Miktar</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Birim</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Kodu</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Adı</th>
+                  <th class="px-4 py-3 text-right text-xs font-bold text-gray-300 uppercase">Miktar</th>
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Birim</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody class="divide-y divide-white/5">
                 ${data.items.map(item => `
-                  <tr class="hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 transition-all duration-200">
-                    <td class="px-4 py-3 font-semibold text-gray-900">${item.material_code}</td>
-                    <td class="px-4 py-3 text-gray-700">${item.material_name}</td>
-                    <td class="px-4 py-3 text-right font-semibold text-gray-900">${item.quantity}</td>
-                    <td class="px-4 py-3 text-gray-600">${item.unit}</td>
+                  <tr class="hover:bg-white/[0.03] transition-all duration-200">
+                    <td class="px-4 py-3 font-semibold text-white">${item.material_code}</td>
+                    <td class="px-4 py-3 text-gray-300">${item.material_name}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-white">${item.quantity}</td>
+                    <td class="px-4 py-3 text-gray-400">${item.unit}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1862,21 +1862,21 @@ MAT-003	Nikel Şerit	500	gr"
           </h2>
           <div class="max-w-md space-y-4">
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1">Mevcut Şifre</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-1">Mevcut Şifre</label>
               <input type="password" id="currentPassword" 
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white"
                 placeholder="Mevcut şifrenizi girin">
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1">Yeni Şifre</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-1">Yeni Şifre</label>
               <input type="password" id="newPassword" 
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white"
                 placeholder="Yeni şifre (en az 6 karakter)">
             </div>
             <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1">Yeni Şifre (Tekrar)</label>
+              <label class="block text-sm font-semibold text-gray-300 mb-1">Yeni Şifre (Tekrar)</label>
               <input type="password" id="confirmPassword" 
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white"
                 placeholder="Yeni şifreyi tekrar girin">
             </div>
             <button onclick="adminPage.changePassword()" 
@@ -1892,17 +1892,17 @@ MAT-003	Nikel Şerit	500	gr"
             <i class="fas fa-user-circle mr-2"></i> Hesap Bilgileri
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-gray-50 rounded-xl p-4">
-              <p class="text-sm text-gray-500">Kullanıcı Adı</p>
-              <p class="text-lg font-bold text-gray-800">${user?.username || '-'}</p>
+            <div class="bg-gray-800/50 rounded-xl p-4">
+              <p class="text-sm text-gray-400">Kullanıcı Adı</p>
+              <p class="text-lg font-bold text-gray-200">${user?.username || '-'}</p>
             </div>
-            <div class="bg-gray-50 rounded-xl p-4">
-              <p class="text-sm text-gray-500">Ad Soyad</p>
-              <p class="text-lg font-bold text-gray-800">${user?.full_name || '-'}</p>
+            <div class="bg-gray-800/50 rounded-xl p-4">
+              <p class="text-sm text-gray-400">Ad Soyad</p>
+              <p class="text-lg font-bold text-gray-200">${user?.full_name || '-'}</p>
             </div>
-            <div class="bg-gray-50 rounded-xl p-4">
-              <p class="text-sm text-gray-500">Rol</p>
-              <p class="text-lg font-bold text-gray-800">${{'admin':'Yönetici','kalite':'Kalite','tekniker':'Tekniker'}[user?.role] || user?.role || '-'}</p>
+            <div class="bg-gray-800/50 rounded-xl p-4">
+              <p class="text-sm text-gray-400">Rol</p>
+              <p class="text-lg font-bold text-gray-200">${{'admin':'Yönetici','kalite':'Kalite','tekniker':'Tekniker'}[user?.role] || user?.role || '-'}</p>
             </div>
           </div>
         </div>

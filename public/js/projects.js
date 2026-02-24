@@ -18,11 +18,11 @@ const ProjectsPage = {
       <div class="max-w-7xl mx-auto">
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+            <h1 class="text-3xl font-bold text-white flex items-center">
               <i class="fas fa-project-diagram mr-3 text-purple-600"></i>
               Proje Takip
             </h1>
-            <p class="text-gray-600 mt-1">Proje süreçlerini yönetin, takip edin</p>
+            <p class="text-gray-400 mt-1">Proje süreçlerini yönetin, takip edin</p>
           </div>
           <button onclick="ProjectsPage.showCreateProject()" 
             class="gradient-btn text-white px-6 py-3 rounded-xl font-semibold hover-lift flex items-center">
@@ -109,14 +109,14 @@ const ProjectsPage = {
     detail.innerHTML = `
       <!-- Tab Nav -->
       <div class="glass-card rounded-xl mb-6 overflow-hidden">
-        <div class="border-b border-gray-200 flex">
-          <button onclick="ProjectsPage.switchTab('dashboard')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'dashboard' ? 'border-b-2 border-purple-500 text-purple-600' : 'text-gray-500 hover:text-gray-700'}" data-tab="dashboard">
+        <div class="border-b border-white/5 flex">
+          <button onclick="ProjectsPage.switchTab('dashboard')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'dashboard' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-gray-400 hover:text-gray-200'}" data-tab="dashboard">
             <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
           </button>
-          <button onclick="ProjectsPage.switchTab('tasks')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'tasks' ? 'border-b-2 border-purple-500 text-purple-600' : 'text-gray-500 hover:text-gray-700'}" data-tab="tasks">
+          <button onclick="ProjectsPage.switchTab('tasks')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'tasks' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-gray-400 hover:text-gray-200'}" data-tab="tasks">
             <i class="fas fa-list mr-2"></i>Görevler
           </button>
-          <button onclick="ProjectsPage.switchTab('gantt')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'gantt' ? 'border-b-2 border-purple-500 text-purple-600' : 'text-gray-500 hover:text-gray-700'}" data-tab="gantt">
+          <button onclick="ProjectsPage.switchTab('gantt')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'gantt' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-gray-400 hover:text-gray-200'}" data-tab="gantt">
             <i class="fas fa-chart-gantt mr-2"></i>Gantt
           </button>
         </div>
@@ -194,12 +194,12 @@ const ProjectsPage = {
 
         <!-- Durum Dağılımı -->
         <div class="glass-card rounded-xl p-6">
-          <h3 class="font-semibold text-gray-800 mb-4">Durum Dağılımı</h3>
-          <div class="flex gap-2 h-8 rounded-full overflow-hidden bg-gray-100">
+          <h3 class="font-semibold text-white mb-4">Durum Dağılımı</h3>
+          <div class="flex gap-2 h-8 rounded-full overflow-hidden bg-white/5">
             ${done.length > 0 ? `<div class="bg-green-500 flex items-center justify-center text-white text-xs font-bold" style="width:${tasks.length > 0 ? (done.length / tasks.length * 100) : 0}%">${done.length}</div>` : ''}
             ${doing.length > 0 ? `<div class="bg-blue-500 flex items-center justify-center text-white text-xs font-bold" style="width:${tasks.length > 0 ? (doing.length / tasks.length * 100) : 0}%">${doing.length}</div>` : ''}
             ${blocked.length > 0 ? `<div class="bg-orange-500 flex items-center justify-center text-white text-xs font-bold" style="width:${tasks.length > 0 ? (blocked.length / tasks.length * 100) : 0}%">${blocked.length}</div>` : ''}
-            ${(tasks.length - done.length - doing.length - blocked.length) > 0 ? `<div class="bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-bold" style="width:${tasks.length > 0 ? ((tasks.length - done.length - doing.length - blocked.length) / tasks.length * 100) : 0}%">${tasks.length - done.length - doing.length - blocked.length}</div>` : ''}
+            ${(tasks.length - done.length - doing.length - blocked.length) > 0 ? `<div class="bg-gray-500 flex items-center justify-center text-white text-xs font-bold" style="width:${tasks.length > 0 ? ((tasks.length - done.length - doing.length - blocked.length) / tasks.length * 100) : 0}%">${tasks.length - done.length - doing.length - blocked.length}</div>` : ''}
           </div>
           <div class="flex gap-4 mt-3 text-xs text-gray-500">
             <span><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span>Tamamlandı</span>
@@ -286,10 +286,10 @@ const ProjectsPage = {
               const depTask = t.depends_on_task_id ? tasks.find(x => x.id === t.depends_on_task_id) : null;
               
               const statusColors = {
-                'backlog': 'bg-gray-100 text-gray-600',
-                'doing': 'bg-blue-100 text-blue-700',
-                'blocked': 'bg-orange-100 text-orange-700',
-                'done': 'bg-green-100 text-green-700'
+                'backlog': 'bg-gray-500/15 text-gray-400',
+                'doing': 'bg-blue-500/15 text-blue-400',
+                'blocked': 'bg-orange-500/15 text-orange-400',
+                'done': 'bg-emerald-500/15 text-emerald-400'
               };
               const statusLabels = { 'backlog': 'Bekliyor', 'doing': 'Yapılıyor', 'blocked': 'Bloke', 'done': 'Tamamlandı' };
 
@@ -299,9 +299,9 @@ const ProjectsPage = {
                   <!-- Sol: Bilgi -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1">
-                      <h4 class="font-bold text-gray-800 truncate">${t.title}</h4>
-                      ${isCritical ? '<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Kritik</span>' : ''}
-                      ${isOverdue ? '<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold animate-pulse">GECİKİYOR</span>' : ''}
+                      <h4 class="font-bold text-white truncate">${t.title}</h4>
+                      ${isCritical ? '<span class="text-xs bg-purple-500/15 text-purple-400 px-2 py-0.5 rounded-full font-medium">Kritik</span>' : ''}
+                      ${isOverdue ? '<span class="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold animate-pulse">GECİKİYOR</span>' : ''}
                     </div>
                     <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                       <span><i class="fas fa-user mr-1"></i>${t.owner_text || '—'}</span>
@@ -313,14 +313,14 @@ const ProjectsPage = {
                         const diffD = Math.ceil((dl - new Date()) / (1000*60*60*24));
                         const isLate = diffD < 0 && t.status !== 'done';
                         const isClose = diffD >= 0 && diffD <= 3 && t.status !== 'done';
-                        const cls = isLate ? 'bg-red-100 text-red-700' : isClose ? 'bg-orange-100 text-orange-700' : 'bg-indigo-50 text-indigo-600';
+                        const cls = isLate ? 'bg-red-500/15 text-red-400' : isClose ? 'bg-orange-500/15 text-orange-400' : 'bg-indigo-500/15 text-indigo-400';
                         const label = t.status === 'done' ? '✓' : isLate ? `${Math.abs(diffD)} gün gecikmiş!` : diffD === 0 ? 'Bugün son gün!' : `${diffD} gün kaldı`;
                         return `<span class="${cls} px-2 py-0.5 rounded-full font-medium"><i class="fas fa-flag mr-1"></i>${new Date(t.deadline).toLocaleDateString('tr-TR')} — ${label}</span>`;
                       })() : ''}
                       ${depTask ? `<span class="text-purple-600"><i class="fas fa-link mr-1"></i>${depTask.title}</span>` : ''}
                     </div>
                     ${t.status === 'blocked' && t.blocked_reason ? `<div class="mt-1 text-xs text-orange-600"><i class="fas fa-ban mr-1"></i>${t.blocked_reason}</div>` : ''}
-                    ${t.notes ? `<div class="mt-1 text-xs text-gray-500 bg-gray-50 rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${t.notes}</div>` : ''}
+                    ${t.notes ? `<div class="mt-1 text-xs text-gray-400 bg-white/5 rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${t.notes}</div>` : ''}
                   </div>
 
                   <!-- Sağ: İlerleme & Aksiyonlar -->
@@ -338,7 +338,7 @@ const ProjectsPage = {
 
                     <!-- Durum Dropdown -->
                     <select onchange="ProjectsPage.quickUpdateStatus(${t.id}, this.value)" 
-                      class="text-xs border rounded-lg px-2 py-1.5 bg-white">
+                      class="text-xs border rounded-lg px-2 py-1.5 bg-white/5 border-white/10 text-white">
                       <option value="backlog" ${t.status === 'backlog' ? 'selected' : ''}>Bekliyor</option>
                       <option value="doing" ${t.status === 'doing' ? 'selected' : ''}>Yapılıyor</option>
                       <option value="blocked" ${t.status === 'blocked' ? 'selected' : ''}>Bloke</option>
@@ -408,7 +408,7 @@ const ProjectsPage = {
         if (currentMonth) {
           const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
           const [y, m] = currentMonth.split('-');
-          monthHeaders += `<div class="absolute top-0 text-xs font-bold text-gray-600 border-l border-gray-200 px-1" style="left:${monthStartX}px;width:${(i * dayWidth) - monthStartX}px">${monthNames[parseInt(m) - 1]} ${y}</div>`;
+          monthHeaders += `<div class="absolute top-0 text-xs font-bold text-gray-400 border-l border-white/10 px-1" style="left:${monthStartX}px;width:${(i * dayWidth) - monthStartX}px">${monthNames[parseInt(m) - 1]} ${y}</div>`;
         }
         currentMonth = monthKey;
         monthStartX = i * dayWidth;
@@ -426,7 +426,7 @@ const ProjectsPage = {
     if (currentMonth) {
       const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
       const [y, m] = currentMonth.split('-');
-      monthHeaders += `<div class="absolute top-0 text-xs font-bold text-gray-600 border-l border-gray-200 px-1" style="left:${monthStartX}px;width:${chartWidth - monthStartX}px">${monthNames[parseInt(m) - 1]} ${y}</div>`;
+      monthHeaders += `<div class="absolute top-0 text-xs font-bold text-gray-400 border-l border-white/10 px-1" style="left:${monthStartX}px;width:${chartWidth - monthStartX}px">${monthNames[parseInt(m) - 1]} ${y}</div>`;
     }
 
     // Bugün çizgisi
@@ -500,11 +500,11 @@ const ProjectsPage = {
 
         <div class="flex">
           <!-- Sol: Görev isimleri -->
-          <div class="flex-shrink-0 bg-gray-50 border-r" style="width:200px">
-            <div class="h-10 border-b flex items-center px-3 text-xs font-bold text-gray-500">Görev</div>
-            <div class="h-5 border-b flex items-center px-3 text-xs text-gray-400">Ay</div>
+          <div class="flex-shrink-0 bg-white/5 border-r border-white/10" style="width:200px">
+            <div class="h-10 border-b border-white/10 flex items-center px-3 text-xs font-bold text-gray-400">Görev</div>
+            <div class="h-5 border-b border-white/10 flex items-center px-3 text-xs text-gray-500">Ay</div>
             ${tasks.map(t => `
-              <div class="flex items-center px-3 text-sm truncate border-b border-gray-100" style="height:${rowHeight}px">
+              <div class="flex items-center px-3 text-sm truncate border-b border-white/5" style="height:${rowHeight}px">
                 <span class="truncate" title="${t.title}">${t.title}</span>
               </div>
             `).join('')}
@@ -518,19 +518,19 @@ const ProjectsPage = {
             <div class="relative border-b" style="width:${chartWidth}px;height:20px">
               ${monthHeaders}
             </div>
-            <div class="relative border-b bg-white" style="width:${chartWidth}px;height:20px">
+            <div class="relative border-b border-white/10 bg-white/5" style="width:${chartWidth}px;height:20px">
               ${headerHtml}
             </div>
 
             <!-- Görev barları -->
             <div class="relative" style="width:${chartWidth}px;height:${chartHeight}px">
               <!-- Satır çizgileri -->
-              ${tasks.map((_, i) => `<div class="absolute w-full border-b border-gray-50" style="top:${(i + 1) * rowHeight}px"></div>`).join('')}
+              ${tasks.map((_, i) => `<div class="absolute w-full border-b border-white/5" style="top:${(i + 1) * rowHeight}px"></div>`).join('')}
               
               <!-- Bugün çizgisi -->
               ${todayLineX > 0 && todayLineX < chartWidth ? `
                 <div class="absolute top-0 bottom-0 border-l-2 border-red-400 z-10" style="left:${todayLineX}px">
-                  <div class="absolute -top-1 -left-3 text-xs text-red-500 font-bold bg-white px-1 rounded">Bugün</div>
+                  <div class="absolute -top-1 -left-3 text-xs text-red-500 font-bold bg-gray-900 px-1 rounded">Bugün</div>
                 </div>
               ` : ''}
 
@@ -563,26 +563,26 @@ const ProjectsPage = {
     const formArea = document.getElementById('taskFormArea');
     formArea.innerHTML = `
       <div class="glass-card rounded-xl p-6 mb-4 border-2 border-purple-200">
-        <h4 class="font-bold text-gray-800 mb-4">${task ? 'Görevi Düzenle' : 'Yeni Görev'}</h4>
+        <h4 class="font-bold text-white mb-4">${task ? 'Görevi Düzenle' : 'Yeni Görev'}</h4>
         <form id="taskForm" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Görev Adı *</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Görev Adı *</label>
               <input type="text" id="tf_title" value="${task?.title || ''}" required
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Görev adı">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Sorumlu Kişi</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Sorumlu Kişi</label>
               <input type="text" id="tf_owner" value="${task?.owner_text || ''}" 
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Kimin üzerinde?">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Süre (İş Günü)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Süre (İş Günü)</label>
               <input type="number" id="tf_duration" value="${task?.duration_workdays || 1}" min="1"
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Durum</label>
               <select id="tf_status" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
                 <option value="backlog" ${task?.status === 'backlog' ? 'selected' : ''}>Bekliyor</option>
                 <option value="doing" ${task?.status === 'doing' ? 'selected' : ''}>Yapılıyor</option>
@@ -591,7 +591,7 @@ const ProjectsPage = {
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">İlerleme (%)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">İlerleme (%)</label>
               <div class="flex items-center gap-3">
                 <input type="range" id="tf_progress" min="0" max="100" step="5" value="${task?.progress_percent || 0}"
                   class="flex-1 accent-purple-600" oninput="document.getElementById('tf_progressLabel').textContent = this.value + '%'">
@@ -599,12 +599,12 @@ const ProjectsPage = {
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Manuel Başlangıç (opsiyonel)</label>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Manuel Başlangıç (opsiyonel)</label>
               <input type="date" id="tf_manual_start" value="${task?.manual_start_date || ''}"
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
             </div>
             <div>
-              <label class="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+              <label class="flex items-center gap-2 text-sm font-medium text-gray-300 mb-1">
                 <input type="checkbox" id="tf_hasDep" ${task?.depends_on_task_id ? 'checked' : ''}
                   onchange="document.getElementById('tf_depSelect').style.display = this.checked ? 'block' : 'none'">
                 Bağımlı mı?
@@ -620,21 +620,21 @@ const ProjectsPage = {
 
           <!-- Blocked Reason -->
           <div id="tf_blockedArea" class="${task?.status === 'blocked' ? '' : 'hidden'}">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Bloke Sebebi</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Bloke Sebebi</label>
             <input type="text" id="tf_blocked_reason" value="${task?.blocked_reason || ''}" 
               class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="Neden bloke?">
           </div>
 
           <!-- Notlar -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-sticky-note text-yellow-500 mr-1"></i>Notlar</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1"><i class="fas fa-sticky-note text-yellow-500 mr-1"></i>Notlar</label>
             <textarea id="tf_notes" rows="2" 
               class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Görevle ilgili kısa notlar...">${task?.notes || ''}</textarea>
           </div>
 
           <!-- Son Tarih (Deadline) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-calendar-times text-red-400 mr-1"></i>Son Tarih (Deadline)</label>
+            <label class="block text-sm font-medium text-gray-300 mb-1"><i class="fas fa-calendar-times text-red-400 mr-1"></i>Son Tarih (Deadline)</label>
             <input type="date" id="tf_deadline" value="${task?.deadline || ''}"
               class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500">
             <p class="text-xs text-gray-400 mt-1">Opsiyonel — belirlenirse otomatik hesaplanan bitiş yerine bu tarih kullanılır</p>
@@ -645,7 +645,7 @@ const ProjectsPage = {
               <i class="fas fa-save mr-1"></i>${task ? 'Güncelle' : 'Ekle'}
             </button>
             <button type="button" onclick="document.getElementById('taskFormArea').innerHTML=''" 
-              class="px-6 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">İptal</button>
+              class="px-6 py-2 border rounded-lg text-gray-400 hover:bg-white/[0.03]">Iptal</button>
           </div>
         </form>
       </div>
@@ -807,7 +807,8 @@ const ProjectsPage = {
   async exportExcel() {
     try {
       showLoading(true);
-      const data = await api.request(`/projects/${this.currentProject.id}/export`);
+      const today = new Date().toISOString().split('T')[0];
+      const data = await api.request(`/projects/${this.currentProject.id}/export?today=${today}`);
       
       // CSV olarak üret (Excel uyumlu)
       const BOM = '\uFEFF';
@@ -850,7 +851,8 @@ const ProjectsPage = {
   async exportWord() {
     try {
       showLoading(true);
-      const data = await api.request(`/projects/${this.currentProject.id}/export`);
+      const today = new Date().toISOString().split('T')[0];
+      const data = await api.request(`/projects/${this.currentProject.id}/export?today=${today}`);
       
       const statusTR = { 'backlog': 'Bekliyor', 'doing': 'Yapılıyor', 'blocked': 'Bloke', 'done': 'Tamamlandı' };
       const statusColor = { 'done': '#16a34a', 'doing': '#2563eb', 'blocked': '#ea580c', 'backlog': '#6b7280' };
