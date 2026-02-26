@@ -716,7 +716,7 @@ const ProjectsPage = {
     let otpaList = [];
     let fetchError = null;
     try { 
-      otpaList = await api.otpa.getAll(); 
+      otpaList = await api.otpa.list(); 
       if (!Array.isArray(otpaList)) otpaList = [];
     } catch(e) { 
       fetchError = e.message || 'OTPA listesi alınamadı';
@@ -1060,7 +1060,7 @@ const ProjectsPage = {
 
   async showCreateProject() {
     let otpaList = [];
-    try { otpaList = await api.otpa.getAll(); } catch(e) {}
+    try { otpaList = await api.otpa.list(); } catch(e) {}
     
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
@@ -1116,7 +1116,7 @@ const ProjectsPage = {
     const p = this.projects.find(x => x.id === id);
     if (!p) return;
     let otpaList = [];
-    try { otpaList = await api.otpa.getAll(); } catch(e) {}
+    try { otpaList = await api.otpa.list(); } catch(e) {}
     
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
