@@ -55,6 +55,40 @@ const authManager = {
     return this.currentUser && roles.includes(this.currentUser.role);
   },
 
+  // Dinamik izin kontrolü
+  hasPermission(module, action = 'can_view') {
+    if (!this.currentUser || !this.currentUser.permissions) return false;
+    const perm = this.currentUser.permissions[module];
+    if (!perm) return false;
+    return !!perm[action];
+  },
+
+  // Herhangi bir modülü görüntüleyebiliyor mu?
+  hasAnyViewPermission() {
+    if (!this.currentUser || !this.currentUser.permissions) return false;
+    return Object.values(this.currentUser.permissions).some(p => p.can_view);
+  },
+
+  // Varsayılan ana sayfa
+  getDefaultPage() {
+    if (!this.currentUser) return 'welcome';
+    const perms = this.currentUser.permissions;
+    if (!perms || Object.keys(perms).length === 0) return 'welcome';
+    
+    // Hiç görüntüleme izni yoksa welcome
+    if (!this.hasAnyViewPermission()) return 'welcome';
+    
+    // Dashboard izni varsa oraya git
+    if (this.hasPermission('dashboard')) return 'dashboard';
+    
+    // Yoksa ilk görüntüleyebildiği sayfayı bul
+    const pageOrder = ['dashboard', 'goods-receipt', 'projects', 'quality', 'returns', 'technicians', 'taskboard', 'paket-analiz', 'prosedur-otpa', 'field-changelog', 'admin'];
+    for (const page of pageOrder) {
+      if (this.hasPermission(page)) return page;
+    }
+    return 'welcome';
+  },
+
   isAdmin() {
     return this.hasRole('admin');
   },
@@ -102,14 +136,8 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     // Setup app navigation and render appropriate page
     app.setupNavigation();
     app.updateUserInfo();
-    const user = authManager.currentUser;
-    if (user && user.role === 'viewer') {
-      app.navigate('welcome');
-    } else if (user && user.role === 'proje_yonetici') {
-      app.navigate('projects');
-    } else {
-      app.navigate('dashboard');
-    }
+    const defaultPage = authManager.getDefaultPage();
+    app.navigate(defaultPage);
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.classList.remove('hidden');

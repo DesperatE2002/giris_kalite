@@ -96,13 +96,35 @@ router.post('/login', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 saat
     });
 
+    // Kullanıcı izinlerini çek
+    let permissions = {};
+    try {
+      const { rows: perms } = await pool.query(`
+        SELECT rp.module, rp.can_view, rp.can_create, rp.can_edit, rp.can_delete
+        FROM role_permissions rp
+        JOIN roles r ON r.id = rp.role_id
+        WHERE r.name = ?
+      `, [user.role]);
+      perms.forEach(p => {
+        permissions[p.module] = {
+          can_view: p.can_view,
+          can_create: p.can_create,
+          can_edit: p.can_edit,
+          can_delete: p.can_delete
+        };
+      });
+    } catch (e) {
+      console.warn('İzinler yüklenemedi (roles tablosu henüz hazır olmayabilir):', e.message);
+    }
+
     res.json({
       message: 'Giriş başarılı',
       user: {
         id: user.id,
         username: user.username,
         full_name: user.full_name,
-        role: user.role
+        role: user.role,
+        permissions
       },
       token
     });
@@ -130,7 +152,31 @@ router.get('/me', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
     }
 
-    res.json(result.rows[0]);
+    const user = result.rows[0];
+
+    // Kullanıcı izinlerini çek
+    let permissions = {};
+    try {
+      const { rows: perms } = await pool.query(`
+        SELECT rp.module, rp.can_view, rp.can_create, rp.can_edit, rp.can_delete
+        FROM role_permissions rp
+        JOIN roles r ON r.id = rp.role_id
+        WHERE r.name = ?
+      `, [user.role]);
+      perms.forEach(p => {
+        permissions[p.module] = {
+          can_view: p.can_view,
+          can_create: p.can_create,
+          can_edit: p.can_edit,
+          can_delete: p.can_delete
+        };
+      });
+    } catch (e) {
+      console.warn('İzinler yüklenemedi:', e.message);
+    }
+
+    user.permissions = permissions;
+    res.json(user);
   } catch (error) {
     console.error('Me hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });

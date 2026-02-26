@@ -44,7 +44,7 @@ const ProjectsPage = {
                 <div onclick="ProjectsPage.selectProject(${p.id})" 
                   class="glass-card rounded-xl p-5 cursor-pointer hover-lift transition-all border-2 ${this.currentProject?.id === p.id ? 'border-purple-500 shadow-lg' : 'border-transparent'}">
                   <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-bold text-gray-800 truncate">${p.name}</h3>
+                    <h3 class="font-bold text-white truncate">${p.name}</h3>
                     <div class="flex gap-1">
                       <button onclick="event.stopPropagation();ProjectsPage.showEditProject(${p.id})" class="text-gray-400 hover:text-blue-500 p-1"><i class="fas fa-edit text-sm"></i></button>
                       <button onclick="event.stopPropagation();ProjectsPage.deleteProject(${p.id})" class="text-gray-400 hover:text-red-500 p-1"><i class="fas fa-trash text-sm"></i></button>
@@ -282,7 +282,7 @@ const ProjectsPage = {
     container.innerHTML = `
       <div class="space-y-4">
         <div class="flex justify-between items-center">
-          <h3 class="font-bold text-lg text-gray-800">Görevler (${tasks.length})</h3>
+          <h3 class="font-bold text-lg text-white">Görevler (${tasks.length})</h3>
           <button onclick="ProjectsPage.showTaskForm()" class="gradient-btn text-white px-4 py-2 rounded-lg text-sm font-semibold">
             <i class="fas fa-plus mr-1"></i>Görev Ekle
           </button>
@@ -523,7 +523,7 @@ const ProjectsPage = {
     container.innerHTML = `
       <div class="glass-card rounded-xl overflow-hidden">
         <div class="p-4 border-b flex items-center justify-between">
-          <h3 class="font-bold text-gray-800"><i class="fas fa-chart-gantt mr-2"></i>Gantt Şeması</h3>
+          <h3 class="font-bold text-white"><i class="fas fa-chart-gantt mr-2"></i>Gantt Şeması</h3>
           <div class="flex items-center gap-3 text-xs text-gray-400">
             <span><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span>Tamamlandı</span>
             <span><span class="inline-block w-3 h-3 rounded bg-blue-500 mr-1"></span>Yapılıyor</span>

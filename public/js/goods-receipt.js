@@ -219,12 +219,12 @@ const goodsReceiptPage = {
             const hasMissing = parseFloat(item.missing_quantity) > 0;
             
             return `
-              <div class="bom-item border rounded-lg p-4 ${isComplete ? 'bg-green-50 border-green-300' : hasMissing ? 'bg-yellow-50 border-yellow-300' : 'border-white/10'}" data-code="${item.material_code}" data-name="${item.material_name}">
+              <div class="bom-item border rounded-lg p-4 ${isComplete ? 'bg-green-500/10 border-green-500/30' : hasMissing ? 'bg-yellow-500/10 border-yellow-500/30' : 'border-white/10'}" data-code="${item.material_code}" data-name="${item.material_name}">
                 <div class="flex justify-between items-start mb-2">
                   <div class="font-bold text-white">${item.material_code}</div>
-                  ${isComplete ? '<i class="fas fa-check-circle text-green-600"></i>' : hasMissing ? '<i class="fas fa-exclamation-triangle text-yellow-600"></i>' : ''}
+                  ${isComplete ? '<i class="fas fa-check-circle text-green-400"></i>' : hasMissing ? '<i class="fas fa-exclamation-triangle text-yellow-400"></i>' : ''}
                 </div>
-                <div class="text-sm text-gray-400 mb-3">${item.material_name}</div>
+                <div class="text-sm text-gray-300 mb-3">${item.material_name}</div>
                 <div class="space-y-1 text-sm">
                   <div class="flex justify-between">
                     <span>Gereken:</span>
@@ -232,11 +232,11 @@ const goodsReceiptPage = {
                   </div>
                   <div class="flex justify-between">
                     <span>Kabul:</span>
-                    <span class="font-medium text-green-600">${item.total_accepted || 0} ${item.unit}</span>
+                    <span class="font-medium text-green-400">${item.total_accepted || 0} ${item.unit}</span>
                   </div>
                   <div class="flex justify-between">
                     <span>Eksik:</span>
-                    <span class="font-medium ${hasMissing ? 'text-red-600' : 'text-white'}">${item.missing_quantity || item.required_quantity} ${item.unit}</span>
+                    <span class="font-medium ${hasMissing ? 'text-red-400' : 'text-white'}">${item.missing_quantity || item.required_quantity} ${item.unit}</span>
                   </div>
                 </div>
                 <div class="mt-3">
@@ -244,7 +244,7 @@ const goodsReceiptPage = {
                     <div class="h-2 rounded-full ${isComplete ? 'bg-green-600' : 'bg-blue-600'}" 
                       style="width: ${Math.min(percentage, 100)}%"></div>
                   </div>
-                  <div class="text-xs text-center mt-1 ${isComplete ? 'text-green-600 font-bold' : 'text-gray-400'}">${percentage}%</div>
+                  <div class="text-xs text-center mt-1 ${isComplete ? 'text-green-400 font-bold' : 'text-gray-400'}">${percentage}%</div>
                 </div>
               </div>
             `;

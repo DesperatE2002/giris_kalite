@@ -37,6 +37,7 @@ import techniciansRoutes from '../routes/technicians.js';
 import paketAnalizRoutes, { migratePacketAnaliz } from '../routes/paket-analiz.js';
 import prosedurOtpaRoutes, { migrateProsedurOtpa } from '../routes/prosedur-otpa.js';
 import fieldChangelogRoutes, { migrateFieldChangelog } from '../routes/field-changelog.js';
+import rolesRoutes, { migrateRoles } from '../routes/roles.js';
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use('/api/technicians', techniciansRoutes);
 app.use('/api/paket-analiz', paketAnalizRoutes);
 app.use('/api/prosedur-otpa', prosedurOtpaRoutes);
 app.use('/api/field-changelog', fieldChangelogRoutes);
+app.use('/api/roles', rolesRoutes);
 
 // Auto-migration: total_returned_quantity ve returned_by sütunlarını ekle
 import pool from '../db/database.js';
@@ -118,13 +120,12 @@ import pool from '../db/database.js';
     }
   }
 
-  // Auto-migration: users role constraint güncellemesi (viewer + proje_yonetici ekleme)
+  // Auto-migration: users role constraint kaldır (artık custom roller destekleniyor)
   try {
     await pool.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
-    await pool.query(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('viewer', 'tekniker', 'kalite', 'proje_yonetici', 'admin'))`);
-    console.log('✅ Auto-migration: users role constraint güncellendi (viewer + proje_yonetici)');
+    console.log('✅ Auto-migration: users role constraint kaldırıldı (custom roller destekleniyor)');
   } catch(e) {
-    if (!e.message.includes('already exists')) {
+    if (!e.message.includes('does not exist')) {
       console.error('⚠️ Users role constraint uyarısı:', e.message);
     }
   }
@@ -207,6 +208,11 @@ import pool from '../db/database.js';
 // Auto-migration: Saha Değişiklik Geçmişi tabloları
 (async () => {
   await migrateFieldChangelog();
+})();
+
+// Auto-migration: Roller ve İzinler tabloları
+(async () => {
+  await migrateRoles();
 })();
 
 // Health check

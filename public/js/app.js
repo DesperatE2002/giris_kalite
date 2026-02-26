@@ -110,58 +110,23 @@ const app = {
     const user = authManager.currentUser;
     if (!user) return;
 
-    const role = user.role;
+    // Dinamik izin tabanlı menü görünürlüğü
+    const permissions = user.permissions || {};
+    const hasAnyPerm = Object.values(permissions).some(p => p.can_view);
 
-    // Viewer: hide everything except logout
-    if (role === 'viewer') {
+    // Eğer hiç izni yoksa tüm menüyü gizle
+    if (!hasAnyPerm) {
       document.querySelectorAll('.nav-btn').forEach(btn => btn.style.display = 'none');
       return;
     }
 
-    // Proje Yöneticisi: only projects page
-    if (role === 'proje_yonetici') {
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-        const page = btn.dataset.page;
-        btn.style.display = (page === 'projects') ? '' : 'none';
-      });
-      return;
-    }
-
-    // --- Normal role logic for tekniker, kalite, admin ---
-
-    // Dashboard, goods-receipt, returns, technicians, taskboard - visible to tekniker/kalite/admin
-    ['dashboard', 'goods-receipt', 'returns', 'technicians', 'taskboard'].forEach(page => {
-      document.querySelectorAll(`[data-page="${page}"]`).forEach(btn => btn.style.display = '');
-    });
-
-    // Quality page - only for kalite and admin
-    document.querySelectorAll('[data-page="quality"]').forEach(btn => {
-      btn.style.display = (role === 'kalite' || role === 'admin') ? '' : 'none';
-    });
-
-    // Admin page - only for admin
-    document.querySelectorAll('[data-page="admin"]').forEach(btn => {
-      btn.style.display = (role === 'admin') ? '' : 'none';
-    });
-
-    // Projects page - for admin and proje_yonetici
-    document.querySelectorAll('[data-page="projects"]').forEach(btn => {
-      btn.style.display = (role === 'admin' || role === 'proje_yonetici') ? '' : 'none';
-    });
-
-    // Paket-Analiz - only for admin
-    document.querySelectorAll('[data-page="paket-analiz"]').forEach(btn => {
-      btn.style.display = (role === 'admin') ? '' : 'none';
-    });
-
-    // Prosedür & OTPA - admin ve kalite
-    document.querySelectorAll('[data-page="prosedur-otpa"]').forEach(btn => {
-      btn.style.display = (role === 'admin' || role === 'kalite') ? '' : 'none';
-    });
-
-    // Saha Değişiklik Geçmişi - admin ve kalite
-    document.querySelectorAll('[data-page="field-changelog"]').forEach(btn => {
-      btn.style.display = (role === 'admin' || role === 'kalite') ? '' : 'none';
+    // Her nav button için izin kontrolü yap
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      const page = btn.dataset.page;
+      if (!page) return;
+      
+      const perm = permissions[page];
+      btn.style.display = (perm && perm.can_view) ? '' : 'none';
     });
   },
 
@@ -199,13 +164,13 @@ const app = {
     // Role-based access guard
     const user = authManager.currentUser;
     if (user) {
-      if (user.role === 'viewer' && page !== 'welcome') {
-        page = 'welcome';
-        this.currentPage = page;
-      }
-      if (user.role === 'proje_yonetici' && page !== 'projects') {
-        page = 'projects';
-        this.currentPage = page;
+      // İzin kontrolü: sayfaya erişim izni yoksa varsayılan sayfaya yönlendir
+      if (page !== 'welcome' && !authManager.hasPermission(page)) {
+        const defaultPage = authManager.getDefaultPage();
+        if (defaultPage !== page) {
+          page = defaultPage;
+          this.currentPage = page;
+        }
       }
     }
 

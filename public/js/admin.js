@@ -41,6 +41,10 @@ const adminPage = {
               class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-users mr-2"></i> Kullanıcılar
             </button>
+            <button onclick="adminPage.switchTab('roles')" data-tab="roles"
+              class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
+              <i class="fas fa-shield-alt mr-2"></i> Roller & İzinler
+            </button>
             <button onclick="adminPage.switchTab('settings')" data-tab="settings"
               class="admin-tab py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200">
               <i class="fas fa-sliders-h mr-2"></i> Ayarlar
@@ -94,6 +98,9 @@ const adminPage = {
         break;
       case 'users':
         this.renderUsersTab();
+        break;
+      case 'roles':
+        this.renderRolesTab();
         break;
       case 'settings':
         this.renderSettingsTab();
@@ -1164,7 +1171,16 @@ MAT-003	Nikel Şerit	500	gr"
     
     try {
       showLoading(true);
-      const users = await api.auth.getUsers();
+      const [users, roles] = await Promise.all([
+        api.auth.getUsers(),
+        api.roles.list().catch(() => [])
+      ]);
+
+      // Rol display name haritası oluştur
+      this._roleDisplayMap = {};
+      roles.forEach(r => {
+        this._roleDisplayMap[r.name] = r.display_name;
+      });
 
       container.innerHTML = `
         <div class="space-y-6">
@@ -1223,7 +1239,23 @@ MAT-003	Nikel Şerit	500	gr"
     }
   },
 
-  showCreateUserModal() {
+  async showCreateUserModal() {
+    // Rolleri API'den çek
+    let roles = [];
+    try {
+      roles = await api.roles.list();
+    } catch (e) {
+      console.warn('Roller yüklenemedi, varsayılanlar kullanılacak');
+    }
+
+    const roleOptions = roles.length > 0 
+      ? roles.map(r => `<option value="${r.name}">${r.display_name}</option>`).join('')
+      : `<option value="viewer">Yeni Kullanıcı (Viewer)</option>
+         <option value="tekniker">Tekniker</option>
+         <option value="kalite">Kalite</option>
+         <option value="proje_yonetici">Proje Yöneticisi</option>
+         <option value="admin">Admin</option>`;
+
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
@@ -1250,11 +1282,7 @@ MAT-003	Nikel Şerit	500	gr"
               <label class="block text-sm font-medium mb-2">Rol *</label>
               <select id="role" required 
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="viewer">Yeni Kullanıcı (Viewer)</option>
-                <option value="tekniker">Tekniker</option>
-                <option value="kalite">Kalite</option>
-                <option value="proje_yonetici">Proje Yöneticisi</option>
-                <option value="admin">Admin</option>
+                ${roleOptions}
               </select>
             </div>
             <div class="flex gap-3 pt-4">
@@ -1297,7 +1325,23 @@ MAT-003	Nikel Şerit	500	gr"
     };
   },
 
-  showEditUserModal(userId, username, fullName, role, isActive) {
+  async showEditUserModal(userId, username, fullName, role, isActive) {
+    // Rolleri API'den çek
+    let roles = [];
+    try {
+      roles = await api.roles.list();
+    } catch (e) {
+      console.warn('Roller yüklenemedi');
+    }
+
+    const roleOptions = roles.length > 0 
+      ? roles.map(r => `<option value="${r.name}" ${role === r.name ? 'selected' : ''}>${r.display_name}</option>`).join('')
+      : `<option value="viewer" ${role === 'viewer' ? 'selected' : ''}>Yeni Kullanıcı (Viewer)</option>
+         <option value="tekniker" ${role === 'tekniker' ? 'selected' : ''}>Tekniker</option>
+         <option value="kalite" ${role === 'kalite' ? 'selected' : ''}>Kalite</option>
+         <option value="proje_yonetici" ${role === 'proje_yonetici' ? 'selected' : ''}>Proje Yöneticisi</option>
+         <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>`;
+
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
@@ -1319,11 +1363,7 @@ MAT-003	Nikel Şerit	500	gr"
               <label class="block text-sm font-medium mb-2">Rol *</label>
               <select id="editRole" required 
                 class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="viewer" ${role === 'viewer' ? 'selected' : ''}>Yeni Kullanıcı (Viewer)</option>
-                <option value="tekniker" ${role === 'tekniker' ? 'selected' : ''}>Tekniker</option>
-                <option value="kalite" ${role === 'kalite' ? 'selected' : ''}>Kalite</option>
-                <option value="proje_yonetici" ${role === 'proje_yonetici' ? 'selected' : ''}>Proje Yöneticisi</option>
-                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+                ${roleOptions}
               </select>
             </div>
             <div>
@@ -1484,6 +1524,549 @@ MAT-003	Nikel Şerit	500	gr"
     return `<span class="px-2 py-1 text-xs rounded-full ${map[status] || map.acik}">${status}</span>`;
   },
 
+  // ========================= ROLLER & İZİNLER TAB =========================
+
+  // Modül tanımları
+  getModuleDefinitions() {
+    return [
+      { key: 'dashboard', label: 'Ana Sayfa', icon: 'fas fa-home' },
+      { key: 'goods-receipt', label: 'Malzeme Girişi', icon: 'fas fa-box' },
+      { key: 'returns', label: 'İadeler', icon: 'fas fa-undo' },
+      { key: 'quality', label: 'Kalite Kontrol', icon: 'fas fa-check-circle' },
+      { key: 'projects', label: 'Proje Takip', icon: 'fas fa-project-diagram' },
+      { key: 'technicians', label: 'Tekniker Takip', icon: 'fas fa-user-cog' },
+      { key: 'taskboard', label: 'Görev Panosu', icon: 'fas fa-tasks' },
+      { key: 'paket-analiz', label: 'Paket Analiz', icon: 'fas fa-battery-full' },
+      { key: 'prosedur-otpa', label: 'Prosedür & OTPA', icon: 'fas fa-file-alt' },
+      { key: 'field-changelog', label: 'Saha Değişiklik', icon: 'fas fa-history' },
+      { key: 'admin', label: 'Yönetim Paneli', icon: 'fas fa-cog' }
+    ];
+  },
+
+  async renderRolesTab() {
+    const container = document.getElementById('tabContent');
+
+    try {
+      showLoading(true);
+      const roles = await api.roles.list();
+
+      container.innerHTML = `
+        <div class="space-y-6 fade-in">
+          <!-- Üst Bar -->
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-white">
+                <i class="fas fa-shield-alt mr-2 text-purple-400"></i> Rol & Yetki Yönetimi
+              </h2>
+              <p class="text-sm text-gray-400 mt-1">Rolleri oluşturun, düzenleyin ve her rol için ekran/işlem izinlerini ayarlayın</p>
+            </div>
+            <button onclick="adminPage.showCreateRoleModal()" 
+              class="gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 hover-lift">
+              <i class="fas fa-plus mr-2"></i> Yeni Rol Oluştur
+            </button>
+          </div>
+
+          <!-- Rol Kartları -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            ${roles.map(role => this.renderRoleCard(role)).join('')}
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      container.innerHTML = `
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl">
+          <i class="fas fa-exclamation-triangle mr-2"></i> ${error.message}
+        </div>
+      `;
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  renderRoleCard(role) {
+    const modules = this.getModuleDefinitions();
+    const permMap = {};
+    (role.permissions || []).forEach(p => {
+      permMap[p.module] = p;
+    });
+
+    const viewCount = Object.values(permMap).filter(p => p.can_view).length;
+    const totalModules = modules.length;
+
+    const roleColors = {
+      'admin': 'purple',
+      'kalite': 'emerald',
+      'tekniker': 'blue',
+      'proje_yonetici': 'orange',
+      'viewer': 'gray'
+    };
+    const color = roleColors[role.name] || 'indigo';
+
+    return `
+      <div class="glass-card rounded-2xl overflow-hidden border border-${color}-500/20">
+        <!-- Rol Başlık -->
+        <div class="p-5 border-b border-white/5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-${color}-500/15 rounded-xl flex items-center justify-center">
+                <i class="fas fa-user-shield text-${color}-400"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-lg">${role.display_name}</h3>
+                <p class="text-xs text-gray-400">${role.name} ${role.is_system ? '<span class="text-yellow-400 ml-1"><i class="fas fa-lock text-[10px]"></i> Sistem</span>' : ''}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs bg-${color}-500/10 text-${color}-400 px-2 py-1 rounded-lg font-medium">
+                ${viewCount}/${totalModules} modül
+              </span>
+              <button onclick="adminPage.showEditPermissionsModal(${role.id})" 
+                class="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all" title="İzinleri Düzenle">
+                <i class="fas fa-edit"></i>
+              </button>
+              ${!role.is_system ? `
+                <button onclick="adminPage.deleteRole(${role.id}, '${role.display_name}')" 
+                  class="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all" title="Rolü Sil">
+                  <i class="fas fa-trash"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+          ${role.description ? `<p class="text-sm text-gray-400 mt-2">${role.description}</p>` : ''}
+        </div>
+        
+        <!-- İzin Özet Tablosu -->
+        <div class="p-4">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="text-gray-500">
+                  <th class="text-left py-1 pr-2 font-medium">Modül</th>
+                  <th class="text-center py-1 px-1 font-medium">Görüntüle</th>
+                  <th class="text-center py-1 px-1 font-medium">Oluştur</th>
+                  <th class="text-center py-1 px-1 font-medium">Düzenle</th>
+                  <th class="text-center py-1 px-1 font-medium">Sil</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${modules.map(mod => {
+                  const p = permMap[mod.key] || {};
+                  return `
+                    <tr class="border-t border-white/[0.03]">
+                      <td class="py-1.5 pr-2">
+                        <span class="text-gray-300"><i class="${mod.icon} text-gray-500 mr-1 w-4 text-center"></i> ${mod.label}</span>
+                      </td>
+                      <td class="text-center py-1.5">${p.can_view ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
+                      <td class="text-center py-1.5">${p.can_create ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
+                      <td class="text-center py-1.5">${p.can_edit ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
+                      <td class="text-center py-1.5">${p.can_delete ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  showCreateRoleModal() {
+    const modules = this.getModuleDefinitions();
+
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="glass-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold gradient-text">
+              <i class="fas fa-plus-circle mr-2"></i> Yeni Rol Oluştur
+            </h2>
+            <button onclick="this.closest('.fixed').remove()" 
+              class="text-gray-400 hover:text-red-400 transition-colors p-2 hover:bg-red-500/10 rounded-xl">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+
+          <form id="createRoleForm" class="space-y-5">
+            <!-- Rol Bilgileri -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1">Rol Adı (Teknik) *</label>
+                <input type="text" id="roleName" required placeholder="ornek_rol"
+                  class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white"
+                  pattern="[a-z0-9_]+" title="Sadece küçük harf, rakam ve alt çizgi kullanılabilir">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1">Görünen Ad *</label>
+                <input type="text" id="roleDisplayName" required placeholder="Örnek Rol"
+                  class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-300 mb-1">Açıklama</label>
+              <input type="text" id="roleDescription" placeholder="Rol hakkında kısa bilgi..."
+                class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white">
+            </div>
+
+            <!-- İzin Matrisi -->
+            <div>
+              <h3 class="text-sm font-bold text-gray-300 mb-3">
+                <i class="fas fa-key mr-1 text-yellow-400"></i> İzinler
+              </h3>
+              <div class="glass-card rounded-xl overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="bg-white/[0.03]">
+                      <th class="text-left py-3 px-4 font-semibold text-gray-300">Modül</th>
+                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Görüntüle</th>
+                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Oluştur</th>
+                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Düzenle</th>
+                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Sil</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${modules.map(mod => `
+                      <tr class="border-t border-white/[0.03] hover:bg-white/[0.02]">
+                        <td class="py-2.5 px-4">
+                          <span class="text-gray-200"><i class="${mod.icon} text-gray-400 mr-2 w-4 text-center"></i>${mod.label}</span>
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="view" 
+                            class="perm-checkbox w-4 h-4 rounded accent-green-500 cursor-pointer"
+                            onchange="adminPage.onPermCheckboxChange(this)">
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="create" 
+                            class="perm-checkbox w-4 h-4 rounded accent-blue-500 cursor-pointer">
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="edit" 
+                            class="perm-checkbox w-4 h-4 rounded accent-yellow-500 cursor-pointer">
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="delete" 
+                            class="perm-checkbox w-4 h-4 rounded accent-red-500 cursor-pointer">
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+              <!-- Toplu Seçim -->
+              <div class="flex gap-2 mt-3">
+                <button type="button" onclick="adminPage.bulkSelectPermissions(true)" 
+                  class="text-xs px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-all">
+                  <i class="fas fa-check-double mr-1"></i> Tümünü Seç
+                </button>
+                <button type="button" onclick="adminPage.bulkSelectPermissions(false)" 
+                  class="text-xs px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all">
+                  <i class="fas fa-times mr-1"></i> Tümünü Kaldır
+                </button>
+                <button type="button" onclick="adminPage.bulkSelectColumn('view', true)" 
+                  class="text-xs px-3 py-1.5 bg-gray-500/10 text-gray-400 rounded-lg hover:bg-gray-500/20 transition-all">
+                  Tüm Görüntüle
+                </button>
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex gap-3 pt-4">
+              <button type="submit" 
+                class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200">
+                <i class="fas fa-save mr-2"></i> Rolü Oluştur
+              </button>
+              <button type="button" onclick="this.closest('.fixed').remove()" 
+                class="px-6 py-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 font-semibold transition-all">
+                İptal
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#createRoleForm').onsubmit = async (e) => {
+      e.preventDefault();
+
+      const name = modal.querySelector('#roleName').value.trim();
+      const display_name = modal.querySelector('#roleDisplayName').value.trim();
+      const description = modal.querySelector('#roleDescription').value.trim();
+
+      // Permissions toplama
+      const permissions = this.collectPermissionsFromForm(modal);
+
+      try {
+        showLoading(true);
+        await api.roles.create({ name, display_name, description, permissions });
+        modal.remove();
+        alert('✅ Rol başarıyla oluşturuldu!');
+        this.renderRolesTab();
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    };
+  },
+
+  async showEditPermissionsModal(roleId) {
+    try {
+      showLoading(true);
+      const role = await api.roles.get(roleId);
+      const modules = this.getModuleDefinitions();
+
+      const permMap = {};
+      (role.permissions || []).forEach(p => {
+        permMap[p.module] = p;
+      });
+
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4';
+      modal.innerHTML = `
+        <div class="glass-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+              <div>
+                <h2 class="text-2xl font-bold gradient-text">
+                  <i class="fas fa-shield-alt mr-2"></i> ${role.display_name}
+                </h2>
+                <p class="text-sm text-gray-400 mt-1">Ekran ve işlem izinlerini düzenleyin</p>
+              </div>
+              <button onclick="this.closest('.fixed').remove()" 
+                class="text-gray-400 hover:text-red-400 transition-colors p-2 hover:bg-red-500/10 rounded-xl">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+
+            <!-- Rol Bilgileri -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1">Görünen Ad</label>
+                <input type="text" id="editRoleDisplayName" value="${role.display_name}"
+                  class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white"
+                  ${role.is_system ? '' : ''}>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1">Açıklama</label>
+                <input type="text" id="editRoleDescription" value="${role.description || ''}"
+                  class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white">
+              </div>
+            </div>
+
+            <!-- İzin Matrisi -->
+            <div class="glass-card rounded-xl overflow-hidden mb-4">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-white/[0.03]">
+                    <th class="text-left py-3 px-4 font-semibold text-gray-300">Modül</th>
+                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
+                      <div class="flex flex-col items-center">
+                        <span>Görüntüle</span>
+                        <button type="button" onclick="adminPage.bulkSelectColumn('view')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
+                      </div>
+                    </th>
+                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
+                      <div class="flex flex-col items-center">
+                        <span>Oluştur</span>
+                        <button type="button" onclick="adminPage.bulkSelectColumn('create')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
+                      </div>
+                    </th>
+                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
+                      <div class="flex flex-col items-center">
+                        <span>Düzenle</span>
+                        <button type="button" onclick="adminPage.bulkSelectColumn('edit')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
+                      </div>
+                    </th>
+                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
+                      <div class="flex flex-col items-center">
+                        <span>Sil</span>
+                        <button type="button" onclick="adminPage.bulkSelectColumn('delete')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${modules.map(mod => {
+                    const p = permMap[mod.key] || {};
+                    return `
+                      <tr class="border-t border-white/[0.03] hover:bg-white/[0.02]">
+                        <td class="py-2.5 px-4">
+                          <span class="text-gray-200"><i class="${mod.icon} text-gray-400 mr-2 w-4 text-center"></i>${mod.label}</span>
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="view" 
+                            class="perm-checkbox w-4 h-4 rounded accent-green-500 cursor-pointer"
+                            ${p.can_view ? 'checked' : ''}
+                            onchange="adminPage.onPermCheckboxChange(this)">
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="create" 
+                            class="perm-checkbox w-4 h-4 rounded accent-blue-500 cursor-pointer"
+                            ${p.can_create ? 'checked' : ''}>
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="edit" 
+                            class="perm-checkbox w-4 h-4 rounded accent-yellow-500 cursor-pointer"
+                            ${p.can_edit ? 'checked' : ''}>
+                        </td>
+                        <td class="text-center py-2.5 px-2">
+                          <input type="checkbox" data-module="${mod.key}" data-perm="delete" 
+                            class="perm-checkbox w-4 h-4 rounded accent-red-500 cursor-pointer"
+                            ${p.can_delete ? 'checked' : ''}>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Toplu Seçim -->
+            <div class="flex gap-2 mb-5">
+              <button type="button" onclick="adminPage.bulkSelectPermissions(true)" 
+                class="text-xs px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-all">
+                <i class="fas fa-check-double mr-1"></i> Tümünü Seç
+              </button>
+              <button type="button" onclick="adminPage.bulkSelectPermissions(false)" 
+                class="text-xs px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all">
+                <i class="fas fa-times mr-1"></i> Tümünü Kaldır
+              </button>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex gap-3">
+              <button onclick="adminPage.saveRolePermissions(${role.id})" 
+                class="flex-1 gradient-btn px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200">
+                <i class="fas fa-save mr-2"></i> Kaydet
+              </button>
+              <button onclick="this.closest('.fixed').remove()" 
+                class="px-6 py-3 bg-white/5 text-gray-400 rounded-xl hover:bg-white/10 font-semibold transition-all">
+                İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  // Görüntüle checkbox kapatıldığında diğerlerini de kapat
+  onPermCheckboxChange(checkbox) {
+    const module = checkbox.dataset.module;
+    const perm = checkbox.dataset.perm;
+    
+    if (perm === 'view' && !checkbox.checked) {
+      // View kapatılınca diğer tüm izinler de kapatılsın
+      const row = checkbox.closest('tr');
+      row.querySelectorAll('.perm-checkbox').forEach(cb => {
+        if (cb !== checkbox) cb.checked = false;
+      });
+    } else if (perm !== 'view' && checkbox.checked) {
+      // Herhangi bir izin açılınca view da otomatik açılsın
+      const row = checkbox.closest('tr');
+      const viewCb = row.querySelector('[data-perm="view"]');
+      if (viewCb && !viewCb.checked) viewCb.checked = true;
+    }
+  },
+
+  bulkSelectPermissions(checked) {
+    document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = checked);
+  },
+
+  bulkSelectColumn(perm, toggle) {
+    const checkboxes = document.querySelectorAll(`[data-perm="${perm}"]`);
+    // toggle: tümü açıksa kapat, değilse aç
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    const newState = toggle !== undefined ? toggle : !allChecked;
+    checkboxes.forEach(cb => {
+      cb.checked = newState;
+      if (perm !== 'view' && newState) {
+        // view de açılmalı
+        const row = cb.closest('tr');
+        const viewCb = row.querySelector('[data-perm="view"]');
+        if (viewCb) viewCb.checked = true;
+      }
+    });
+  },
+
+  collectPermissionsFromForm(container) {
+    const modules = this.getModuleDefinitions();
+    const permissions = [];
+
+    for (const mod of modules) {
+      const viewCb = container.querySelector(`[data-module="${mod.key}"][data-perm="view"]`);
+      const createCb = container.querySelector(`[data-module="${mod.key}"][data-perm="create"]`);
+      const editCb = container.querySelector(`[data-module="${mod.key}"][data-perm="edit"]`);
+      const deleteCb = container.querySelector(`[data-module="${mod.key}"][data-perm="delete"]`);
+
+      permissions.push({
+        module: mod.key,
+        can_view: viewCb ? viewCb.checked : false,
+        can_create: createCb ? createCb.checked : false,
+        can_edit: editCb ? editCb.checked : false,
+        can_delete: deleteCb ? deleteCb.checked : false
+      });
+    }
+
+    return permissions;
+  },
+
+  async saveRolePermissions(roleId) {
+    const modal = document.querySelector('.fixed');
+    if (!modal) return;
+
+    const permissions = this.collectPermissionsFromForm(modal);
+    const display_name = modal.querySelector('#editRoleDisplayName')?.value?.trim();
+    const description = modal.querySelector('#editRoleDescription')?.value?.trim();
+
+    try {
+      showLoading(true);
+
+      // Rol bilgilerini güncelle
+      if (display_name) {
+        await api.roles.update(roleId, { display_name, description: description || '' });
+      }
+
+      // İzinleri güncelle
+      await api.roles.updatePermissions(roleId, permissions);
+
+      modal.remove();
+      alert('✅ Rol izinleri başarıyla güncellendi!');
+      this.renderRolesTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
+  async deleteRole(roleId, roleName) {
+    if (!confirm(`"${roleName}" rolünü silmek istediğinize emin misiniz?\n\nBu role atanmış kullanıcılar varsa silme işlemi başarısız olacaktır.`)) {
+      return;
+    }
+
+    try {
+      showLoading(true);
+      await api.roles.delete(roleId);
+      alert('✅ Rol başarıyla silindi!');
+      this.renderRolesTab();
+    } catch (error) {
+      alert('Hata: ' + error.message);
+    } finally {
+      showLoading(false);
+    }
+  },
+
   getRoleBadge(role) {
     const map = {
       'viewer': { class: 'bg-gray-500/15 text-gray-400', text: 'Yeni Kullanıcı' },
@@ -1492,7 +2075,13 @@ MAT-003	Nikel Şerit	500	gr"
       'proje_yonetici': { class: 'bg-orange-500/15 text-orange-400', text: 'Proje Yöneticisi' },
       'admin': { class: 'bg-purple-500/15 text-purple-400', text: 'Admin' }
     };
-    const r = map[role] || map.viewer;
+    // Dinamik roller: display name'i cache'den al
+    const displayName = (this._roleDisplayMap && this._roleDisplayMap[role]) || role;
+    const r = map[role] || { class: 'bg-indigo-500/15 text-indigo-400', text: displayName };
+    // Sistem rollerinde de display name göster
+    if (map[role] && this._roleDisplayMap && this._roleDisplayMap[role]) {
+      r.text = this._roleDisplayMap[role];
+    }
     return `<span class="px-2 py-1 text-xs rounded-full ${r.class}">${r.text}</span>`;
   },
 

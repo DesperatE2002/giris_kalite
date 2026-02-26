@@ -226,6 +226,41 @@ const api = {
     
     summary: () => 
       api.request('/reports/summary')
+  },
+
+  // Roles endpoints
+  roles: {
+    list: () => 
+      api.request('/roles'),
+
+    get: (id) => 
+      api.request(`/roles/${id}`),
+
+    create: (data) => 
+      api.request('/roles', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+
+    update: (id, data) => 
+      api.request(`/roles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+
+    updatePermissions: (id, permissions) => 
+      api.request(`/roles/${id}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions })
+      }),
+
+    delete: (id) => 
+      api.request(`/roles/${id}`, {
+        method: 'DELETE'
+      }),
+
+    myPermissions: () => 
+      api.request('/roles/my-permissions')
   }
 };
 
