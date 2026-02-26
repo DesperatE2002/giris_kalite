@@ -107,6 +107,7 @@ const ProjectsPage = {
     event?.target?.closest?.('.glass-card')?.classList?.add('border-purple-500', 'shadow-lg');
 
     const detail = document.getElementById('projectDetail');
+    if (!detail) return;
     detail.classList.remove('hidden');
 
     detail.innerHTML = `

@@ -104,6 +104,18 @@ export async function migrateRoles() {
       }
     } catch (e) { /* ignore */ }
 
+    // Patch: tüm system rollere projects erişimi ekle (eksikse)
+    try {
+      const { rows: allRoles } = await pool.query("SELECT id FROM roles WHERE is_system = true");
+      for (const r of allRoles) {
+        await pool.query(
+          `INSERT INTO role_permissions (role_id, module, permission_key, granted) VALUES (?, 'projects', 'access', true)
+           ON CONFLICT (role_id, module, permission_key) DO NOTHING`,
+          [r.id]
+        );
+      }
+    } catch (e) { /* ignore */ }
+
     // users.role constraint kaldır
     try {
       await pool.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
