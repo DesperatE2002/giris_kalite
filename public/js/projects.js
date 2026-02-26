@@ -600,15 +600,8 @@ const ProjectsPage = {
     container.innerHTML = `<div class="flex items-center justify-center h-32"><i class="fas fa-spinner fa-spin text-3xl text-purple-400"></i></div>`;
 
     if (!p.linked_otpa_id) {
-      container.innerHTML = `
-        <div class="glass-card rounded-xl p-10 text-center">
-          <i class="fas fa-unlink text-5xl text-gray-500 mb-4"></i>
-          <h3 class="text-lg font-bold text-gray-400">OTPA Bağlı Değil</h3>
-          <p class="text-sm text-gray-500 mt-2">Bu projeye bir OTPA bağlayarak malzeme durumunu takip edebilirsiniz.</p>
-          <button onclick="ProjectsPage.showEditProject(${p.id})" class="mt-4 gradient-btn text-white px-6 py-2 rounded-xl font-semibold text-sm">
-            <i class="fas fa-link mr-2"></i>OTPA Bağla
-          </button>
-        </div>`;
+      // OTPA bağlı değil — OTPA listesini göster, kullanıcı buradan seçsin
+      await this._renderOtpaSelector(container);
       return;
     }
 
@@ -619,7 +612,8 @@ const ProjectsPage = {
         container.innerHTML = `
           <div class="glass-card rounded-xl p-8 text-center">
             <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
-            <p class="text-gray-400">Bağlı OTPA bulunamadı. Proje düzenleyerek farklı bir OTPA bağlayabilirsiniz.</p>
+            <p class="text-gray-400">Bağlı OTPA bulunamadı.</p>
+            <button onclick="ProjectsPage.unlinkOtpa()" class="mt-3 text-sm text-red-400 hover:text-red-300 underline">Bağlantıyı Kaldır</button>
           </div>`;
         return;
       }
@@ -656,6 +650,9 @@ const ProjectsPage = {
                   <div class="text-2xl font-bold text-white">${summary.completed_items}/${summary.total_items}</div>
                   <div class="text-xs text-gray-500">Malzeme</div>
                 </div>
+                <button onclick="ProjectsPage.unlinkOtpa()" class="text-xs text-gray-500 hover:text-red-400 transition-colors" title="OTPA bağlantısını kaldır">
+                  <i class="fas fa-unlink mr-1"></i>Değiştir
+                </button>
               </div>
             </div>
             <div class="w-full bg-gray-700 rounded-full h-3 mt-4">
@@ -666,7 +663,6 @@ const ProjectsPage = {
           <!-- Malzeme Grupları -->
           ${Object.entries(groups).map(([ct, items]) => {
             const completedInGroup = items.filter(m => m.completion_pct >= 100).length;
-            const groupPct = items.length > 0 ? Math.round(completedInGroup / items.length * 100) : 0;
             return `
             <div class="glass-card rounded-xl overflow-hidden">
               <div class="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
@@ -711,6 +707,143 @@ const ProjectsPage = {
         </div>`;
     } catch (e) {
       container.innerHTML = `<div class="glass-card rounded-xl p-6 text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>Malzeme bilgisi yüklenemedi: ${e.message}</div>`;
+    }
+  },
+
+  // ─── OTPA SEÇİCİ (Malzeme tab içinde) ─────────────────────────────────
+
+  async _renderOtpaSelector(container) {
+    let otpaList = [];
+    try { otpaList = await api.otpa.getAll(); } catch(e) {}
+
+    if (otpaList.length === 0) {
+      container.innerHTML = `
+        <div class="glass-card rounded-xl p-10 text-center">
+          <i class="fas fa-inbox text-5xl text-gray-500 mb-4"></i>
+          <h3 class="text-lg font-bold text-gray-400">Henüz OTPA Kaydı Yok</h3>
+          <p class="text-sm text-gray-500 mt-2">Prosedür & OTPA modülünden OTPA oluşturun, sonra buradan bağlayın.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="space-y-4">
+        <div class="glass-card rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-white">
+              <i class="fas fa-link text-blue-400 mr-2"></i>OTPA Bağla
+            </h3>
+            <p class="text-sm text-gray-400">Bir OTPA seçerek malzeme takibini başlatın</p>
+          </div>
+          <!-- Arama -->
+          <input type="text" id="otpaSearchInput" placeholder="OTPA veya proje adı ara..." 
+            onInput="ProjectsPage._filterOtpaList()"
+            class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white text-sm mb-4">
+        </div>
+
+        <!-- OTPA Tamamlama Raporu Tablosu -->
+        <div class="glass-card rounded-xl overflow-hidden">
+          <div class="px-6 py-4 bg-white/[0.02] border-b border-white/5">
+            <h4 class="font-bold text-white"><i class="fas fa-clipboard-list mr-2 text-purple-400"></i>OTPA Tamamlama Raporu</h4>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm" id="otpaListTable">
+              <thead>
+                <tr class="text-left text-gray-500 text-xs uppercase">
+                  <th class="px-4 py-3">OTPA</th>
+                  <th class="px-4 py-3">Proje</th>
+                  <th class="px-4 py-3 text-center">Toplam</th>
+                  <th class="px-4 py-3 text-center">Tamamlanan</th>
+                  <th class="px-4 py-3 text-center">%</th>
+                  <th class="px-4 py-3 text-center">İşlem</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/[0.03]" id="otpaListBody">
+                ${otpaList.map(o => {
+                  const pct = o.total_items > 0 ? Math.round(o.completed_items / o.total_items * 100) : 0;
+                  const pctColor = pct === 100 ? 'text-green-400' : pct > 50 ? 'text-blue-400' : pct > 0 ? 'text-yellow-400' : 'text-gray-500';
+                  const barColor = pct === 100 ? 'bg-green-500' : pct > 50 ? 'bg-blue-500' : pct > 0 ? 'bg-yellow-500' : 'bg-gray-600';
+                  return `
+                  <tr class="hover:bg-white/[0.04] cursor-pointer otpa-row transition-colors" data-search="${(o.otpa_number + ' ' + (o.project_name || '')).toLowerCase()}">
+                    <td class="px-4 py-4">
+                      <span class="font-bold text-white">${o.otpa_number}</span>
+                    </td>
+                    <td class="px-4 py-4 text-gray-300">${o.project_name || '-'}</td>
+                    <td class="px-4 py-4 text-center text-gray-400">${o.total_items}</td>
+                    <td class="px-4 py-4 text-center text-gray-300">${o.completed_items}</td>
+                    <td class="px-4 py-4 text-center">
+                      <div class="flex items-center justify-center gap-2">
+                        <span class="font-bold ${pctColor}">${pct}%</span>
+                        <div class="w-16 bg-gray-700 rounded-full h-2">
+                          <div class="h-2 rounded-full ${barColor} transition-all" style="width:${pct}%"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                      <button onclick="event.stopPropagation();ProjectsPage.linkOtpaToProject(${o.id})" 
+                        class="gradient-btn text-white px-4 py-2 rounded-lg text-xs font-semibold hover:scale-105 transition-transform">
+                        <i class="fas fa-link mr-1"></i>Bağla
+                      </button>
+                    </td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  },
+
+  _filterOtpaList() {
+    const q = (document.getElementById('otpaSearchInput')?.value || '').toLowerCase();
+    document.querySelectorAll('#otpaListBody .otpa-row').forEach(row => {
+      row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+    });
+  },
+
+  async linkOtpaToProject(otpaId) {
+    const p = this.currentProject;
+    if (!p) return;
+    try {
+      showLoading(true);
+      await api.request(`/projects/${p.id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ name: p.name, start_date: p.start_date, linked_otpa_id: otpaId }) 
+      });
+      // Proje verisini yenile
+      this.currentProject = await api.request(`/projects/${p.id}`);
+      // Listeyi de yenile (OTPA badge göstermek için)
+      const listResult = await api.request('/projects');
+      this.projects = listResult;
+      // Malzeme tab'ını yeniden render et
+      const content = document.getElementById('ptabContent');
+      if (content) await this.renderMaterials(content);
+    } catch (e) { 
+      alert('OTPA bağlama hatası: ' + e.message); 
+    } finally { 
+      showLoading(false); 
+    }
+  },
+
+  async unlinkOtpa() {
+    const p = this.currentProject;
+    if (!p) return;
+    if (!confirm('OTPA bağlantısını kaldırmak istediğinize emin misiniz?')) return;
+    try {
+      showLoading(true);
+      await api.request(`/projects/${p.id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ name: p.name, start_date: p.start_date, linked_otpa_id: null }) 
+      });
+      this.currentProject = await api.request(`/projects/${p.id}`);
+      const listResult = await api.request('/projects');
+      this.projects = listResult;
+      const content = document.getElementById('ptabContent');
+      if (content) await this.renderMaterials(content);
+    } catch (e) { 
+      alert('Hata: ' + e.message); 
+    } finally { 
+      showLoading(false); 
     }
   },
 
