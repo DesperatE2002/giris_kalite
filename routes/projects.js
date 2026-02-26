@@ -95,7 +95,7 @@ function scheduleTasks(tasks, projectStartDate) {
 
     // Deadline varsa: deadline'ı kullan override olarak
     if (task.deadline) {
-      task.calculated_end_date = task.deadline;
+      task.calculated_end_date = formatDate(task.deadline);
     }
     
     resolved.add(taskId);
