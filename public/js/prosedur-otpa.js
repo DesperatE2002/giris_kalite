@@ -22,7 +22,8 @@ const ProsedurOtpa = {
   fmtDate(d) { if (!d) return '-'; try { return new Date(d).toLocaleDateString('tr-TR'); } catch { return d; } },
   fmtDateTime(d) { if (!d) return '-'; try { return new Date(d).toLocaleString('tr-TR'); } catch { return d; } },
   isAdmin() { return authManager?.currentUser?.role === 'admin'; },
-  isKalite() { const r = authManager?.currentUser?.role; return r === 'admin' || r === 'kalite'; },
+  isKalite() { return authManager.hasPermission('prosedur-otpa', 'prosedur_manage'); },
+  canFillForms() { return authManager.hasPermission('prosedur-otpa', 'prosedur_fill'); },
   badge(t, c) { return `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${c}">${t}</span>`; },
 
   formTypeBadge(t) {

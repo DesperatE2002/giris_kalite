@@ -53,6 +53,7 @@ const ProjectsPage = {
                   <div class="flex items-center gap-3 text-sm text-gray-400 mb-3">
                     <span><i class="fas fa-calendar mr-1"></i>${p.start_date}</span>
                     <span><i class="fas fa-tasks mr-1"></i>${p.task_count || 0} görev</span>
+                    ${p.linked_otpa_number ? `<span class="text-blue-400"><i class="fas fa-link mr-1"></i>${p.linked_otpa_number}</span>` : ''}
                   </div>
                   <div class="w-full bg-gray-700 rounded-full h-2.5 mb-1">
                     <div class="h-2.5 rounded-full transition-all ${(p.progress_percent || 0) === 100 ? 'bg-green-500' : 'bg-purple-500'}" 
@@ -121,6 +122,9 @@ const ProjectsPage = {
           <button onclick="ProjectsPage.switchTab('gantt')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'gantt' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-gray-400 hover:text-gray-200'}" data-tab="gantt">
             <i class="fas fa-chart-gantt mr-2"></i>Gantt
           </button>
+          <button onclick="ProjectsPage.switchTab('materials')" class="ptab-btn px-6 py-4 text-sm font-medium ${this.currentTab === 'materials' ? 'border-b-2 border-purple-500 text-purple-400' : 'text-gray-400 hover:text-gray-200'}" data-tab="materials">
+            <i class="fas fa-boxes mr-2"></i>Malzeme Durumu
+          </button>
         </div>
       </div>
 
@@ -146,6 +150,7 @@ const ProjectsPage = {
     if (tab === 'dashboard') this.renderDashboard(content);
     else if (tab === 'tasks') this.renderTasks(content);
     else if (tab === 'gantt') this.renderGantt(content);
+    else if (tab === 'materials') this.renderMaterials(content);
   },
 
   // ─── DASHBOARD ─────────────────────────────────────────────────────────
@@ -588,6 +593,127 @@ const ProjectsPage = {
     `;
   },
 
+  // ─── MALZEME DURUMU TAB ────────────────────────────────────────────────
+
+  async renderMaterials(container) {
+    const p = this.currentProject;
+    container.innerHTML = `<div class="flex items-center justify-center h-32"><i class="fas fa-spinner fa-spin text-3xl text-purple-400"></i></div>`;
+
+    if (!p.linked_otpa_id) {
+      container.innerHTML = `
+        <div class="glass-card rounded-xl p-10 text-center">
+          <i class="fas fa-unlink text-5xl text-gray-500 mb-4"></i>
+          <h3 class="text-lg font-bold text-gray-400">OTPA Bağlı Değil</h3>
+          <p class="text-sm text-gray-500 mt-2">Bu projeye bir OTPA bağlayarak malzeme durumunu takip edebilirsiniz.</p>
+          <button onclick="ProjectsPage.showEditProject(${p.id})" class="mt-4 gradient-btn text-white px-6 py-2 rounded-xl font-semibold text-sm">
+            <i class="fas fa-link mr-2"></i>OTPA Bağla
+          </button>
+        </div>`;
+      return;
+    }
+
+    try {
+      const data = await api.request(`/projects/${p.id}/materials`);
+      
+      if (!data.linked || !data.otpa) {
+        container.innerHTML = `
+          <div class="glass-card rounded-xl p-8 text-center">
+            <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-3"></i>
+            <p class="text-gray-400">Bağlı OTPA bulunamadı. Proje düzenleyerek farklı bir OTPA bağlayabilirsiniz.</p>
+          </div>`;
+        return;
+      }
+
+      const { otpa, summary, materials } = data;
+      
+      // Component type gruplama
+      const groups = {};
+      materials.forEach(m => {
+        const ct = m.component_type || 'Diğer';
+        if (!groups[ct]) groups[ct] = [];
+        groups[ct].push(m);
+      });
+
+      const groupNames = { batarya: 'Batarya', vccu: 'VCCU', junction_box: 'Junction Box', pdu: 'PDU', 'Diğer': 'Diğer' };
+
+      container.innerHTML = `
+        <div class="space-y-6">
+          <!-- OTPA Bilgisi & Özet -->
+          <div class="glass-card rounded-xl p-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h3 class="text-lg font-bold text-white">
+                  <i class="fas fa-link text-blue-400 mr-2"></i>${otpa.otpa_number}
+                </h3>
+                <p class="text-sm text-gray-400 mt-1">${otpa.project_name || ''}</p>
+              </div>
+              <div class="flex items-center gap-6">
+                <div class="text-center">
+                  <div class="text-2xl font-bold ${summary.overall_pct === 100 ? 'text-green-400' : 'text-purple-400'}">${summary.overall_pct}%</div>
+                  <div class="text-xs text-gray-500">Tamamlanma</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-white">${summary.completed_items}/${summary.total_items}</div>
+                  <div class="text-xs text-gray-500">Malzeme</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-3 mt-4">
+              <div class="h-3 rounded-full transition-all ${summary.overall_pct === 100 ? 'bg-green-500' : summary.overall_pct > 50 ? 'bg-purple-500' : 'bg-yellow-500'}" style="width:${summary.overall_pct}%"></div>
+            </div>
+          </div>
+
+          <!-- Malzeme Grupları -->
+          ${Object.entries(groups).map(([ct, items]) => {
+            const completedInGroup = items.filter(m => m.completion_pct >= 100).length;
+            const groupPct = items.length > 0 ? Math.round(completedInGroup / items.length * 100) : 0;
+            return `
+            <div class="glass-card rounded-xl overflow-hidden">
+              <div class="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+                <h4 class="font-bold text-white"><i class="fas fa-cube mr-2 text-purple-400"></i>${groupNames[ct] || ct}</h4>
+                <span class="text-sm ${completedInGroup === items.length ? 'text-green-400' : 'text-gray-400'}">${completedInGroup}/${items.length} tam</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-gray-500 text-xs uppercase">
+                      <th class="px-4 py-3">Malzeme Kodu</th>
+                      <th class="px-4 py-3">Malzeme Adı</th>
+                      <th class="px-4 py-3 text-center">Gereken</th>
+                      <th class="px-4 py-3 text-center">Kabul</th>
+                      <th class="px-4 py-3 text-center">Eksik</th>
+                      <th class="px-4 py-3 text-center">Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/[0.03]">
+                    ${items.map(m => `
+                      <tr class="hover:bg-white/[0.02] ${m.missing_quantity > 0 ? '' : 'opacity-70'}">
+                        <td class="px-4 py-3 font-mono text-xs text-gray-300">${m.material_code}</td>
+                        <td class="px-4 py-3 text-gray-200">${m.material_name}</td>
+                        <td class="px-4 py-3 text-center text-gray-400">${m.required_quantity} ${m.unit}</td>
+                        <td class="px-4 py-3 text-center ${m.total_accepted >= m.required_quantity ? 'text-green-400 font-bold' : 'text-white'}">${m.total_accepted}</td>
+                        <td class="px-4 py-3 text-center ${m.missing_quantity > 0 ? 'text-red-400 font-bold' : 'text-green-400'}">${m.missing_quantity > 0 ? m.missing_quantity : '✓'}</td>
+                        <td class="px-4 py-3 text-center">
+                          <div class="w-16 mx-auto">
+                            <div class="w-full bg-gray-700 rounded-full h-1.5">
+                              <div class="h-1.5 rounded-full ${m.completion_pct >= 100 ? 'bg-green-500' : m.completion_pct > 0 ? 'bg-yellow-500' : 'bg-gray-600'}" style="width:${Math.min(100, m.completion_pct)}%"></div>
+                            </div>
+                            <div class="text-[10px] text-gray-500 mt-0.5">${m.completion_pct}%</div>
+                          </div>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    } catch (e) {
+      container.innerHTML = `<div class="glass-card rounded-xl p-6 text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>Malzeme bilgisi yüklenemedi: ${e.message}</div>`;
+    }
+  },
+
   // ─── GÖREV FORM ────────────────────────────────────────────────────────
 
   showTaskForm(editId = null) {
@@ -779,48 +905,111 @@ const ProjectsPage = {
 
   // ─── PROJE CRUD UI ─────────────────────────────────────────────────────
 
-  showCreateProject() {
-    const name = prompt('Proje adı:');
-    if (!name) return;
-    const start_date = prompt('Başlangıç tarihi (YYYY-AA-GG):', new Date().toISOString().split('T')[0]);
-    if (!start_date) return;
-    this.createProject(name, start_date);
+  async showCreateProject() {
+    let otpaList = [];
+    try { otpaList = await api.otpa.getAll(); } catch(e) {}
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-white"><i class="fas fa-folder-plus mr-2 text-purple-400"></i>Yeni Proje</h2>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1">Proje Adı *</label>
+            <input type="text" id="cp_name" class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white" placeholder="Proje adı">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1">Başlangıç Tarihi *</label>
+            <input type="date" id="cp_start" value="${new Date().toISOString().split('T')[0]}" class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1">
+              <i class="fas fa-link mr-1 text-blue-400"></i>Bağlı OTPA (Malzeme Takibi)
+            </label>
+            <select id="cp_otpa" class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white">
+              <option value="">— OTPA Bağlama (opsiyonel) —</option>
+              ${otpaList.map(o => `<option value="${o.id}">${o.otpa_number} — ${o.project_name || ''}</option>`).join('')}
+            </select>
+            <p class="text-xs text-gray-500 mt-1">OTPA bağlarsanız proje detayında malzeme durumu görüntülenir</p>
+          </div>
+          <button onclick="ProjectsPage._saveNewProject()" class="w-full gradient-btn text-white py-3 rounded-xl font-semibold">
+            <i class="fas fa-save mr-2"></i>Oluştur
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
   },
 
-  async createProject(name, start_date) {
+  async _saveNewProject() {
+    const name = document.getElementById('cp_name').value.trim();
+    const start_date = document.getElementById('cp_start').value;
+    const linked_otpa_id = document.getElementById('cp_otpa').value || null;
+    if (!name || !start_date) { alert('Proje adı ve başlangıç tarihi gerekli'); return; }
     try {
       showLoading(true);
-      const project = await api.request('/projects', { method: 'POST', body: JSON.stringify({ name, start_date }) });
+      document.querySelector('.fixed')?.remove();
+      const project = await api.request('/projects', { method: 'POST', body: JSON.stringify({ name, start_date, linked_otpa_id: linked_otpa_id ? parseInt(linked_otpa_id) : null }) });
       this.currentProject = project;
       await this.render();
       await this.selectProject(project.id);
-    } catch (e) {
-      alert('Hata: ' + e.message);
-    } finally {
-      showLoading(false);
-    }
+    } catch (e) { alert('Hata: ' + e.message); } finally { showLoading(false); }
   },
 
-  showEditProject(id) {
+  async showEditProject(id) {
     const p = this.projects.find(x => x.id === id);
     if (!p) return;
-    const name = prompt('Proje adı:', p.name);
-    if (!name) return;
-    const start_date = prompt('Başlangıç tarihi:', p.start_date);
-    if (!start_date) return;
-    this.updateProject(id, name, start_date);
+    let otpaList = [];
+    try { otpaList = await api.otpa.getAll(); } catch(e) {}
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-white"><i class="fas fa-edit mr-2 text-blue-400"></i>Proje Düzenle</h2>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1">Proje Adı *</label>
+            <input type="text" id="ep_name" value="${p.name}" class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1">Başlangıç Tarihi *</label>
+            <input type="date" id="ep_start" value="${p.start_date}" class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1">
+              <i class="fas fa-link mr-1 text-blue-400"></i>Bağlı OTPA (Malzeme Takibi)
+            </label>
+            <select id="ep_otpa" class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-purple-500 focus:outline-none text-white">
+              <option value="">— OTPA Bağlama Yok —</option>
+              ${otpaList.map(o => `<option value="${o.id}" ${p.linked_otpa_id == o.id ? 'selected' : ''}>${o.otpa_number} — ${o.project_name || ''}</option>`).join('')}
+            </select>
+          </div>
+          <button onclick="ProjectsPage._saveEditProject(${id})" class="w-full gradient-btn text-white py-3 rounded-xl font-semibold">
+            <i class="fas fa-save mr-2"></i>Kaydet
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
   },
 
-  async updateProject(id, name, start_date) {
+  async _saveEditProject(id) {
+    const name = document.getElementById('ep_name').value.trim();
+    const start_date = document.getElementById('ep_start').value;
+    const linked_otpa_id = document.getElementById('ep_otpa').value || null;
+    if (!name || !start_date) { alert('Proje adı ve başlangıç tarihi gerekli'); return; }
     try {
       showLoading(true);
-      await api.request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify({ name, start_date }) });
+      document.querySelector('.fixed')?.remove();
+      await api.request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify({ name, start_date, linked_otpa_id: linked_otpa_id ? parseInt(linked_otpa_id) : null }) });
       await this.render();
-    } catch (e) {
-      alert('Hata: ' + e.message);
-    } finally {
-      showLoading(false);
-    }
+    } catch (e) { alert('Hata: ' + e.message); } finally { showLoading(false); }
   },
 
   async deleteProject(id) {

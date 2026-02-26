@@ -248,8 +248,10 @@ router.get('/', authenticateToken, requireModuleAccess('projects'), async (req, 
       SELECT p.*,
         (SELECT COUNT(*) FROM project_tasks WHERE project_id = p.id) as task_count,
         (SELECT COUNT(*) FROM project_tasks WHERE project_id = p.id AND status = 'blocked') as blocked_count,
-        (SELECT COUNT(*) FROM project_tasks WHERE project_id = p.id AND status = 'done') as done_count
+        (SELECT COUNT(*) FROM project_tasks WHERE project_id = p.id AND status = 'done') as done_count,
+        o.otpa_number as linked_otpa_number
       FROM projects p
+      LEFT JOIN otpa o ON p.linked_otpa_id = o.id
       ORDER BY p.created_at DESC
     `);
     
@@ -332,14 +334,14 @@ router.get('/:id', authenticateToken, requireModuleAccess('projects'), async (re
 // Proje oluştur
 router.post('/', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
-    const { name, start_date } = req.body;
+    const { name, start_date, linked_otpa_id } = req.body;
     if (!name || !start_date) {
       return res.status(400).json({ error: 'Proje adı ve başlangıç tarihi gereklidir' });
     }
     
     const result = await pool.query(
-      `INSERT INTO projects (name, start_date) VALUES (?, ?) RETURNING *`,
-      [name, start_date]
+      `INSERT INTO projects (name, start_date, linked_otpa_id) VALUES (?, ?, ?) RETURNING *`,
+      [name, start_date, linked_otpa_id || null]
     );
     
     res.status(201).json(result.rows[0]);
@@ -352,10 +354,10 @@ router.post('/', authenticateToken, requireModuleAccess('projects'), async (req,
 // Proje güncelle
 router.put('/:id', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
-    const { name, start_date } = req.body;
+    const { name, start_date, linked_otpa_id } = req.body;
     const result = await pool.query(
-      `UPDATE projects SET name = ?, start_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
-      [name, start_date, req.params.id]
+      `UPDATE projects SET name = ?, start_date = ?, linked_otpa_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *`,
+      [name, start_date, linked_otpa_id !== undefined ? (linked_otpa_id || null) : null, req.params.id]
     );
     
     if (result.rows.length === 0) {
@@ -485,6 +487,71 @@ router.delete('/:projectId/tasks/:taskId', authenticateToken, requireModuleAcces
     res.json({ message: 'Görev silindi' });
   } catch (error) {
     console.error('Görev silme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  }
+});
+
+// ─── PROJE MALZEME DURUMU (OTPA BOM'UNDAN ÇEKİLİR) ────────────────────────
+
+router.get('/:id/materials', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
+  try {
+    const projectResult = await pool.query('SELECT * FROM projects WHERE id = ?', [req.params.id]);
+    if (projectResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Proje bulunamadı' });
+    }
+    const project = projectResult.rows[0];
+    if (!project.linked_otpa_id) {
+      return res.json({ linked: false, otpa: null, materials: [] });
+    }
+
+    // OTPA bilgisi
+    const otpaResult = await pool.query(
+      'SELECT id, otpa_number, project_name, status FROM otpa WHERE id = ?',
+      [project.linked_otpa_id]
+    );
+    if (otpaResult.rows.length === 0) {
+      return res.json({ linked: true, otpa: null, materials: [], error: 'Bağlı OTPA bulunamadı' });
+    }
+    const otpa = otpaResult.rows[0];
+
+    // BOM + giriş + kalite verisini tek sorguda çek
+    const bomResult = await pool.query(`
+      SELECT 
+        b.id,
+        b.material_code,
+        b.material_name,
+        b.required_quantity,
+        b.unit,
+        b.component_type,
+        COALESCE(SUM(gr.received_quantity), 0) as total_received,
+        COALESCE(SUM(qr.accepted_quantity), 0) as total_accepted,
+        COALESCE(SUM(qr.rejected_quantity), 0) as total_rejected
+      FROM bom_items b
+      LEFT JOIN goods_receipt gr ON b.otpa_id = gr.otpa_id AND b.material_code = gr.material_code
+      LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE b.otpa_id = ?
+      GROUP BY b.id, b.material_code, b.material_name, b.required_quantity, b.unit, b.component_type
+      ORDER BY b.component_type, b.material_code
+    `, [project.linked_otpa_id]);
+
+    const materials = bomResult.rows.map(item => {
+      const missing = Math.max(0, item.required_quantity - item.total_accepted);
+      const pct = item.required_quantity > 0 ? Math.min(100, Math.round(item.total_accepted / item.required_quantity * 100)) : 0;
+      return { ...item, missing_quantity: missing, completion_pct: pct };
+    });
+
+    const totalItems = materials.length;
+    const completedItems = materials.filter(m => m.completion_pct >= 100).length;
+    const overallPct = totalItems > 0 ? Math.round(completedItems / totalItems * 100) : 0;
+
+    res.json({
+      linked: true,
+      otpa,
+      summary: { total_items: totalItems, completed_items: completedItems, overall_pct: overallPct },
+      materials
+    });
+  } catch (error) {
+    console.error('Proje malzeme durumu hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
   }
 });

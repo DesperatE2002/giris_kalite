@@ -3,7 +3,7 @@ const qualityPage = {
   currentTab: 'pending',
 
   async render() {
-    if (!authManager.isKalite()) {
+    if (!authManager.hasPermission('quality')) {
       document.getElementById('content').innerHTML = `
         <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 px-4 py-3 rounded">
           <i class="fas fa-exclamation-triangle mr-2"></i> Bu sayfaya erişim yetkiniz yok.
