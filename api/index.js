@@ -113,6 +113,11 @@ import pool from '../db/database.js';
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    // linked_otpa_id sütunu ekle (yoksa)
+    try {
+      await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS linked_otpa_id INTEGER');
+    } catch (e) { /* column already exists */ }
+
     console.log('✅ Auto-migration: projects ve project_tasks tabloları hazır');
   } catch (e) {
     if (!e.message.includes('already exists')) {
