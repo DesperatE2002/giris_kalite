@@ -57,7 +57,10 @@ const authManager = {
 
   // Dinamik izin kontrolü
   hasPermission(module, action = 'can_view') {
-    if (!this.currentUser || !this.currentUser.permissions) return false;
+    if (!this.currentUser) return false;
+    // Admin her zaman tam yetkili
+    if (this.currentUser.role === 'admin') return true;
+    if (!this.currentUser.permissions) return false;
     const perm = this.currentUser.permissions[module];
     if (!perm) return false;
     return !!perm[action];
@@ -65,13 +68,19 @@ const authManager = {
 
   // Herhangi bir modülü görüntüleyebiliyor mu?
   hasAnyViewPermission() {
-    if (!this.currentUser || !this.currentUser.permissions) return false;
+    if (!this.currentUser) return false;
+    // Admin her zaman erişebilir
+    if (this.currentUser.role === 'admin') return true;
+    if (!this.currentUser.permissions) return false;
     return Object.values(this.currentUser.permissions).some(p => p.can_view);
   },
 
   // Varsayılan ana sayfa
   getDefaultPage() {
     if (!this.currentUser) return 'welcome';
+    // Admin her zaman dashboard'a gitsin
+    if (this.currentUser.role === 'admin') return 'dashboard';
+    
     const perms = this.currentUser.permissions;
     if (!perms || Object.keys(perms).length === 0) return 'welcome';
     

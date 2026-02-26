@@ -110,6 +110,12 @@ const app = {
     const user = authManager.currentUser;
     if (!user) return;
 
+    // Admin her zaman tüm menüleri görsün
+    if (user.role === 'admin') {
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.style.display = '');
+      return;
+    }
+
     // Dinamik izin tabanlı menü görünürlüğü
     const permissions = user.permissions || {};
     const hasAnyPerm = Object.values(permissions).some(p => p.can_view);
