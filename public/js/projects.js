@@ -714,7 +714,27 @@ const ProjectsPage = {
 
   async _renderOtpaSelector(container) {
     let otpaList = [];
-    try { otpaList = await api.otpa.getAll(); } catch(e) {}
+    let fetchError = null;
+    try { 
+      otpaList = await api.otpa.getAll(); 
+      if (!Array.isArray(otpaList)) otpaList = [];
+    } catch(e) { 
+      fetchError = e.message || 'OTPA listesi alınamadı';
+      console.error('OTPA listesi hatası:', e);
+    }
+
+    if (fetchError) {
+      container.innerHTML = `
+        <div class="glass-card rounded-xl p-10 text-center">
+          <i class="fas fa-exclamation-triangle text-5xl text-yellow-500 mb-4"></i>
+          <h3 class="text-lg font-bold text-gray-400">OTPA Listesi Yüklenemedi</h3>
+          <p class="text-sm text-red-400 mt-2">${fetchError}</p>
+          <button onclick="ProjectsPage.renderMaterials(document.getElementById('ptabContent'))" class="mt-4 gradient-btn text-white px-6 py-2 rounded-xl font-semibold text-sm">
+            <i class="fas fa-redo mr-2"></i>Tekrar Dene
+          </button>
+        </div>`;
+      return;
+    }
 
     if (otpaList.length === 0) {
       container.innerHTML = `
