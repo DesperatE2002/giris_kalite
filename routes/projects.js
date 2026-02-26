@@ -127,6 +127,117 @@ function calculateEstimatedEndDate(tasks) {
   return maxEnd ? formatDate(maxEnd) : null;
 }
 
+// ─── İŞ GÜNÜ FARKI ───────────────────────────────────────────────────────
+
+function workdaysBetween(date1Str, date2Str) {
+  const d1 = new Date(date1Str);
+  const d2 = new Date(date2Str);
+  if (d1 >= d2) return 0;
+  let count = 0;
+  const cursor = new Date(d1);
+  while (cursor < d2) {
+    cursor.setDate(cursor.getDate() + 1);
+    if (!isWeekend(cursor)) count++;
+  }
+  return count;
+}
+
+// ─── ÖNGÖRÜ BİTİŞ TARİHİ (PREDICTED END DATE) ──────────────────────────
+
+function calculatePredictedSchedule(scheduledTasks) {
+  if (!scheduledTasks || scheduledTasks.length === 0) {
+    return { predicted_end_date: null, delay_workdays: 0 };
+  }
+
+  const today = formatDate(new Date());
+  const taskMap = {};
+  scheduledTasks.forEach(t => { taskMap[t.id] = t; });
+
+  const resolved = new Set();
+
+  function predictTask(taskId) {
+    if (resolved.has(taskId)) return taskMap[taskId];
+    const task = taskMap[taskId];
+    if (!task) return null;
+
+    // Tamamlanmış görevler: orijinal tarihleri koru
+    if (task.status === 'done') {
+      task.predicted_end_date = task.calculated_end_date;
+      task.task_delay_days = 0;
+      resolved.add(taskId);
+      return task;
+    }
+
+    // Kalan iş günü hesapla
+    const progress = task.progress_percent || 0;
+    const totalDuration = task.duration_workdays || 1;
+    const remainingDays = Math.max(1, Math.ceil((1 - progress / 100) * totalDuration));
+
+    // En erken başlayabileceği tarih
+    let earliestStart;
+
+    if (task.depends_on_task_id && taskMap[task.depends_on_task_id]) {
+      // Bağımlılık varsa — bağımlı görevin öngörü bitişinden sonra başla
+      const dep = predictTask(task.depends_on_task_id);
+      if (dep && dep.predicted_end_date) {
+        let afterDep = new Date(dep.predicted_end_date);
+        afterDep.setDate(afterDep.getDate() + 1);
+        while (isWeekend(afterDep)) afterDep.setDate(afterDep.getDate() + 1);
+
+        const todayDate = new Date(today);
+        earliestStart = afterDep > todayDate ? afterDep : todayDate;
+      } else {
+        earliestStart = new Date(today);
+      }
+    } else {
+      // Bağımlılık yok — orijinal başlangıç veya bugün (hangisi daha geçse)
+      const originalStart = new Date(task.calculated_start_date);
+      const todayDate = new Date(today);
+      earliestStart = originalStart > todayDate ? originalStart : todayDate;
+    }
+
+    // Hafta sonuna denk geliyorsa ileri al
+    while (isWeekend(earliestStart)) earliestStart.setDate(earliestStart.getDate() + 1);
+
+    const predictedEnd = addWorkdays(earliestStart, remainingDays);
+    task.predicted_end_date = formatDate(predictedEnd);
+
+    // Bu görev için gecikme (iş günü)
+    const origEnd = task.calculated_end_date;
+    if (origEnd && task.predicted_end_date > origEnd) {
+      task.task_delay_days = workdaysBetween(origEnd, task.predicted_end_date);
+    } else {
+      task.task_delay_days = 0;
+    }
+
+    resolved.add(taskId);
+    return task;
+  }
+
+  // Tüm görevleri tahminle
+  Object.keys(taskMap).forEach(id => predictTask(parseInt(id)));
+
+  // Projenin öngörü bitiş tarihi = en geç predicted_end_date
+  let maxPredicted = null;
+  Object.values(taskMap).forEach(t => {
+    if (t.predicted_end_date) {
+      const d = new Date(t.predicted_end_date);
+      if (!maxPredicted || d > maxPredicted) maxPredicted = d;
+    }
+  });
+
+  const predictedEndDate = maxPredicted ? formatDate(maxPredicted) : null;
+  const estimatedEndDate = calculateEstimatedEndDate(scheduledTasks);
+
+  // Toplam proje gecikmesi (iş günü)
+  let delayWorkdays = 0;
+  if (estimatedEndDate && predictedEndDate && predictedEndDate > estimatedEndDate) {
+    delayWorkdays = workdaysBetween(estimatedEndDate, predictedEndDate);
+  }
+
+  return { predicted_end_date: predictedEndDate, delay_workdays: delayWorkdays };
+}
+
 // ─── PROJE CRUD ──────────────────────────────────────────────────────────────
 
 // Tüm projeleri listele
@@ -150,6 +261,11 @@ router.get('/', authenticateToken, authorizeRoles('admin'), async (req, res) => 
       const scheduledTasks = scheduleTasks(tasksResult.rows, project.start_date);
       project.progress_percent = calculateProjectProgress(scheduledTasks);
       project.estimated_end_date = calculateEstimatedEndDate(scheduledTasks);
+      
+      // Öngörü bitiş tarihi
+      const prediction = calculatePredictedSchedule(scheduledTasks);
+      project.predicted_end_date = prediction.predicted_end_date;
+      project.delay_workdays = prediction.delay_workdays;
       
       // Geciken görev sayısı
       const today = formatDate(new Date());
@@ -183,6 +299,11 @@ router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
     project.tasks = scheduledTasks;
     project.progress_percent = calculateProjectProgress(scheduledTasks);
     project.estimated_end_date = calculateEstimatedEndDate(scheduledTasks);
+    
+    // Öngörü bitiş tarihi hesapla
+    const prediction = calculatePredictedSchedule(scheduledTasks);
+    project.predicted_end_date = prediction.predicted_end_date;
+    project.delay_workdays = prediction.delay_workdays;
     
     // Geciken görevler
     const today = formatDate(new Date());
@@ -388,11 +509,16 @@ router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req
     // Client tarafından gelen bugünün tarihini kullan (timezone uyumu için)
     const today = req.query.today || formatDate(new Date());
     
+    // Öngörü hesapla
+    const prediction = calculatePredictedSchedule(scheduledTasks);
+    
     res.json({
       project: {
         name: project.name,
         start_date: project.start_date,
         estimated_end_date: calculateEstimatedEndDate(scheduledTasks),
+        predicted_end_date: prediction.predicted_end_date,
+        delay_workdays: prediction.delay_workdays,
         progress_percent: calculateProjectProgress(scheduledTasks),
         export_date: today
       },
@@ -404,6 +530,8 @@ router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req
         progress: t.progress_percent,
         start_date: t.calculated_start_date,
         end_date: t.calculated_end_date,
+        predicted_end_date: t.predicted_end_date || t.calculated_end_date,
+        task_delay_days: t.task_delay_days || 0,
         dependency: t.depends_on_task_id ? scheduledTasks.find(x => x.id === t.depends_on_task_id)?.title || '-' : '-',
         blocked_reason: t.blocked_reason || '-',
         deadline: t.deadline || null,

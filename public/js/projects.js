@@ -60,7 +60,9 @@ const ProjectsPage = {
                   </div>
                   <div class="flex justify-between text-xs text-gray-400">
                     <span>%${p.progress_percent || 0}</span>
-                    <span>${p.overdue_count > 0 ? `<span class="text-red-500 font-bold">${p.overdue_count} gecikme!</span>` : (p.estimated_end_date || '—')}</span>
+                    <span>${p.overdue_count > 0 
+                      ? `<span class="text-red-500 font-bold">${p.overdue_count} gecikme!</span>${p.delay_workdays > 0 ? ` <span class="text-yellow-400">(+${p.delay_workdays} gün)</span>` : ''}` 
+                      : (p.estimated_end_date || '—')}</span>
                   </div>
                 </div>
               `).join('')}
@@ -165,10 +167,17 @@ const ProjectsPage = {
     container.innerHTML = `
       <div class="space-y-6">
         <!-- Üst Kartlar -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="glass-card rounded-xl p-5">
-            <div class="text-sm text-gray-400 mb-1">Tahmini Bitiş</div>
-            <div class="text-xl font-bold text-gray-800">${p.estimated_end_date || '—'}</div>
+            <div class="text-sm text-gray-400 mb-1">Planlanan Bitiş</div>
+            <div class="text-xl font-bold text-white">${p.estimated_end_date || '—'}</div>
+          </div>
+          <div class="glass-card rounded-xl p-5 ${p.delay_workdays > 0 ? 'border border-red-500/30 bg-red-500/5' : 'border border-green-500/30 bg-green-500/5'}">
+            <div class="text-sm text-gray-400 mb-1">Öngörü Bitiş</div>
+            <div class="text-xl font-bold ${p.delay_workdays > 0 ? 'text-red-400' : 'text-green-400'}">${p.predicted_end_date || '—'}</div>
+            ${p.delay_workdays > 0 
+              ? `<div class="text-xs text-red-400 mt-1 font-semibold"><i class="fas fa-arrow-up mr-1"></i>${p.delay_workdays} iş günü gecikme</div>` 
+              : `<div class="text-xs text-green-400 mt-1 font-semibold"><i class="fas fa-check mr-1"></i>Yolunda</div>`}
           </div>
           <div class="glass-card rounded-xl p-5">
             <div class="text-sm text-gray-400 mb-1">Genel İlerleme</div>
@@ -179,7 +188,7 @@ const ProjectsPage = {
           </div>
           <div class="glass-card rounded-xl p-5">
             <div class="text-sm text-gray-400 mb-1">Toplam Görev</div>
-            <div class="text-3xl font-bold text-gray-800">${tasks.length}</div>
+            <div class="text-3xl font-bold text-white">${tasks.length}</div>
             <div class="text-xs text-green-600 mt-1">${done.length} tamamlandı</div>
           </div>
           <div class="glass-card rounded-xl p-5">
@@ -214,15 +223,23 @@ const ProjectsPage = {
         <div class="glass-card rounded-xl p-6 border-l-4 border-red-500">
           <h3 class="font-semibold text-red-400 mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Geciken Görevler</h3>
           <div class="space-y-2">
-            ${overdue.map(t => `
+            ${overdue.map(t => {
+              const delayDays = t.task_delay_days || 0;
+              return `
               <div class="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                <div>
+                <div class="flex-1 min-w-0">
                   <span class="font-medium text-white">${t.title}</span>
                   <span class="text-sm text-gray-400 ml-2">(${t.owner_text || '—'})</span>
                 </div>
-                <span class="text-xs text-red-400 font-bold">Bitiş: ${t.calculated_end_date}</span>
-              </div>
-            `).join('')}
+                <div class="flex items-center gap-3 flex-shrink-0 ml-3">
+                  <div class="text-right">
+                    <div class="text-xs text-gray-400">Plan: <span class="text-red-400 line-through">${t.calculated_end_date}</span></div>
+                    ${t.predicted_end_date ? `<div class="text-xs text-yellow-400">Öngörü: <span class="font-bold">${t.predicted_end_date}</span></div>` : ''}
+                  </div>
+                  ${delayDays > 0 ? `<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-bold whitespace-nowrap">+${delayDays} gün</span>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
           </div>
         </div>
         ` : ''}
@@ -284,6 +301,7 @@ const ProjectsPage = {
               const isOverdue = t.status !== 'done' && t.calculated_end_date && t.calculated_end_date < today;
               const isCritical = (p.critical_tasks || []).includes(t.id);
               const depTask = t.depends_on_task_id ? tasks.find(x => x.id === t.depends_on_task_id) : null;
+              const taskDelay = t.task_delay_days || 0;
               
               const statusColors = {
                 'backlog': 'bg-gray-500/15 text-gray-400',
@@ -308,6 +326,7 @@ const ProjectsPage = {
                       <span class="px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[t.status]}">${statusLabels[t.status]}</span>
                       <span><i class="fas fa-clock mr-1"></i>${t.duration_workdays} iş günü</span>
                       <span><i class="fas fa-calendar-alt mr-1"></i>${t.calculated_start_date} → ${t.calculated_end_date}</span>
+                      ${taskDelay > 0 ? `<span class="bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded-full font-medium"><i class="fas fa-chart-line mr-1"></i>Öngörü: ${t.predicted_end_date} (+${taskDelay} gün)</span>` : ''}
                       ${t.deadline ? (() => {
                         const dl = new Date(t.deadline + 'T23:59:59');
                         const diffD = Math.ceil((dl - new Date()) / (1000*60*60*24));
@@ -374,8 +393,8 @@ const ProjectsPage = {
       return;
     }
 
-    // Tarih aralığı hesapla
-    const allDates = tasks.flatMap(t => [t.calculated_start_date, t.calculated_end_date]).filter(Boolean);
+    // Tarih aralığı hesapla (öngörü tarihlerini de dahil et)
+    const allDates = tasks.flatMap(t => [t.calculated_start_date, t.calculated_end_date, t.predicted_end_date]).filter(Boolean);
     const minDate = new Date(allDates.reduce((a, b) => a < b ? a : b));
     const maxDate = new Date(allDates.reduce((a, b) => a > b ? a : b));
     
@@ -471,6 +490,20 @@ const ProjectsPage = {
         }
       }
 
+      // Öngörü uzantısı (gecikme varsa)
+      let predictedBar = '';
+      if (t.predicted_end_date && t.predicted_end_date > t.calculated_end_date && t.status !== 'done') {
+        const predEnd = new Date(t.predicted_end_date);
+        const predDuration = Math.ceil((predEnd - end) / (1000 * 60 * 60 * 24));
+        const predW = Math.max(predDuration * dayWidth, dayWidth / 2);
+        predictedBar = `
+          <div class="absolute rounded-r-md bg-yellow-500/30 border border-yellow-500/40 border-dashed flex items-center justify-center text-yellow-400 text-xs font-bold overflow-hidden"
+            style="left:${x + w}px;top:${y}px;width:${predW}px;height:${barH}px" title="Öngörü uzantısı: ${t.calculated_end_date} → ${t.predicted_end_date} (+${t.task_delay_days || 0} iş günü)">
+            +${t.task_delay_days || ''}
+          </div>
+        `;
+      }
+
       return {
         html: `
           <div class="absolute rounded-md ${colors[t.status]} ${isOverdue ? 'ring-2 ring-red-400' : ''} ${isCritical ? 'ring-2 ring-purple-400' : ''} flex items-center px-2 text-white text-xs font-medium overflow-hidden cursor-pointer group shadow-sm"
@@ -479,6 +512,7 @@ const ProjectsPage = {
             <!-- İlerleme overlay -->
             <div class="absolute left-0 top-0 h-full bg-black bg-opacity-15 rounded-md" style="width:${t.progress_percent}%"></div>
           </div>
+          ${predictedBar}
         `,
         arrow
       };
@@ -495,6 +529,7 @@ const ProjectsPage = {
             <span><span class="inline-block w-3 h-3 rounded bg-blue-500 mr-1"></span>Yapılıyor</span>
             <span><span class="inline-block w-3 h-3 rounded bg-orange-500 mr-1"></span>Bloke</span>
             <span><span class="inline-block w-3 h-3 rounded bg-gray-400 mr-1"></span>Bekliyor</span>
+            <span><span class="inline-block w-3 h-3 rounded border border-dashed border-yellow-500 bg-yellow-500/30 mr-1"></span>Öngörü Uzantısı</span>
           </div>
         </div>
 
@@ -817,6 +852,8 @@ const ProjectsPage = {
       csv += `"Proje","${data.project.name}"\n`;
       csv += `"Başlangıç","${data.project.start_date}"\n`;
       csv += `"Tahmini Bitiş","${data.project.estimated_end_date || '-'}"\n`;
+      csv += `"Öngörü Bitiş","${data.project.predicted_end_date || '-'}"\n`;
+      csv += `"Gecikme (iş günü)","${data.project.delay_workdays || 0}"\n`;
       csv += `"İlerleme","%${data.project.progress_percent}"\n`;
       csv += `"Rapor Tarihi","${data.project.export_date}"\n\n`;
       
@@ -829,11 +866,11 @@ const ProjectsPage = {
       csv += `"Geciken","${data.summary.overdue}"\n\n`;
       
       csv += `"GÖREVLER"\n`;
-      csv += `"Görev","Sorumlu","Durum","Süre (gün)","İlerleme (%)","Başlangıç","Bitiş","Bağımlılık","Bloke Sebebi","Gecikme"\n`;
+      csv += `"Görev","Sorumlu","Durum","Süre (gün)","İlerleme (%)","Başlangıç","Bitiş","Öngörü Bitiş","Gecikme (gün)","Bağımlılık","Bloke Sebebi","Gecikiyor"\n`;
       
       const statusTR = { 'backlog': 'Bekliyor', 'doing': 'Yapılıyor', 'blocked': 'Bloke', 'done': 'Tamamlandı' };
       data.tasks.forEach(t => {
-        csv += `"${t.title}","${t.owner}","${statusTR[t.status] || t.status}","${t.duration}","${t.progress}","${t.start_date}","${t.end_date}","${t.dependency}","${t.blocked_reason}","${t.is_overdue ? 'EVET' : 'Hayır'}"\n`;
+        csv += `"${t.title}","${t.owner}","${statusTR[t.status] || t.status}","${t.duration}","${t.progress}","${t.start_date}","${t.end_date}","${t.predicted_end_date || t.end_date}","${t.task_delay_days || 0}","${t.dependency}","${t.blocked_reason}","${t.is_overdue ? 'EVET' : 'Hayır'}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1123,8 +1160,16 @@ const ProjectsPage = {
       <tr>
         <td class="info-label">Başlangıç Tarihi:</td>
         <td class="info-value">${data.project.start_date}</td>
-        <td class="info-label">Tahmini Bitiş:</td>
+        <td class="info-label">Planlanan Bitiş:</td>
         <td class="info-value"><strong>${data.project.estimated_end_date || '—'}</strong></td>
+      </tr>
+      <tr>
+        <td class="info-label">Öngörü Bitiş:</td>
+        <td class="info-value"><strong style="color:${data.project.delay_workdays > 0 ? '#dc2626' : '#16a34a'};">${data.project.predicted_end_date || '—'}</strong>
+          ${data.project.delay_workdays > 0 ? `<span style="color:#dc2626;font-size:9pt;margin-left:6pt;">(+${data.project.delay_workdays} iş günü gecikme)</span>` : `<span style="color:#16a34a;font-size:9pt;margin-left:6pt;">✓ Yolunda</span>`}
+        </td>
+        <td class="info-label">Rapor Tarihi:</td>
+        <td class="info-value">${data.project.export_date}</td>
       </tr>
       <tr>
         <td class="info-label">Genel İlerleme:</td>
@@ -1184,6 +1229,7 @@ const ProjectsPage = {
         <th style="width:55pt;">İlerleme</th>
         <th style="width:65pt;">Başlangıç</th>
         <th style="width:65pt;">Bitiş</th>
+        <th style="width:65pt;">Öngörü Bitiş</th>
         <th style="width:80pt;">Bağımlılık</th>
         <th style="width:80pt;">Not</th>
       </tr>
@@ -1207,6 +1253,7 @@ const ProjectsPage = {
             </td>
             <td style="font-size:8.5pt;">${t.start_date}</td>
             <td style="font-size:8.5pt;${t.is_overdue ? 'color:#dc2626;font-weight:bold;' : ''}">${t.end_date}${t.is_overdue ? ' ⚠️' : ''}</td>
+            <td style="font-size:8.5pt;${t.task_delay_days > 0 ? 'color:#dc2626;font-weight:bold;' : 'color:#16a34a;'}">${t.predicted_end_date || t.end_date}${t.task_delay_days > 0 ? ` (+${t.task_delay_days})` : ''}</td>
             <td style="font-size:8.5pt;">${t.dependency !== '-' ? t.dependency : ''}</td>
             <td style="font-size:8.5pt;color:#6b7280;">${t.blocked_reason !== '-' ? t.blocked_reason : ''}</td>
           </tr>
@@ -1223,14 +1270,15 @@ const ProjectsPage = {
       <tr>
         <th>Görev</th>
         <th>Sorumlu</th>
-        <th>Bitiş Tarihi</th>
+        <th>Planlanan Bitiş</th>
+        <th>Öngörü Bitiş</th>
         <th>Gecikme</th>
       </tr>
     </thead>
     <tbody>
       ${data.tasks.filter(t => t.is_overdue).map(t => {
         const daysLate = Math.ceil((new Date() - new Date(t.end_date)) / (1000*60*60*24));
-        return `<tr><td><strong>${t.title}</strong></td><td>${t.owner}</td><td>${t.end_date}</td><td style="color:#dc2626;font-weight:bold;">${daysLate} gün</td></tr>`;
+        return `<tr><td><strong>${t.title}</strong></td><td>${t.owner}</td><td>${t.end_date}</td><td style="font-weight:bold;">${t.predicted_end_date || '—'}</td><td style="color:#dc2626;font-weight:bold;">+${t.task_delay_days || daysLate} iş günü</td></tr>`;
       }).join('')}
     </tbody>
   </table>
