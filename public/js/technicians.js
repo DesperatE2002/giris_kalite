@@ -100,10 +100,10 @@ const TechPage = {
   renderBoard(container) {
     const statuses = [
       { id: 'pending', label: 'Bekliyor', icon: 'fas fa-clock', color: 'gray', bgColor: 'bg-white/[0.03]' },
-      { id: 'active', label: 'Çalışılıyor', icon: 'fas fa-play', color: 'blue', bgColor: 'bg-blue-50' },
-      { id: 'paused', label: 'Pause', icon: 'fas fa-pause-circle', color: 'purple', bgColor: 'bg-purple-50' },
-      { id: 'blocked', label: 'Bloke', icon: 'fas fa-ban', color: 'orange', bgColor: 'bg-orange-50' },
-      { id: 'completed', label: 'Tamamlandı', icon: 'fas fa-check', color: 'green', bgColor: 'bg-green-50' }
+      { id: 'active', label: 'Çalışılıyor', icon: 'fas fa-play', color: 'blue', bgColor: 'bg-blue-500/10' },
+      { id: 'paused', label: 'Pause', icon: 'fas fa-pause-circle', color: 'purple', bgColor: 'bg-purple-500/10' },
+      { id: 'blocked', label: 'Bloke', icon: 'fas fa-ban', color: 'orange', bgColor: 'bg-orange-500/10' },
+      { id: 'completed', label: 'Tamamlandı', icon: 'fas fa-check', color: 'green', bgColor: 'bg-green-500/10' }
     ];
 
     container.innerHTML = `
@@ -129,9 +129,9 @@ const TechPage = {
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         ${statuses.map(s => `
           <div class="rounded-xl ${s.bgColor} p-3">
-            <h3 class="font-bold text-${s.color}-700 mb-3 flex items-center gap-2 text-sm">
+            <h3 class="font-bold text-${s.color}-400 mb-3 flex items-center gap-2 text-sm">
               <i class="${s.icon}"></i>${s.label}
-              <span class="bg-${s.color}-200 text-${s.color}-800 text-xs px-2 py-0.5 rounded-full">
+              <span class="bg-${s.color}-500/20 text-${s.color}-400 text-xs px-2 py-0.5 rounded-full">
                 ${this.assignments.filter(a => a.status === s.id).length}
               </span>
             </h3>
@@ -195,9 +195,9 @@ const TechPage = {
 
         ${durationText ? `<div class="text-xs text-gray-400 mb-2"><i class="fas fa-stopwatch mr-1 text-indigo-400"></i>${durationText}</div>` : ''}
         
-        ${a.performance_score ? `<div class="text-xs mb-2"><span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">Puan: ${a.performance_score}</span></div>` : ''}
+        ${a.performance_score ? `<div class="text-xs mb-2"><span class="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold">Puan: ${a.performance_score}</span></div>` : ''}
         
-        ${a.blocked_reason && a.status === 'blocked' ? `<div class="text-xs text-orange-600 mb-2 bg-orange-50 rounded px-2 py-1"><i class="fas fa-exclamation-triangle mr-1"></i>${a.blocked_reason}</div>` : ''}
+        ${a.blocked_reason && a.status === 'blocked' ? `<div class="text-xs text-orange-400 mb-2 bg-orange-500/10 rounded px-2 py-1"><i class="fas fa-exclamation-triangle mr-1"></i>${a.blocked_reason}</div>` : ''}
         
         ${a.notes ? `<div class="text-xs text-gray-400 mb-2 bg-white/[0.03] rounded px-2 py-1"><i class="fas fa-sticky-note mr-1 text-yellow-500"></i>${a.notes}</div>` : ''}
 
@@ -207,7 +207,7 @@ const TechPage = {
           const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
           const isOverdue = diffDays < 0;
           const isUrgent = diffDays >= 0 && diffDays <= 2;
-          const cls = isOverdue ? 'bg-red-100 text-red-700' : isUrgent ? 'bg-orange-100 text-orange-700' : 'bg-blue-50 text-blue-600';
+          const cls = isOverdue ? 'bg-red-500/20 text-red-400' : isUrgent ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/10 text-blue-400';
           const icon = isOverdue ? 'fa-exclamation-circle' : isUrgent ? 'fa-clock' : 'fa-calendar-alt';
           const label = isOverdue ? `${Math.abs(diffDays)} gün gecikmiş!` : diffDays === 0 ? 'Bugün son gün!' : `${diffDays} gün kaldı`;
           return `<div class="text-xs mb-2 ${cls} rounded px-2 py-1 font-medium"><i class="fas ${icon} mr-1"></i>${new Date(a.deadline).toLocaleDateString('tr-TR')} — ${label}</div>`;
@@ -230,16 +230,16 @@ const TechPage = {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Boşta -->
         <div class="glass-card rounded-xl p-5">
-          <h3 class="font-bold text-green-700 mb-4 flex items-center gap-2">
+          <h3 class="font-bold text-green-400 mb-4 flex items-center gap-2">
             <i class="fas fa-coffee text-xl"></i>Boşta
-            <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">${free.length}</span>
+            <span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">${free.length}</span>
           </h3>
           <div class="space-y-3">
             ${free.length === 0 ? '<p class="text-sm text-gray-400">Herkes meşgul</p>' :
               free.map(w => `
-                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-green-500/10 rounded-lg">
                   <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center font-bold text-green-700">${w.full_name.charAt(0)}</div>
+                    <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center font-bold text-green-400">${w.full_name.charAt(0)}</div>
                     <div>
                       <p class="font-semibold text-white text-sm">${w.full_name}</p>
                       <p class="text-xs text-gray-400">Bugün ${w.completed_today} görev tamamladı</p>
@@ -253,22 +253,22 @@ const TechPage = {
 
         <!-- Çalışıyor -->
         <div class="glass-card rounded-xl p-5">
-          <h3 class="font-bold text-blue-700 mb-4 flex items-center gap-2">
+          <h3 class="font-bold text-blue-400 mb-4 flex items-center gap-2">
             <i class="fas fa-cogs text-xl"></i>Çalışıyor
-            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">${busy.length}</span>
+            <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full">${busy.length}</span>
           </h3>
           <div class="space-y-3">
             ${busy.length === 0 ? '<p class="text-sm text-gray-400">Aktif çalışan yok</p>' :
               busy.map(w => `
-                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-blue-500/10 rounded-lg">
                   <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center font-bold text-blue-700">${w.full_name.charAt(0)}</div>
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center font-bold text-blue-400">${w.full_name.charAt(0)}</div>
                     <div>
                       <p class="font-semibold text-white text-sm">${w.full_name}</p>
                       <p class="text-xs text-gray-400">${w.active_tasks} aktif, ${w.pending_tasks} bekliyor</p>
                     </div>
                   </div>
-                  <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Meşgul</span>
+                  <span class="bg-blue-500/20 text-blue-400 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-spinner fa-spin mr-1"></i>Meşgul</span>
                 </div>
               `).join('')}
           </div>
@@ -276,22 +276,22 @@ const TechPage = {
 
         <!-- Yoğun -->
         <div class="glass-card rounded-xl p-5">
-          <h3 class="font-bold text-red-700 mb-4 flex items-center gap-2">
+          <h3 class="font-bold text-red-400 mb-4 flex items-center gap-2">
             <i class="fas fa-fire text-xl"></i>Yoğun
-            <span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">${overloaded.length}</span>
+            <span class="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-full">${overloaded.length}</span>
           </h3>
           <div class="space-y-3">
             ${overloaded.length === 0 ? '<p class="text-sm text-gray-400">Aşırı yoğun yok</p>' :
               overloaded.map(w => `
-                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-red-500/10 rounded-lg">
                   <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-red-200 rounded-full flex items-center justify-center font-bold text-red-700">${w.full_name.charAt(0)}</div>
+                    <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center font-bold text-red-400">${w.full_name.charAt(0)}</div>
                     <div>
                       <p class="font-semibold text-white text-sm">${w.full_name}</p>
                       <p class="text-xs text-gray-400">${w.active_tasks} aktif, ${w.pending_tasks} bekliyor</p>
                     </div>
                   </div>
-                  <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-exclamation mr-1"></i>Yoğun</span>
+                  <span class="bg-red-500/20 text-red-400 text-xs font-bold px-2 py-1 rounded-full"><i class="fas fa-exclamation mr-1"></i>Yoğun</span>
                 </div>
               `).join('')}
           </div>
@@ -331,25 +331,25 @@ const TechPage = {
 
         <!-- Özet -->
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div class="bg-green-50 rounded-xl p-4 text-center">
+          <div class="bg-green-500/10 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-green-600">${s.total_completed || 0}</p>
-            <p class="text-xs text-gray-500 mt-1">Tamamlanan</p>
+            <p class="text-xs text-gray-400 mt-1">Tamamlanan</p>
           </div>
-          <div class="bg-blue-50 rounded-xl p-4 text-center">
+          <div class="bg-blue-500/10 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-blue-600">${s.total_active || 0}</p>
-            <p class="text-xs text-gray-500 mt-1">Aktif</p>
+            <p class="text-xs text-gray-400 mt-1">Aktif</p>
           </div>
-          <div class="bg-purple-50 rounded-xl p-4 text-center">
+          <div class="bg-purple-500/10 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-purple-600">${s.total_paused || 0}</p>
-            <p class="text-xs text-gray-500 mt-1">Pause</p>
+            <p class="text-xs text-gray-400 mt-1">Pause</p>
           </div>
-          <div class="bg-orange-50 rounded-xl p-4 text-center">
+          <div class="bg-orange-500/10 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-orange-600">${s.total_blocked || 0}</p>
-            <p class="text-xs text-gray-500 mt-1">Bloke</p>
+            <p class="text-xs text-gray-400 mt-1">Bloke</p>
           </div>
-          <div class="bg-indigo-50 rounded-xl p-4 text-center">
+          <div class="bg-indigo-500/10 rounded-xl p-4 text-center">
             <p class="text-3xl font-bold text-indigo-600">${totalHours}s ${totalMins}dk</p>
-            <p class="text-xs text-gray-500 mt-1">Toplam Çalışma</p>
+            <p class="text-xs text-gray-400 mt-1">Toplam Çalışma</p>
           </div>
         </div>
 
@@ -363,15 +363,15 @@ const TechPage = {
               const statusIcons = { completed: 'fa-check-circle text-green-500', active: 'fa-play-circle text-blue-500', paused: 'fa-pause-circle text-purple-500', blocked: 'fa-ban text-orange-500', pending: 'fa-clock text-gray-400' };
               const mainStatus = g.people.some(p => p.status === 'active') ? 'active' : g.people.some(p => p.status === 'paused') ? 'paused' : g.people.every(p => p.status === 'completed') ? 'completed' : g.status;
               return `
-                <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-lg text-sm">
+                <div class="flex items-center justify-between p-3 bg-indigo-500/10 rounded-lg text-sm">
                   <div class="flex items-center gap-2">
                     <i class="fas ${statusIcons[mainStatus] || 'fa-circle text-gray-400'}"></i>
-                    <span class="font-semibold">${g.title}</span>
-                    <span class="text-gray-500">— ${durText}</span>
+                    <span class="font-semibold text-white">${g.title}</span>
+                    <span class="text-gray-400">— ${durText}</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full text-xs font-bold">${g.people.length} kişi</span>
-                    <span class="text-gray-600 text-xs">(${names})</span>
+                    <span class="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full text-xs font-bold">${g.people.length} kişi</span>
+                    <span class="text-gray-400 text-xs">(${names})</span>
                   </div>
                 </div>
               `;
@@ -401,7 +401,7 @@ const TechPage = {
                       <td class="py-2 font-medium">${p.full_name}</td>
                       <td class="py-2 text-center font-bold">${p.task_count}</td>
                       <td class="py-2 text-center">${hrs}s ${mins}dk</td>
-                      <td class="py-2 text-center"><span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold text-xs">${parseFloat(p.avg_score).toFixed(1)}</span></td>
+                      <td class="py-2 text-center"><span class="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold text-xs">${parseFloat(p.avg_score).toFixed(1)}</span></td>
                     </tr>
                   `;
                 }).join('')}
@@ -418,14 +418,14 @@ const TechPage = {
               const mins = a.actual_duration_minutes || 0;
               const durText = mins < 60 ? `${mins} dk` : `${Math.floor(mins/60)}s ${mins%60}dk`;
               return `
-                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg text-sm">
+                <div class="flex items-center justify-between p-3 bg-green-500/10 rounded-lg text-sm">
                   <div>
-                    <span class="font-semibold">${a.title}</span>
-                    <span class="text-gray-500 ml-2">— ${a.assigned_to_name}</span>
+                    <span class="font-semibold text-white">${a.title}</span>
+                    <span class="text-gray-400 ml-2">— ${a.assigned_to_name}</span>
                   </div>
                   <div class="flex items-center gap-3">
-                    <span class="text-gray-500"><i class="fas fa-stopwatch mr-1"></i>${durText}</span>
-                    ${a.performance_score ? `<span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold text-xs">+${a.performance_score}</span>` : ''}
+                    <span class="text-gray-400"><i class="fas fa-stopwatch mr-1"></i>${durText}</span>
+                    ${a.performance_score ? `<span class="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold text-xs">+${a.performance_score}</span>` : ''}
                   </div>
                 </div>
               `;
@@ -438,10 +438,10 @@ const TechPage = {
           <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-pause-circle text-purple-500 mr-2"></i>Pause Edilen İşler</h4>
           <div class="space-y-2 mb-6">
             ${report.paused.map(a => `
-              <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg text-sm">
+              <div class="flex items-center justify-between p-3 bg-purple-500/10 rounded-lg text-sm">
                 <div>
-                  <span class="font-semibold">${a.title}</span>
-                  <span class="text-gray-500 ml-2">— ${a.assigned_to_name}</span>
+                  <span class="font-semibold text-white">${a.title}</span>
+                  <span class="text-gray-400 ml-2">— ${a.assigned_to_name}</span>
                 </div>
                 <span class="text-purple-600 text-xs"><i class="fas fa-pause mr-1"></i>Pause</span>
               </div>
@@ -454,10 +454,10 @@ const TechPage = {
           <h4 class="font-bold text-gray-300 mb-3"><i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i>Blokajlar</h4>
           <div class="space-y-2">
             ${report.blocked.map(a => `
-              <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg text-sm">
+              <div class="flex items-center justify-between p-3 bg-orange-500/10 rounded-lg text-sm">
                 <div>
-                  <span class="font-semibold">${a.title}</span>
-                  <span class="text-gray-500 ml-2">— ${a.assigned_to_name}</span>
+                  <span class="font-semibold text-white">${a.title}</span>
+                  <span class="text-gray-400 ml-2">— ${a.assigned_to_name}</span>
                 </div>
                 <span class="text-orange-600 text-xs">${a.blocked_reason || 'Sebep belirtilmedi'}</span>
               </div>
@@ -512,8 +512,8 @@ const TechPage = {
                     <div class="w-14 h-14 mx-auto bg-gradient-to-br from-indigo-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg mb-2">${d.full_name.charAt(0)}</div>
                     <p class="font-bold text-white text-sm truncate">${d.full_name}</p>
                     <p class="text-indigo-600 font-bold text-lg">${parseFloat(d.total_score).toFixed(1)}</p>
-                    <p class="text-xs text-gray-500">${d.total_tasks} görev</p>
-                    <div class="bg-gradient-to-t from-indigo-200 to-indigo-100 rounded-t-lg mt-2 ${heights[idx]}"></div>
+                    <p class="text-xs text-gray-400">${d.total_tasks} görev</p>
+                    <div class="bg-gradient-to-t from-indigo-500/30 to-indigo-400/10 rounded-t-lg mt-2 ${heights[idx]}"></div>
                   </div>
                 `;
               }).join('')}
@@ -544,7 +544,7 @@ const TechPage = {
                       <td class="py-3">${i < 3 ? medals[i] : i + 1}</td>
                       <td class="py-3">
                         <div class="flex items-center gap-2">
-                          <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-600 text-xs">${d.full_name.charAt(0)}</div>
+                          <div class="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center font-bold text-indigo-400 text-xs">${d.full_name.charAt(0)}</div>
                           ${d.full_name}
                         </div>
                       </td>
@@ -553,7 +553,7 @@ const TechPage = {
                       <td class="py-3 text-center">${'★'.repeat(Math.round(d.avg_difficulty))}${'☆'.repeat(5 - Math.round(d.avg_difficulty))}</td>
                       <td class="py-3 text-center">${parseFloat(d.avg_score).toFixed(1)}</td>
                       <td class="py-3 text-center">${d.best_score || '—'}</td>
-                      <td class="py-3 text-center"><span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">${parseFloat(d.total_score).toFixed(1)}</span></td>
+                      <td class="py-3 text-center"><span class="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full font-bold">${parseFloat(d.total_score).toFixed(1)}</span></td>
                     </tr>
                   `;
                 }).join('')}

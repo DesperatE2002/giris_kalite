@@ -35,7 +35,7 @@ const ProjectsPage = {
           ${this.projects.length === 0 ? `
             <div class="glass-card rounded-2xl p-12 text-center">
               <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
-              <h3 class="text-xl font-semibold text-gray-500">Henüz proje yok</h3>
+              <h3 class="text-xl font-semibold text-gray-400">Henüz proje yok</h3>
               <p class="text-gray-400 mt-2">Yeni bir proje oluşturarak başlayın</p>
             </div>
           ` : `
@@ -50,11 +50,11 @@ const ProjectsPage = {
                       <button onclick="event.stopPropagation();ProjectsPage.deleteProject(${p.id})" class="text-gray-400 hover:text-red-500 p-1"><i class="fas fa-trash text-sm"></i></button>
                     </div>
                   </div>
-                  <div class="flex items-center gap-3 text-sm text-gray-500 mb-3">
+                  <div class="flex items-center gap-3 text-sm text-gray-400 mb-3">
                     <span><i class="fas fa-calendar mr-1"></i>${p.start_date}</span>
                     <span><i class="fas fa-tasks mr-1"></i>${p.task_count || 0} görev</span>
                   </div>
-                  <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                  <div class="w-full bg-gray-700 rounded-full h-2.5 mb-1">
                     <div class="h-2.5 rounded-full transition-all ${(p.progress_percent || 0) === 100 ? 'bg-green-500' : 'bg-purple-500'}" 
                       style="width: ${p.progress_percent || 0}%"></div>
                   </div>
@@ -133,10 +133,10 @@ const ProjectsPage = {
     document.querySelectorAll('.ptab-btn').forEach(btn => {
       if (btn.dataset.tab === tab) {
         btn.classList.add('border-b-2', 'border-purple-500', 'text-purple-600');
-        btn.classList.remove('text-gray-500');
+        btn.classList.remove('text-gray-400');
       } else {
         btn.classList.remove('border-b-2', 'border-purple-500', 'text-purple-600');
-        btn.classList.add('text-gray-500');
+        btn.classList.add('text-gray-400');
       }
     });
 
@@ -167,23 +167,23 @@ const ProjectsPage = {
         <!-- Üst Kartlar -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="glass-card rounded-xl p-5">
-            <div class="text-sm text-gray-500 mb-1">Tahmini Bitiş</div>
+            <div class="text-sm text-gray-400 mb-1">Tahmini Bitiş</div>
             <div class="text-xl font-bold text-gray-800">${p.estimated_end_date || '—'}</div>
           </div>
           <div class="glass-card rounded-xl p-5">
-            <div class="text-sm text-gray-500 mb-1">Genel İlerleme</div>
+            <div class="text-sm text-gray-400 mb-1">Genel İlerleme</div>
             <div class="text-3xl font-bold text-purple-600">%${p.progress_percent || 0}</div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
               <div class="h-2 rounded-full bg-purple-500" style="width:${p.progress_percent || 0}%"></div>
             </div>
           </div>
           <div class="glass-card rounded-xl p-5">
-            <div class="text-sm text-gray-500 mb-1">Toplam Görev</div>
+            <div class="text-sm text-gray-400 mb-1">Toplam Görev</div>
             <div class="text-3xl font-bold text-gray-800">${tasks.length}</div>
             <div class="text-xs text-green-600 mt-1">${done.length} tamamlandı</div>
           </div>
           <div class="glass-card rounded-xl p-5">
-            <div class="text-sm text-gray-500 mb-1">Sorunlar</div>
+            <div class="text-sm text-gray-400 mb-1">Sorunlar</div>
             <div class="flex items-center gap-3">
               ${blocked.length > 0 ? `<span class="text-xl font-bold text-orange-500">${blocked.length} <span class="text-xs">bloke</span></span>` : ''}
               ${overdue.length > 0 ? `<span class="text-xl font-bold text-red-500">${overdue.length} <span class="text-xs">geciken</span></span>` : ''}
@@ -201,7 +201,7 @@ const ProjectsPage = {
             ${blocked.length > 0 ? `<div class="bg-orange-500 flex items-center justify-center text-white text-xs font-bold" style="width:${tasks.length > 0 ? (blocked.length / tasks.length * 100) : 0}%">${blocked.length}</div>` : ''}
             ${(tasks.length - done.length - doing.length - blocked.length) > 0 ? `<div class="bg-gray-500 flex items-center justify-center text-white text-xs font-bold" style="width:${tasks.length > 0 ? ((tasks.length - done.length - doing.length - blocked.length) / tasks.length * 100) : 0}%">${tasks.length - done.length - doing.length - blocked.length}</div>` : ''}
           </div>
-          <div class="flex gap-4 mt-3 text-xs text-gray-500">
+          <div class="flex gap-4 mt-3 text-xs text-gray-400">
             <span><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span>Tamamlandı</span>
             <span><span class="inline-block w-3 h-3 rounded bg-blue-500 mr-1"></span>Yapılıyor</span>
             <span><span class="inline-block w-3 h-3 rounded bg-orange-500 mr-1"></span>Bloke</span>
@@ -212,15 +212,15 @@ const ProjectsPage = {
         <!-- Geciken & Kritik Görevler -->
         ${overdue.length > 0 ? `
         <div class="glass-card rounded-xl p-6 border-l-4 border-red-500">
-          <h3 class="font-semibold text-red-600 mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Geciken Görevler</h3>
+          <h3 class="font-semibold text-red-400 mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Geciken Görevler</h3>
           <div class="space-y-2">
             ${overdue.map(t => `
-              <div class="flex items-center justify-between bg-red-50 rounded-lg p-3">
+              <div class="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg p-3">
                 <div>
-                  <span class="font-medium text-gray-800">${t.title}</span>
-                  <span class="text-sm text-gray-500 ml-2">(${t.owner_text || '—'})</span>
+                  <span class="font-medium text-white">${t.title}</span>
+                  <span class="text-sm text-gray-400 ml-2">(${t.owner_text || '—'})</span>
                 </div>
-                <span class="text-xs text-red-600 font-bold">Bitiş: ${t.calculated_end_date}</span>
+                <span class="text-xs text-red-400 font-bold">Bitiş: ${t.calculated_end_date}</span>
               </div>
             `).join('')}
           </div>
@@ -229,13 +229,13 @@ const ProjectsPage = {
 
         ${criticalTasks.length > 0 ? `
         <div class="glass-card rounded-xl p-6 border-l-4 border-purple-500">
-          <h3 class="font-semibold text-purple-600 mb-3"><i class="fas fa-fire mr-2"></i>Kritik Yol Görevleri</h3>
-          <p class="text-xs text-gray-500 mb-3">Bu görevler gecikirse tüm proje gecikir.</p>
+          <h3 class="font-semibold text-purple-400 mb-3"><i class="fas fa-fire mr-2"></i>Kritik Yol Görevleri</h3>
+          <p class="text-xs text-gray-400 mb-3">Bu görevler gecikirse tüm proje gecikir.</p>
           <div class="space-y-2">
             ${criticalTasks.map(t => `
-              <div class="flex items-center justify-between bg-purple-50 rounded-lg p-3">
-                <span class="font-medium">${t.title}</span>
-                <span class="text-xs text-purple-600">${t.calculated_start_date} → ${t.calculated_end_date}</span>
+              <div class="flex items-center justify-between bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                <span class="font-medium text-white">${t.title}</span>
+                <span class="text-xs text-purple-400">${t.calculated_start_date} → ${t.calculated_end_date}</span>
               </div>
             `).join('')}
           </div>
@@ -303,7 +303,7 @@ const ProjectsPage = {
                       ${isCritical ? '<span class="text-xs bg-purple-500/15 text-purple-400 px-2 py-0.5 rounded-full font-medium">Kritik</span>' : ''}
                       ${isOverdue ? '<span class="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full font-bold animate-pulse">GECİKİYOR</span>' : ''}
                     </div>
-                    <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                    <div class="flex flex-wrap items-center gap-3 text-xs text-gray-400">
                       <span><i class="fas fa-user mr-1"></i>${t.owner_text || '—'}</span>
                       <span class="px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[t.status]}">${statusLabels[t.status]}</span>
                       <span><i class="fas fa-clock mr-1"></i>${t.duration_workdays} iş günü</span>
@@ -327,12 +327,12 @@ const ProjectsPage = {
                   <div class="flex items-center gap-3 flex-shrink-0">
                     <!-- İlerleme -->
                     <div class="w-32">
-                      <div class="flex justify-between text-xs text-gray-500 mb-1">
+                      <div class="flex justify-between text-xs text-gray-400 mb-1">
                         <span>İlerleme</span>
                         <span class="font-bold">%${t.progress_percent}</span>
                       </div>
                       <input type="range" min="0" max="100" step="5" value="${t.progress_percent}" 
-                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-600"
                         onchange="ProjectsPage.quickUpdateProgress(${t.id}, this.value)">
                     </div>
 
@@ -415,7 +415,7 @@ const ProjectsPage = {
       }
 
       headerHtml += `
-        <div class="absolute top-0 text-center text-xs select-none ${isWeekend ? 'bg-gray-100 text-gray-400' : 'text-gray-500'} ${isToday ? 'bg-purple-100 font-bold text-purple-700' : ''}" 
+        <div class="absolute top-0 text-center text-xs select-none ${isWeekend ? 'bg-white/5 text-gray-500' : 'text-gray-400'} ${isToday ? 'bg-purple-500/20 font-bold text-purple-400' : ''}" 
           style="left:${i * dayWidth}px;width:${dayWidth}px;height:100%">
           ${dayNum}
         </div>
@@ -490,7 +490,7 @@ const ProjectsPage = {
       <div class="glass-card rounded-xl overflow-hidden">
         <div class="p-4 border-b flex items-center justify-between">
           <h3 class="font-bold text-gray-800"><i class="fas fa-chart-gantt mr-2"></i>Gantt Şeması</h3>
-          <div class="flex items-center gap-3 text-xs text-gray-500">
+          <div class="flex items-center gap-3 text-xs text-gray-400">
             <span><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span>Tamamlandı</span>
             <span><span class="inline-block w-3 h-3 rounded bg-blue-500 mr-1"></span>Yapılıyor</span>
             <span><span class="inline-block w-3 h-3 rounded bg-orange-500 mr-1"></span>Bloke</span>
@@ -502,7 +502,7 @@ const ProjectsPage = {
           <!-- Sol: Görev isimleri -->
           <div class="flex-shrink-0 bg-white/5 border-r border-white/10" style="width:200px">
             <div class="h-10 border-b border-white/10 flex items-center px-3 text-xs font-bold text-gray-400">Görev</div>
-            <div class="h-5 border-b border-white/10 flex items-center px-3 text-xs text-gray-500">Ay</div>
+            <div class="h-5 border-b border-white/10 flex items-center px-3 text-xs text-gray-400">Ay</div>
             ${tasks.map(t => `
               <div class="flex items-center px-3 text-sm truncate border-b border-white/5" style="height:${rowHeight}px">
                 <span class="truncate" title="${t.title}">${t.title}</span>

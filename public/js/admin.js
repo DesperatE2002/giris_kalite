@@ -137,7 +137,7 @@ const adminPage = {
                     <td class="px-6 py-4 font-medium">${otpa.otpa_number}</td>
                     <td class="px-6 py-4">
                       <div>${otpa.project_name}</div>
-                      ${otpa.customer_info ? `<div class="text-xs text-gray-500">${otpa.customer_info}</div>` : ''}
+                      ${otpa.customer_info ? `<div class="text-xs text-gray-400">${otpa.customer_info}</div>` : ''}
                     </td>
                     <td class="px-6 py-4 text-center">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/15 text-purple-400">
@@ -150,15 +150,15 @@ const adminPage = {
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">
                       <button onclick="adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
-                        class="text-blue-600 hover:text-blue-900">
+                        class="text-blue-400 hover:text-blue-300">
                         <i class="fas fa-upload mr-1"></i> BOM Yükle
                       </button>
                       <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; adminPage.editOtpa(${otpa.id})" 
-                        class="text-green-600 hover:text-green-900 disabled:opacity-50">
+                        class="text-green-400 hover:text-green-300 disabled:opacity-50">
                         <i class="fas fa-edit mr-1"></i> Düzenle
                       </button>
                       <button onclick="adminPage.deleteOtpa(${otpa.id}, '${otpa.otpa_number}')" 
-                        class="text-red-600 hover:text-red-900">
+                        class="text-red-400 hover:text-red-300">
                         <i class="fas fa-trash mr-1"></i> Sil
                       </button>
                     </td>
@@ -331,7 +331,7 @@ const adminPage = {
               <i class="fas fa-upload mr-2"></i> BOM Yükle - ${otpaNumber}
             </h2>
             <button onclick="this.closest('.fixed').remove()" 
-              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
               <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
@@ -804,7 +804,7 @@ MAT-003	Nikel Şerit	500	gr"
             
             <div class="overflow-x-auto">
               ${missing.length === 0 ? `
-                <div class="px-6 py-8 text-center text-gray-500">
+                <div class="px-6 py-8 text-center text-gray-400">
                   <i class="fas fa-check-circle text-4xl text-green-500 mb-2"></i>
                   <p>Tüm malzemeler tamamlandı! 🎉</p>
                 </div>
@@ -861,11 +861,11 @@ MAT-003	Nikel Şerit	500	gr"
                         </td>
                         <td class="px-6 py-4">
                           <div class="font-medium">${item.material_code}</div>
-                          <div class="text-xs text-gray-500">${item.material_name}</div>
+                          <div class="text-xs text-gray-400">${item.material_name}</div>
                         </td>
                         <td class="px-6 py-4 text-right">${item.required_quantity} ${item.unit}</td>
-                        <td class="px-6 py-4 text-right text-green-600">${item.accepted_quantity || 0} ${item.unit}</td>
-                        <td class="px-6 py-4 text-right font-bold text-red-600">${item.missing_quantity} ${item.unit}</td>
+                        <td class="px-6 py-4 text-right text-green-400">${item.accepted_quantity || 0} ${item.unit}</td>
+                        <td class="px-6 py-4 text-right font-bold text-red-400">${item.missing_quantity} ${item.unit}</td>
                         <td class="px-6 py-4 text-center">
                           <span class="px-2 py-1 text-xs rounded ${item.status === 'Hiç Gelmedi' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}">
                             ${item.status || 'Bekliyor'}
@@ -889,7 +889,7 @@ MAT-003	Nikel Şerit	500	gr"
             </div>
             <div class="overflow-x-auto">
               ${allReceipts.length === 0 ? `
-                <div class="px-6 py-8 text-center text-gray-500">
+                <div class="px-6 py-8 text-center text-gray-400">
                   Henüz malzeme girişi yapılmamış
                 </div>
               ` : `
@@ -924,13 +924,13 @@ MAT-003	Nikel Şerit	500	gr"
                         <td class="px-4 py-3 font-medium">${receipt.otpa_number || 'N/A'}</td>
                         <td class="px-4 py-3">
                           <div class="font-medium">${receipt.material_code}</div>
-                          <div class="text-xs text-gray-500">${receipt.material_name || ''}</div>
+                          <div class="text-xs text-gray-400">${receipt.material_name || ''}</div>
                         </td>
                         <td class="px-4 py-3 text-right font-medium">${receipt.received_quantity} ${receipt.unit || ''}</td>
-                        <td class="px-4 py-3 text-right text-green-600">${receipt.accepted_quantity || 0}</td>
-                        <td class="px-4 py-3 text-right text-red-600">${receipt.rejected_quantity || 0}</td>
+                        <td class="px-4 py-3 text-right text-green-400">${receipt.accepted_quantity || 0}</td>
+                        <td class="px-4 py-3 text-right text-red-400">${receipt.rejected_quantity || 0}</td>
                         <td class="px-4 py-3 text-center">
-                          <span class="px-2 py-1 text-xs rounded ${statusColors[receipt.quality_status] || 'bg-gray-100 text-gray-800'}">
+                          <span class="px-2 py-1 text-xs rounded ${statusColors[receipt.quality_status] || 'bg-gray-500/15 text-gray-400'}">
                             ${statusLabels[receipt.quality_status] || 'Bekliyor'}
                           </span>
                         </td>
@@ -970,10 +970,10 @@ MAT-003	Nikel Şerit	500	gr"
                       <td class="px-6 py-4 text-right">${item.completed_items || 0}</td>
                       <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
-                          <span class="font-bold ${(item.completion_percentage || 0) >= 100 ? 'text-green-600' : 'text-blue-600'}">
+                          <span class="font-bold ${(item.completion_percentage || 0) >= 100 ? 'text-green-400' : 'text-blue-400'}">
                             ${item.completion_percentage || 0}%
                           </span>
-                          <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
                             <div class="h-full ${(item.completion_percentage || 0) >= 100 ? 'bg-green-600' : 'bg-blue-600'}" 
                               style="width: ${item.completion_percentage || 0}%"></div>
                           </div>
@@ -1014,14 +1014,14 @@ MAT-003	Nikel Şerit	500	gr"
                       <td class="px-4 py-3 font-medium">${item.otpa_number}</td>
                       <td class="px-4 py-3">
                         <div class="font-medium">${item.material_code}</div>
-                        <div class="text-xs text-gray-500">${item.material_name}</div>
+                        <div class="text-xs text-gray-400">${item.material_name}</div>
                       </td>
                       <td class="px-4 py-3">
                         <span class="px-2 py-1 text-xs rounded ${item.status === 'red' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'}">
                           ${item.status === 'red' ? '❌ Red' : '⚠️ Şartlı Kabul'}
                         </span>
                       </td>
-                      <td class="px-4 py-3 text-right font-bold text-red-600">${item.rejected_quantity}</td>
+                      <td class="px-4 py-3 text-right font-bold text-red-400">${item.rejected_quantity}</td>
                       <td class="px-4 py-3 text-sm text-gray-400">${item.reason || '-'}</td>
                       <td class="px-4 py-3">${item.decision_by_name || 'Bilinmiyor'}</td>
                     </tr>
@@ -1195,13 +1195,13 @@ MAT-003	Nikel Şerit	500	gr"
                     <td class="px-6 py-4">${this.getRoleBadge(user.role)}</td>
                     <td class="px-6 py-4">
                       ${user.is_active 
-                        ? '<span class="text-green-600">✓ Aktif</span>' 
-                        : '<span class="text-red-600">✗ Pasif</span>'}
+                        ? '<span class="text-green-400">✓ Aktif</span>' 
+                        : '<span class="text-red-400">✗ Pasif</span>'}
                     </td>
                     <td class="px-6 py-4 text-sm">${new Date(user.created_at).toLocaleDateString('tr-TR')}</td>
                     <td class="px-6 py-4">
                       <button onclick="adminPage.showEditUserModal(${user.id}, '${user.username}', '${user.full_name.replace(/'/g, "\\'")}', '${user.role}', ${user.is_active ? 'true' : 'false'})" 
-                        class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                        class="text-blue-400 hover:text-blue-300 font-medium text-sm">
                         <i class="fas fa-edit mr-1"></i>Düzenle
                       </button>
                     </td>
@@ -1303,12 +1303,12 @@ MAT-003	Nikel Şerit	500	gr"
     modal.innerHTML = `
       <div class="glass-card rounded-2xl shadow-xl max-w-lg w-full">
         <div class="p-6">
-          <h2 class="text-2xl font-bold mb-4"><i class="fas fa-user-edit mr-2 text-blue-600"></i>Kullanıcı Düzenle</h2>
+          <h2 class="text-2xl font-bold mb-4"><i class="fas fa-user-edit mr-2 text-blue-400"></i>Kullanıcı Düzenle</h2>
           <form id="editUserForm" class="space-y-4">
             <div>
               <label class="block text-sm font-medium mb-2">Kullanıcı Adı</label>
               <input type="text" value="${username}" disabled
-                class="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-500">
+                class="w-full px-3 py-2 border rounded-lg bg-gray-800/50 text-gray-400 border-white/10">
             </div>
             <div>
               <label class="block text-sm font-medium mb-2">Ad Soyad *</label>
@@ -1404,7 +1404,7 @@ MAT-003	Nikel Şerit	500	gr"
               <div>
                 <label class="block text-sm font-medium mb-2">OTPA Numarası</label>
                 <input type="text" value="${otpa.otpa.otpa_number}" disabled
-                  class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+                  class="w-full px-3 py-2 border border-white/10 rounded-lg bg-gray-800/50 text-gray-400">
               </div>
               <div>
                 <label class="block text-sm font-medium mb-2">Proje Adı *</label>
@@ -1559,7 +1559,7 @@ MAT-003	Nikel Şerit	500	gr"
                           ${template.item_count} malzeme
                         </span>
                       </div>
-                      <div class="text-xs text-gray-500 mb-4">
+                      <div class="text-xs text-gray-400 mb-4">
                         <i class="fas fa-user mr-1"></i> ${template.created_by_name || 'Sistem'}
                         <span class="mx-2">•</span>
                         <i class="fas fa-clock mr-1"></i> ${new Date(template.created_at).toLocaleDateString('tr-TR')}
@@ -1603,7 +1603,7 @@ MAT-003	Nikel Şerit	500	gr"
             <i class="fas fa-copy mr-2"></i> Yeni BOM Şablonu Oluştur
           </h2>
           <button onclick="this.closest('.fixed').remove()" 
-            class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+            class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
             <i class="fas fa-times text-3xl"></i>
           </button>
         </div>
@@ -1786,10 +1786,10 @@ MAT-003	Nikel Şerit	500	gr"
               <h2 class="text-2xl font-bold gradient-text">
                 <i class="fas fa-copy mr-2"></i> ${data.template.template_name}
               </h2>
-              ${data.template.description ? `<p class="text-sm text-gray-600 mt-1">${data.template.description}</p>` : ''}
+              ${data.template.description ? `<p class="text-sm text-gray-400 mt-1">${data.template.description}</p>` : ''}
             </div>
             <button onclick="this.closest('.fixed').remove()" 
-              class="text-gray-500 hover:text-red-600 transition-colors duration-200 p-2 hover:bg-red-50 rounded-xl">
+              class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
               <i class="fas fa-times text-3xl"></i>
             </button>
           </div>
