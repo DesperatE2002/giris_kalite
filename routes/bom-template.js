@@ -1,5 +1,6 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -68,7 +69,7 @@ router.get('/:templateId', authenticateToken, async (req, res) => {
 });
 
 // Yeni BOM şablonu oluştur
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -128,7 +129,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // Şablonu güncelle
-router.put('/:templateId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:templateId', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -178,7 +179,7 @@ router.put('/:templateId', authenticateToken, authorizeRoles('admin'), async (re
 });
 
 // Şablonu sil
-router.delete('/:templateId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:templateId', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { templateId } = req.params;
 
@@ -198,7 +199,7 @@ router.delete('/:templateId', authenticateToken, authorizeRoles('admin'), async 
 });
 
 // Şablonu OTPA'ya uygula (component_type ile)
-router.post('/:templateId/apply/:otpaId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/:templateId/apply/:otpaId', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   const client = await pool.connect();
   
   try {

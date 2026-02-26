@@ -25,15 +25,9 @@ const app = {
       if (hash && validPages.includes(hash)) {
         this.navigate(hash);
       } else {
-        // Viewer role -> welcome screen, proje_yonetici -> projects, others -> dashboard
-        const user = authManager.currentUser;
-        if (user && user.role === 'viewer') {
-          this.navigate('welcome');
-        } else if (user && user.role === 'proje_yonetici') {
-          this.navigate('projects');
-        } else {
-          this.navigate('dashboard');
-        }
+        // İzin tabanlı varsayılan sayfa
+        const defaultPage = authManager.getDefaultPage();
+        this.navigate(defaultPage);
       }
     } else {
       // Show login screen
@@ -118,7 +112,7 @@ const app = {
 
     // Dinamik izin tabanlı menü görünürlüğü
     const permissions = user.permissions || {};
-    const hasAnyPerm = Object.values(permissions).some(p => p.can_view);
+    const hasAnyPerm = Object.values(permissions).some(p => p.access);
 
     // Eğer hiç izni yoksa tüm menüyü gizle
     if (!hasAnyPerm) {
@@ -132,7 +126,7 @@ const app = {
       if (!page) return;
       
       const perm = permissions[page];
-      btn.style.display = (perm && perm.can_view) ? '' : 'none';
+      btn.style.display = (perm && perm.access) ? '' : 'none';
     });
   },
 

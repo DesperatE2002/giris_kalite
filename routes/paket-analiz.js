@@ -4,7 +4,8 @@
 // Mevcut BOM sistemi (bom_*, bom_templates vb.) ile SIFIR çakışma
 // ═══════════════════════════════════════════════════════════════════════════════
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -78,7 +79,7 @@ router.get('/materials', authenticateToken, async (req, res) => {
 });
 
 // Toplu içe aktarım (UPSERT by malzeme_no)
-router.post('/materials/import-paste', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/materials/import-paste', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     const { rows, mapping } = req.body;
     if (!rows?.length || mapping?.malzeme_no === undefined) {
@@ -126,7 +127,7 @@ router.post('/materials/import-paste', authenticateToken, authorizeRoles('admin'
 });
 
 // Tek malzeme güncelle
-router.put('/materials/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/materials/:id', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     const { parca_tanimi, birim_adet, stok, lead_time_gun, birim_maliyet, tedarikci } = req.body;
     await pool.query(
@@ -139,7 +140,7 @@ router.put('/materials/:id', authenticateToken, authorizeRoles('admin'), async (
 });
 
 // Tek malzeme sil
-router.delete('/materials/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/materials/:id', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     await pool.query('DELETE FROM pa_master_materials WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -147,7 +148,7 @@ router.delete('/materials/:id', authenticateToken, authorizeRoles('admin'), asyn
 });
 
 // Tüm master veriyi sil
-router.delete('/materials', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/materials', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     await pool.query('DELETE FROM pa_master_materials');
     res.json({ success: true });
@@ -168,7 +169,7 @@ router.get('/bom-packages', authenticateToken, async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Sunucu hatası' }); }
 });
 
-router.post('/bom-packages', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/bom-packages', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     const { paket_adi, aciklama } = req.body;
     if (!paket_adi?.trim()) return res.status(400).json({ error: 'Paket adı zorunlu' });
@@ -177,7 +178,7 @@ router.post('/bom-packages', authenticateToken, authorizeRoles('admin'), async (
   } catch (error) { res.status(500).json({ error: 'Oluşturma hatası' }); }
 });
 
-router.put('/bom-packages/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/bom-packages/:id', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     const { paket_adi, aciklama } = req.body;
     await pool.query('UPDATE pa_bom_packages SET paket_adi=?, aciklama=?, updated_at=CURRENT_TIMESTAMP WHERE id=?', [paket_adi, aciklama || '', req.params.id]);
@@ -186,7 +187,7 @@ router.put('/bom-packages/:id', authenticateToken, authorizeRoles('admin'), asyn
   } catch (error) { res.status(500).json({ error: 'Güncelleme hatası' }); }
 });
 
-router.delete('/bom-packages/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/bom-packages/:id', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     await pool.query('DELETE FROM pa_bom_packages WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -209,7 +210,7 @@ router.get('/bom-packages/:id/items', authenticateToken, async (req, res) => {
 });
 
 // BOM toplu aktarım — paketin kalemlerini sil, yeniden yaz
-router.post('/bom-packages/:id/items/import-paste', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/bom-packages/:id/items/import-paste', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     const pkgId = req.params.id;
     const { rows, mapping } = req.body;
@@ -239,7 +240,7 @@ router.post('/bom-packages/:id/items/import-paste', authenticateToken, authorize
 });
 
 // Tek kalem ekle
-router.post('/bom-packages/:id/items', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/bom-packages/:id/items', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     const { malzeme_no, miktar } = req.body;
     if (!malzeme_no?.trim()) return res.status(400).json({ error: 'Malzeme No zorunlu' });
@@ -249,7 +250,7 @@ router.post('/bom-packages/:id/items', authenticateToken, authorizeRoles('admin'
 });
 
 // Kalem sil
-router.delete('/bom-items/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/bom-items/:id', authenticateToken, requireModuleAccess('paket-analiz'), async (req, res) => {
   try {
     await pool.query('DELETE FROM pa_bom_items WHERE id=?', [req.params.id]);
     res.json({ success: true });

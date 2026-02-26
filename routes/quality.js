@@ -1,11 +1,12 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
 
 // Kalite bekleyen kayıtlar
-router.get('/pending', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+router.get('/pending', authenticateToken, requireModuleAccess('quality'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -37,7 +38,7 @@ router.get('/pending', authenticateToken, authorizeRoles('kalite', 'admin'), asy
 });
 
 // Manuel iade oluştur - Stoğu azalt (ÖNEMLİ: /:receiptId'den ÖNCE olmalı!)
-router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'kalite', 'admin'), async (req, res) => {
+router.post('/manual-return', authenticateToken, requireModuleAccess('quality'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -122,7 +123,7 @@ router.post('/manual-return', authenticateToken, authorizeRoles('teknisyen', 'ka
 });
 
 // Kalite kararı ver
-router.post('/:receiptId', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+router.post('/:receiptId', authenticateToken, requireModuleAccess('quality'), async (req, res) => {
   try {
     const { receiptId } = req.params;
     const { status, accepted_quantity, rejected_quantity, reason } = req.body;
@@ -190,7 +191,7 @@ router.post('/:receiptId', authenticateToken, authorizeRoles('kalite', 'admin'),
 });
 
 // Toplu kalite onayı
-router.post('/bulk/approve-all', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+router.post('/bulk/approve-all', authenticateToken, requireModuleAccess('quality'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -279,7 +280,7 @@ router.get('/:receiptId', authenticateToken, async (req, res) => {
 });
 
 // Tüm kalite kayıtlarını listele (filtreleme ile)
-router.get('/', authenticateToken, authorizeRoles('kalite', 'admin'), async (req, res) => {
+router.get('/', authenticateToken, requireModuleAccess('quality'), async (req, res) => {
   try {
     const { status, otpa_id, start_date, end_date } = req.query;
 

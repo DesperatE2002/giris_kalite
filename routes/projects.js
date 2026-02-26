@@ -1,5 +1,6 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -241,7 +242,7 @@ function calculatePredictedSchedule(scheduledTasks) {
 // ─── PROJE CRUD ──────────────────────────────────────────────────────────────
 
 // Tüm projeleri listele
-router.get('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT p.*,
@@ -282,7 +283,7 @@ router.get('/', authenticateToken, authorizeRoles('admin'), async (req, res) => 
 });
 
 // Tek proje detayı (görevlerle birlikte)
-router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/:id', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const projectResult = await pool.query('SELECT * FROM projects WHERE id = ?', [req.params.id]);
     if (projectResult.rows.length === 0) {
@@ -329,7 +330,7 @@ router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // Proje oluştur
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const { name, start_date } = req.body;
     if (!name || !start_date) {
@@ -349,7 +350,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // Proje güncelle
-router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const { name, start_date } = req.body;
     const result = await pool.query(
@@ -369,7 +370,7 @@ router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // Proje sil
-router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     await pool.query('DELETE FROM project_tasks WHERE project_id = ?', [req.params.id]);
     const result = await pool.query('DELETE FROM projects WHERE id = ?', [req.params.id]);
@@ -388,7 +389,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, re
 // ─── GÖREV CRUD ──────────────────────────────────────────────────────────────
 
 // Görev oluştur
-router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/:projectId/tasks', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes, deadline } = req.body;
     
@@ -418,7 +419,7 @@ router.post('/:projectId/tasks', authenticateToken, authorizeRoles('admin'), asy
 });
 
 // Görev güncelle
-router.put('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:projectId/tasks/:taskId', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const { title, owner_text, status, duration_workdays, progress_percent, manual_start_date, depends_on_task_id, blocked_reason, notes, deadline } = req.body;
     
@@ -464,7 +465,7 @@ router.put('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin
 });
 
 // Görev sil
-router.delete('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:projectId/tasks/:taskId', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     // Bu göreve bağımlı olan görevlerin bağımlılığını kaldır
     await pool.query(
@@ -491,7 +492,7 @@ router.delete('/:projectId/tasks/:taskId', authenticateToken, authorizeRoles('ad
 // ─── EXCEL / WORD EXPORT ──────────────────────────────────────────────────────
 
 // Proje rapor verisi (JSON → frontend'de Excel/Word oluşturulacak)
-router.get('/:id/export', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/:id/export', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
   try {
     const projectResult = await pool.query('SELECT * FROM projects WHERE id = ?', [req.params.id]);
     if (projectResult.rows.length === 0) {

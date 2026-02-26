@@ -1,11 +1,12 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
 
 // Admin: İade istatistiklerini sıfırla (TEST İÇİN)
-router.post('/reset-return-stats', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/reset-return-stats', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   const client = await pool.connect();
   
   try {

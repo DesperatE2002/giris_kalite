@@ -1526,20 +1526,27 @@ MAT-003	Nikel Şerit	500	gr"
 
   // ========================= ROLLER & İZİNLER TAB =========================
 
-  // Modül tanımları
+  // Modül tanımları (backend MODULE_DEFINITIONS ile senkron)
   getModuleDefinitions() {
     return [
-      { key: 'dashboard', label: 'Ana Sayfa', icon: 'fas fa-home' },
-      { key: 'goods-receipt', label: 'Malzeme Girişi', icon: 'fas fa-box' },
-      { key: 'returns', label: 'İadeler', icon: 'fas fa-undo' },
-      { key: 'quality', label: 'Kalite Kontrol', icon: 'fas fa-check-circle' },
-      { key: 'projects', label: 'Proje Takip', icon: 'fas fa-project-diagram' },
-      { key: 'technicians', label: 'Tekniker Takip', icon: 'fas fa-user-cog' },
-      { key: 'taskboard', label: 'Görev Panosu', icon: 'fas fa-tasks' },
-      { key: 'paket-analiz', label: 'Paket Analiz', icon: 'fas fa-battery-full' },
-      { key: 'prosedur-otpa', label: 'Prosedür & OTPA', icon: 'fas fa-file-alt' },
-      { key: 'field-changelog', label: 'Saha Değişiklik', icon: 'fas fa-history' },
-      { key: 'admin', label: 'Yönetim Paneli', icon: 'fas fa-cog' }
+      { key: 'dashboard', label: 'Ana Sayfa', icon: 'fas fa-home', type: 'simple' },
+      { key: 'goods-receipt', label: 'Malzeme Girişi', icon: 'fas fa-box', type: 'simple' },
+      { key: 'returns', label: 'İadeler', icon: 'fas fa-undo', type: 'simple' },
+      { key: 'quality', label: 'Kalite Kontrol', icon: 'fas fa-check-circle', type: 'simple' },
+      { key: 'projects', label: 'Proje Takip', icon: 'fas fa-project-diagram', type: 'simple' },
+      { key: 'technicians', label: 'Tekniker Takip', icon: 'fas fa-user-cog', type: 'simple' },
+      { key: 'taskboard', label: 'Görev Panosu', icon: 'fas fa-tasks', type: 'simple' },
+      { key: 'paket-analiz', label: 'Paket Analiz', icon: 'fas fa-battery-full', type: 'simple' },
+      { 
+        key: 'prosedur-otpa', label: 'Prosedür & OTPA', icon: 'fas fa-file-alt', type: 'multi',
+        subPermissions: [
+          { key: 'prosedur_view', label: 'Görüntüle & İndir' },
+          { key: 'prosedur_fill', label: 'Form Doldur' },
+          { key: 'prosedur_manage', label: 'Şablon & Döküman Yönet' }
+        ]
+      },
+      { key: 'field-changelog', label: 'Saha Değişiklik', icon: 'fas fa-history', type: 'simple' },
+      { key: 'admin', label: 'Yönetim Paneli', icon: 'fas fa-cog', type: 'simple' }
     ];
   },
 
@@ -1585,12 +1592,14 @@ MAT-003	Nikel Şerit	500	gr"
 
   renderRoleCard(role) {
     const modules = this.getModuleDefinitions();
+    // Yeni izin formatı: permissions dizisi [{module, permission_key, granted}]
     const permMap = {};
     (role.permissions || []).forEach(p => {
-      permMap[p.module] = p;
+      if (!permMap[p.module]) permMap[p.module] = {};
+      permMap[p.module][p.permission_key] = p.granted;
     });
 
-    const viewCount = Object.values(permMap).filter(p => p.can_view).length;
+    const accessCount = modules.filter(mod => permMap[mod.key]?.access).length;
     const totalModules = modules.length;
 
     const roleColors = {
@@ -1618,7 +1627,7 @@ MAT-003	Nikel Şerit	500	gr"
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs bg-${color}-500/10 text-${color}-400 px-2 py-1 rounded-lg font-medium">
-                ${viewCount}/${totalModules} modül
+                ${accessCount}/${totalModules} modül
               </span>
               <button onclick="adminPage.showEditPermissionsModal(${role.id})" 
                 class="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all" title="İzinleri Düzenle">
@@ -1635,36 +1644,29 @@ MAT-003	Nikel Şerit	500	gr"
           ${role.description ? `<p class="text-sm text-gray-400 mt-2">${role.description}</p>` : ''}
         </div>
         
-        <!-- İzin Özet Tablosu -->
+        <!-- İzin Özet -->
         <div class="p-4">
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs">
-              <thead>
-                <tr class="text-gray-500">
-                  <th class="text-left py-1 pr-2 font-medium">Modül</th>
-                  <th class="text-center py-1 px-1 font-medium">Görüntüle</th>
-                  <th class="text-center py-1 px-1 font-medium">Oluştur</th>
-                  <th class="text-center py-1 px-1 font-medium">Düzenle</th>
-                  <th class="text-center py-1 px-1 font-medium">Sil</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${modules.map(mod => {
-                  const p = permMap[mod.key] || {};
-                  return `
-                    <tr class="border-t border-white/[0.03]">
-                      <td class="py-1.5 pr-2">
-                        <span class="text-gray-300"><i class="${mod.icon} text-gray-500 mr-1 w-4 text-center"></i> ${mod.label}</span>
-                      </td>
-                      <td class="text-center py-1.5">${p.can_view ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
-                      <td class="text-center py-1.5">${p.can_create ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
-                      <td class="text-center py-1.5">${p.can_edit ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
-                      <td class="text-center py-1.5">${p.can_delete ? '<i class="fas fa-check text-green-400"></i>' : '<i class="fas fa-minus text-gray-600"></i>'}</td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
+          <div class="space-y-1.5">
+            ${modules.map(mod => {
+              const mp = permMap[mod.key] || {};
+              const hasAccess = mp.access;
+              if (mod.type === 'multi' && hasAccess) {
+                const subLabels = mod.subPermissions.filter(s => mp[s.key]).map(s => s.label).join(', ');
+                return `
+                  <div class="flex items-center gap-2 text-xs">
+                    <i class="${mod.icon} w-4 text-center ${hasAccess ? 'text-green-400' : 'text-gray-600'}"></i>
+                    <span class="${hasAccess ? 'text-gray-200' : 'text-gray-600'}">${mod.label}</span>
+                    ${hasAccess ? '<i class="fas fa-check text-green-400 text-[10px]"></i>' : '<i class="fas fa-minus text-gray-600 text-[10px]"></i>'}
+                    ${subLabels ? `<span class="text-gray-500 ml-1">(${subLabels})</span>` : ''}
+                  </div>`;
+              }
+              return `
+                <div class="flex items-center gap-2 text-xs">
+                  <i class="${mod.icon} w-4 text-center ${hasAccess ? 'text-green-400' : 'text-gray-600'}"></i>
+                  <span class="${hasAccess ? 'text-gray-200' : 'text-gray-600'}">${mod.label}</span>
+                  ${hasAccess ? '<i class="fas fa-check text-green-400 text-[10px]"></i>' : '<i class="fas fa-minus text-gray-600 text-[10px]"></i>'}
+                </div>`;
+            }).join('')}
           </div>
         </div>
       </div>
@@ -1710,63 +1712,25 @@ MAT-003	Nikel Şerit	500	gr"
                 class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white">
             </div>
 
-            <!-- İzin Matrisi -->
+            <!-- İzin Matrisi - YENİ BASİT YAPI -->
             <div>
               <h3 class="text-sm font-bold text-gray-300 mb-3">
-                <i class="fas fa-key mr-1 text-yellow-400"></i> İzinler
+                <i class="fas fa-key mr-1 text-yellow-400"></i> Modül İzinleri
               </h3>
               <div class="glass-card rounded-xl overflow-hidden">
-                <table class="w-full text-sm">
-                  <thead>
-                    <tr class="bg-white/[0.03]">
-                      <th class="text-left py-3 px-4 font-semibold text-gray-300">Modül</th>
-                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Görüntüle</th>
-                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Oluştur</th>
-                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Düzenle</th>
-                      <th class="text-center py-3 px-2 font-semibold text-gray-300">Sil</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${modules.map(mod => `
-                      <tr class="border-t border-white/[0.03] hover:bg-white/[0.02]">
-                        <td class="py-2.5 px-4">
-                          <span class="text-gray-200"><i class="${mod.icon} text-gray-400 mr-2 w-4 text-center"></i>${mod.label}</span>
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="view" 
-                            class="perm-checkbox w-4 h-4 rounded accent-green-500 cursor-pointer"
-                            onchange="adminPage.onPermCheckboxChange(this)">
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="create" 
-                            class="perm-checkbox w-4 h-4 rounded accent-blue-500 cursor-pointer">
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="edit" 
-                            class="perm-checkbox w-4 h-4 rounded accent-yellow-500 cursor-pointer">
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="delete" 
-                            class="perm-checkbox w-4 h-4 rounded accent-red-500 cursor-pointer">
-                        </td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
+                <div class="divide-y divide-white/[0.03]">
+                  ${modules.map(mod => this._renderPermissionRow(mod, {})).join('')}
+                </div>
               </div>
               <!-- Toplu Seçim -->
               <div class="flex gap-2 mt-3">
                 <button type="button" onclick="adminPage.bulkSelectPermissions(true)" 
                   class="text-xs px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-all">
-                  <i class="fas fa-check-double mr-1"></i> Tümünü Seç
+                  <i class="fas fa-check-double mr-1"></i> Tümünü Aç
                 </button>
                 <button type="button" onclick="adminPage.bulkSelectPermissions(false)" 
                   class="text-xs px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all">
-                  <i class="fas fa-times mr-1"></i> Tümünü Kaldır
-                </button>
-                <button type="button" onclick="adminPage.bulkSelectColumn('view', true)" 
-                  class="text-xs px-3 py-1.5 bg-gray-500/10 text-gray-400 rounded-lg hover:bg-gray-500/20 transition-all">
-                  Tüm Görüntüle
+                  <i class="fas fa-times mr-1"></i> Tümünü Kapat
                 </button>
               </div>
             </div>
@@ -1803,7 +1767,7 @@ MAT-003	Nikel Şerit	500	gr"
         showLoading(true);
         await api.roles.create({ name, display_name, description, permissions });
         modal.remove();
-        alert('✅ Rol başarıyla oluşturuldu!');
+        alert('Rol başarıyla oluşturuldu!');
         this.renderRolesTab();
       } catch (error) {
         alert('Hata: ' + error.message);
@@ -1819,9 +1783,11 @@ MAT-003	Nikel Şerit	500	gr"
       const role = await api.roles.get(roleId);
       const modules = this.getModuleDefinitions();
 
+      // Yeni izin formatı: permMap[module][permission_key] = granted
       const permMap = {};
       (role.permissions || []).forEach(p => {
-        permMap[p.module] = p;
+        if (!permMap[p.module]) permMap[p.module] = {};
+        permMap[p.module][p.permission_key] = p.granted;
       });
 
       const modal = document.createElement('div');
@@ -1834,7 +1800,7 @@ MAT-003	Nikel Şerit	500	gr"
                 <h2 class="text-2xl font-bold gradient-text">
                   <i class="fas fa-shield-alt mr-2"></i> ${role.display_name}
                 </h2>
-                <p class="text-sm text-gray-400 mt-1">Ekran ve işlem izinlerini düzenleyin</p>
+                <p class="text-sm text-gray-400 mt-1">Modül erişim izinlerini düzenleyin</p>
               </div>
               <button onclick="this.closest('.fixed').remove()" 
                 class="text-gray-400 hover:text-red-400 transition-colors p-2 hover:bg-red-500/10 rounded-xl">
@@ -1847,8 +1813,7 @@ MAT-003	Nikel Şerit	500	gr"
               <div>
                 <label class="block text-sm font-semibold text-gray-300 mb-1">Görünen Ad</label>
                 <input type="text" id="editRoleDisplayName" value="${role.display_name}"
-                  class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white"
-                  ${role.is_system ? '' : ''}>
+                  class="w-full px-4 py-3 border-2 border-white/10 bg-white/5 rounded-xl focus:border-blue-500 focus:outline-none transition-all text-white">
               </div>
               <div>
                 <label class="block text-sm font-semibold text-gray-300 mb-1">Açıklama</label>
@@ -1857,83 +1822,22 @@ MAT-003	Nikel Şerit	500	gr"
               </div>
             </div>
 
-            <!-- İzin Matrisi -->
+            <!-- İzin Matrisi - YENİ BASİT YAPI -->
             <div class="glass-card rounded-xl overflow-hidden mb-4">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="bg-white/[0.03]">
-                    <th class="text-left py-3 px-4 font-semibold text-gray-300">Modül</th>
-                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
-                      <div class="flex flex-col items-center">
-                        <span>Görüntüle</span>
-                        <button type="button" onclick="adminPage.bulkSelectColumn('view')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
-                      </div>
-                    </th>
-                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
-                      <div class="flex flex-col items-center">
-                        <span>Oluştur</span>
-                        <button type="button" onclick="adminPage.bulkSelectColumn('create')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
-                      </div>
-                    </th>
-                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
-                      <div class="flex flex-col items-center">
-                        <span>Düzenle</span>
-                        <button type="button" onclick="adminPage.bulkSelectColumn('edit')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
-                      </div>
-                    </th>
-                    <th class="text-center py-3 px-2 font-semibold text-gray-300">
-                      <div class="flex flex-col items-center">
-                        <span>Sil</span>
-                        <button type="button" onclick="adminPage.bulkSelectColumn('delete')" class="text-[10px] text-blue-400 hover:text-blue-300 mt-0.5">hepsi</button>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${modules.map(mod => {
-                    const p = permMap[mod.key] || {};
-                    return `
-                      <tr class="border-t border-white/[0.03] hover:bg-white/[0.02]">
-                        <td class="py-2.5 px-4">
-                          <span class="text-gray-200"><i class="${mod.icon} text-gray-400 mr-2 w-4 text-center"></i>${mod.label}</span>
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="view" 
-                            class="perm-checkbox w-4 h-4 rounded accent-green-500 cursor-pointer"
-                            ${p.can_view ? 'checked' : ''}
-                            onchange="adminPage.onPermCheckboxChange(this)">
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="create" 
-                            class="perm-checkbox w-4 h-4 rounded accent-blue-500 cursor-pointer"
-                            ${p.can_create ? 'checked' : ''}>
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="edit" 
-                            class="perm-checkbox w-4 h-4 rounded accent-yellow-500 cursor-pointer"
-                            ${p.can_edit ? 'checked' : ''}>
-                        </td>
-                        <td class="text-center py-2.5 px-2">
-                          <input type="checkbox" data-module="${mod.key}" data-perm="delete" 
-                            class="perm-checkbox w-4 h-4 rounded accent-red-500 cursor-pointer"
-                            ${p.can_delete ? 'checked' : ''}>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
+              <div class="divide-y divide-white/[0.03]">
+                ${modules.map(mod => this._renderPermissionRow(mod, permMap[mod.key] || {})).join('')}
+              </div>
             </div>
 
             <!-- Toplu Seçim -->
             <div class="flex gap-2 mb-5">
               <button type="button" onclick="adminPage.bulkSelectPermissions(true)" 
                 class="text-xs px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-all">
-                <i class="fas fa-check-double mr-1"></i> Tümünü Seç
+                <i class="fas fa-check-double mr-1"></i> Tümünü Aç
               </button>
               <button type="button" onclick="adminPage.bulkSelectPermissions(false)" 
                 class="text-xs px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-all">
-                <i class="fas fa-times mr-1"></i> Tümünü Kaldır
+                <i class="fas fa-times mr-1"></i> Tümünü Kapat
               </button>
             </div>
 
@@ -1960,42 +1864,83 @@ MAT-003	Nikel Şerit	500	gr"
     }
   },
 
-  // Görüntüle checkbox kapatıldığında diğerlerini de kapat
-  onPermCheckboxChange(checkbox) {
+  // Tek izin satırı render helper'ı
+  _renderPermissionRow(mod, existingPerms) {
+    if (mod.type === 'multi') {
+      // Prosedür & OTPA gibi çoklu izinli modüller
+      const hasAccess = existingPerms.access;
+      return `
+        <div class="hover:bg-white/[0.02] transition-colors">
+          <!-- Ana Erişim Toggle -->
+          <div class="flex items-center justify-between px-4 py-3">
+            <div class="flex items-center gap-3">
+              <i class="${mod.icon} text-gray-400 w-5 text-center"></i>
+              <span class="text-gray-200 font-medium text-sm">${mod.label}</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" data-module="${mod.key}" data-perm="access" 
+                class="perm-checkbox sr-only peer" ${hasAccess ? 'checked' : ''}
+                onchange="adminPage.onAccessToggle(this)">
+              <div class="w-9 h-5 bg-gray-600 peer-checked:bg-green-500 rounded-full transition-colors
+                after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all
+                peer-checked:after:translate-x-4"></div>
+            </label>
+          </div>
+          <!-- Alt İzinler -->
+          <div class="sub-perms px-4 pb-3 pl-12 space-y-2 ${hasAccess ? '' : 'hidden'}" data-parent="${mod.key}">
+            ${mod.subPermissions.map(sub => `
+              <label class="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" data-module="${mod.key}" data-perm="${sub.key}"
+                  class="perm-checkbox w-3.5 h-3.5 rounded accent-blue-500 cursor-pointer"
+                  ${existingPerms[sub.key] ? 'checked' : ''}>
+                <span class="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">${sub.label}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+
+    // Basit modül - tek toggle
+    return `
+      <div class="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+        <div class="flex items-center gap-3">
+          <i class="${mod.icon} text-gray-400 w-5 text-center"></i>
+          <span class="text-gray-200 font-medium text-sm">${mod.label}</span>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" data-module="${mod.key}" data-perm="access" 
+            class="perm-checkbox sr-only peer" ${existingPerms.access ? 'checked' : ''}>
+          <div class="w-9 h-5 bg-gray-600 peer-checked:bg-green-500 rounded-full transition-colors
+            after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all
+            peer-checked:after:translate-x-4"></div>
+        </label>
+      </div>`;
+  },
+
+  // Multi-permission modülde ana toggle açılıp kapandığında alt izinleri göster/gizle
+  onAccessToggle(checkbox) {
     const module = checkbox.dataset.module;
-    const perm = checkbox.dataset.perm;
-    
-    if (perm === 'view' && !checkbox.checked) {
-      // View kapatılınca diğer tüm izinler de kapatılsın
-      const row = checkbox.closest('tr');
-      row.querySelectorAll('.perm-checkbox').forEach(cb => {
-        if (cb !== checkbox) cb.checked = false;
-      });
-    } else if (perm !== 'view' && checkbox.checked) {
-      // Herhangi bir izin açılınca view da otomatik açılsın
-      const row = checkbox.closest('tr');
-      const viewCb = row.querySelector('[data-perm="view"]');
-      if (viewCb && !viewCb.checked) viewCb.checked = true;
+    const subContainer = checkbox.closest('.fixed')?.querySelector(`[data-parent="${module}"]`);
+    if (subContainer) {
+      if (checkbox.checked) {
+        subContainer.classList.remove('hidden');
+      } else {
+        subContainer.classList.add('hidden');
+        // Alt izinleri de kapat
+        subContainer.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
+      }
     }
   },
 
   bulkSelectPermissions(checked) {
-    document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = checked);
-  },
-
-  bulkSelectColumn(perm, toggle) {
-    const checkboxes = document.querySelectorAll(`[data-perm="${perm}"]`);
-    // toggle: tümü açıksa kapat, değilse aç
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    const newState = toggle !== undefined ? toggle : !allChecked;
-    checkboxes.forEach(cb => {
-      cb.checked = newState;
-      if (perm !== 'view' && newState) {
-        // view de açılmalı
-        const row = cb.closest('tr');
-        const viewCb = row.querySelector('[data-perm="view"]');
-        if (viewCb) viewCb.checked = true;
-      }
+    const modal = document.querySelector('.fixed');
+    if (!modal) return;
+    modal.querySelectorAll('.perm-checkbox').forEach(cb => {
+      cb.checked = checked;
+    });
+    // Sub perm container'ları göster/gizle
+    modal.querySelectorAll('[data-parent]').forEach(container => {
+      container.classList.toggle('hidden', !checked);
     });
   },
 
@@ -2004,18 +1949,21 @@ MAT-003	Nikel Şerit	500	gr"
     const permissions = [];
 
     for (const mod of modules) {
-      const viewCb = container.querySelector(`[data-module="${mod.key}"][data-perm="view"]`);
-      const createCb = container.querySelector(`[data-module="${mod.key}"][data-perm="create"]`);
-      const editCb = container.querySelector(`[data-module="${mod.key}"][data-perm="edit"]`);
-      const deleteCb = container.querySelector(`[data-module="${mod.key}"][data-perm="delete"]`);
+      // Ana erişim (access)
+      const accessCb = container.querySelector(`[data-module="${mod.key}"][data-perm="access"]`);
+      if (accessCb && accessCb.checked) {
+        permissions.push({ module: mod.key, permission_key: 'access', granted: true });
+      }
 
-      permissions.push({
-        module: mod.key,
-        can_view: viewCb ? viewCb.checked : false,
-        can_create: createCb ? createCb.checked : false,
-        can_edit: editCb ? editCb.checked : false,
-        can_delete: deleteCb ? deleteCb.checked : false
-      });
+      // Alt izinler (multi modüller)
+      if (mod.type === 'multi' && mod.subPermissions) {
+        for (const sub of mod.subPermissions) {
+          const subCb = container.querySelector(`[data-module="${mod.key}"][data-perm="${sub.key}"]`);
+          if (subCb && subCb.checked) {
+            permissions.push({ module: mod.key, permission_key: sub.key, granted: true });
+          }
+        }
+      }
     }
 
     return permissions;

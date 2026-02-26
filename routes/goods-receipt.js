@@ -1,11 +1,12 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
 
 // Tüm girişleri getir (raporlama için)
-router.get('/all', authenticateToken, async (req, res) => {
+router.get('/all', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
@@ -35,7 +36,7 @@ router.get('/all', authenticateToken, async (req, res) => {
 });
 
 // Tüm malzeme giriş kayıtlarını listele (filtrelenmiş)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   try {
     const { otpa_id, material_code } = req.query;
 
@@ -81,7 +82,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // OTPA'ya göre giriş kayıtlarını getir
-router.get('/otpa/:otpaId', authenticateToken, async (req, res) => {
+router.get('/otpa/:otpaId', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   try {
     const { otpaId } = req.params;
 
@@ -112,7 +113,7 @@ router.get('/otpa/:otpaId', authenticateToken, async (req, res) => {
 });
 
 // Yeni malzeme giriş kaydı oluştur
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -216,7 +217,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Toplu malzeme girişi - seçilen malzemelerin tamamını tam miktarda giriş yap
-router.post('/bulk', authenticateToken, async (req, res) => {
+router.post('/bulk', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -286,7 +287,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
 });
 
 // Giriş kaydı detayı
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   try {
     const { id } = req.params;
 

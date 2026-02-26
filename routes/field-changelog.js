@@ -7,7 +7,8 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -399,7 +400,7 @@ router.put('/logs/:id', authenticateToken, async (req, res) => {
 });
 
 // ─── Kayıt sil ──────────────────────────────────────────────────────
-router.delete('/logs/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/logs/:id', authenticateToken, requireModuleAccess('field-changelog'), async (req, res) => {
   try {
     const { id } = req.params;
     // Dosya temizliği
@@ -482,7 +483,7 @@ router.delete('/attachments/:id', authenticateToken, async (req, res) => {
 });
 
 // ─── EXCEL IMPORT ───────────────────────────────────────────────────
-router.post('/import', authenticateToken, authorizeRoles('admin', 'kalite'), upload.single('file'), async (req, res) => {
+router.post('/import', authenticateToken, requireModuleAccess('field-changelog'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Excel dosyası yükleyin' });
 

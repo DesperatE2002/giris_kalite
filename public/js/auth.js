@@ -55,8 +55,8 @@ const authManager = {
     return this.currentUser && roles.includes(this.currentUser.role);
   },
 
-  // Dinamik izin kontrolü
-  hasPermission(module, action = 'can_view') {
+  // Dinamik izin kontrolü (yeni basit yapı: permissions[module].access veya .prosedur_view vb.)
+  hasPermission(module, action = 'access') {
     if (!this.currentUser) return false;
     // Admin her zaman tam yetkili
     if (this.currentUser.role === 'admin') return true;
@@ -66,13 +66,13 @@ const authManager = {
     return !!perm[action];
   },
 
-  // Herhangi bir modülü görüntüleyebiliyor mu?
+  // Herhangi bir modüle erişebiliyor mu?
   hasAnyViewPermission() {
     if (!this.currentUser) return false;
     // Admin her zaman erişebilir
     if (this.currentUser.role === 'admin') return true;
     if (!this.currentUser.permissions) return false;
-    return Object.values(this.currentUser.permissions).some(p => p.can_view);
+    return Object.values(this.currentUser.permissions).some(p => p.access);
   },
 
   // Varsayılan ana sayfa

@@ -1,5 +1,6 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -150,7 +151,7 @@ router.get('/assignments', authenticateToken, async (req, res) => {
 });
 
 // Görev oluştur (admin)
-router.post('/assignments', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/assignments', authenticateToken, requireModuleAccess('technicians'), async (req, res) => {
   try {
     const { title, description, assigned_to, difficulty, notes, deadline } = req.body;
 
@@ -172,7 +173,7 @@ router.post('/assignments', authenticateToken, authorizeRoles('admin'), async (r
 });
 
 // Görev güncelle (admin)
-router.put('/assignments/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/assignments/:id', authenticateToken, requireModuleAccess('technicians'), async (req, res) => {
   try {
     const { title, description, assigned_to, difficulty, notes, status, deadline } = req.body;
 
@@ -195,7 +196,7 @@ router.put('/assignments/:id', authenticateToken, authorizeRoles('admin'), async
 });
 
 // Görev sil (admin)
-router.delete('/assignments/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/assignments/:id', authenticateToken, requireModuleAccess('technicians'), async (req, res) => {
   try {
     await pool.query('DELETE FROM tech_activity_logs WHERE assignment_id = ?', [req.params.id]);
     const result = await pool.query('DELETE FROM tech_assignments WHERE id = ?', [req.params.id]);

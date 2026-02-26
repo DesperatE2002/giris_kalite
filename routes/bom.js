@@ -1,7 +1,8 @@
 import express from 'express';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import path from 'path';
 import fs from 'fs';
 import pool from '../db/database.js';
@@ -55,7 +56,7 @@ router.get('/:otpaId', authenticateToken, async (req, res) => {
 });
 
 // OTPA'nın tüm BOM'unu toplu sil
-router.delete('/bulk-delete/:otpaId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/bulk-delete/:otpaId', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { otpaId } = req.params;
 
@@ -69,7 +70,7 @@ router.delete('/bulk-delete/:otpaId', authenticateToken, authorizeRoles('admin')
 });
 
 // Excel'den BOM yükle
-router.post('/upload', authenticateToken, authorizeRoles('admin'), upload.single('file'), async (req, res) => {
+router.post('/upload', authenticateToken, requireModuleAccess('admin'), upload.single('file'), async (req, res) => {
   try {
     const { otpaId } = req.body;
 
@@ -200,7 +201,7 @@ router.post('/upload', authenticateToken, authorizeRoles('admin'), upload.single
 });
 
 // Tek BOM kalemi ekle
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { otpa_id, material_code, material_name, required_quantity, unit } = req.body;
 
@@ -231,7 +232,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // BOM kalemi sil
-router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -252,7 +253,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, re
 });
 
 // Komponent bazlı BOM yükleme
-router.post('/upload-component', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/upload-component', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { otpa_id, component_type, items } = req.body;
 

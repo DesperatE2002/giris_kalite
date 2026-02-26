@@ -1,13 +1,14 @@
 // routes/bom.js - Yeni endpoint ekleyelim
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import fs from 'fs';
 import pool from '../db/database.js';
 
 const router = express.Router();
 
 // Komponent bazlı BOM yükleme (YEN İ)
-router.post('/upload-component', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/upload-component', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { otpa_id, component_type, items } = req.body;
 

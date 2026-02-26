@@ -8,7 +8,8 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -235,7 +236,7 @@ router.get('/documents', authenticateToken, async (req, res) => {
 });
 
 // Doküman yükle
-router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, (req, res, next) => {
+router.post('/documents', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     next();
@@ -261,7 +262,7 @@ router.post('/documents', authenticateToken, authorizeRoles('admin'), (req, res,
 });
 
 // Doküman güncelle
-router.put('/documents/:id', authenticateToken, authorizeRoles('admin'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, (req, res, next) => {
+router.put('/documents/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), (req, res, next) => { req.uploadSubDir = 'documents'; next(); }, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     next();
@@ -297,7 +298,7 @@ router.put('/documents/:id', authenticateToken, authorizeRoles('admin'), (req, r
 });
 
 // Doküman sil
-router.delete('/documents/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/documents/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     await pool.query('DELETE FROM po_documents WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -393,7 +394,7 @@ router.get('/otpa/:id', authenticateToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Sunucu hatası' }); }
 });
 
-router.post('/otpa', authenticateToken, authorizeRoles('admin', 'kalite'), async (req, res) => {
+router.post('/otpa', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     const { otpa_no, project_name, production_date, responsible_tech, battery_count, notes } = req.body;
     if (!otpa_no?.trim()) return res.status(400).json({ error: 'OTPA No zorunlu' });
@@ -408,7 +409,7 @@ router.post('/otpa', authenticateToken, authorizeRoles('admin', 'kalite'), async
   }
 });
 
-router.put('/otpa/:id', authenticateToken, authorizeRoles('admin', 'kalite'), async (req, res) => {
+router.put('/otpa/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     const { project_name, production_date, responsible_tech, battery_count, status, notes } = req.body;
     await pool.query(
@@ -420,7 +421,7 @@ router.put('/otpa/:id', authenticateToken, authorizeRoles('admin', 'kalite'), as
   } catch (e) { res.status(500).json({ error: 'Güncelleme hatası' }); }
 });
 
-router.delete('/otpa/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/otpa/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     await pool.query('DELETE FROM po_otpa WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -441,7 +442,7 @@ router.get('/form-templates', authenticateToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Sunucu hatası' }); }
 });
 
-router.post('/form-templates', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/form-templates', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     const { form_name, form_type, description } = req.body;
     if (!form_name?.trim()) return res.status(400).json({ error: 'Form adı zorunlu' });
@@ -450,7 +451,7 @@ router.post('/form-templates', authenticateToken, authorizeRoles('admin'), async
   } catch (e) { res.status(500).json({ error: 'Oluşturma hatası' }); }
 });
 
-router.put('/form-templates/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/form-templates/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     const { form_name, form_type, description, is_active } = req.body;
     await pool.query('UPDATE po_form_templates SET form_name=COALESCE(?,form_name), form_type=COALESCE(?,form_type), description=COALESCE(?,description), is_active=COALESCE(?,is_active) WHERE id=?',
@@ -460,7 +461,7 @@ router.put('/form-templates/:id', authenticateToken, authorizeRoles('admin'), as
   } catch (e) { res.status(500).json({ error: 'Güncelleme hatası' }); }
 });
 
-router.delete('/form-templates/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/form-templates/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     await pool.query('DELETE FROM po_form_templates WHERE id=?', [req.params.id]);
     res.json({ success: true });
@@ -475,7 +476,7 @@ router.get('/form-templates/:id/items', authenticateToken, async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Sunucu hatası' }); }
 });
 
-router.post('/form-templates/:id/items', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/form-templates/:id/items', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     const { item_no, item_text, control_type, is_required, sort_order } = req.body;
     if (!item_text?.trim()) return res.status(400).json({ error: 'Madde metni zorunlu' });
@@ -503,7 +504,7 @@ router.post('/form-templates/:id/items', authenticateToken, authorizeRoles('admi
   } catch (e) { res.status(500).json({ error: 'Ekleme hatası' }); }
 });
 
-router.put('/form-items/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/form-items/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     const { item_no, item_text, control_type, is_required, sort_order } = req.body;
     await pool.query('UPDATE po_form_items SET item_no=COALESCE(?,item_no), item_text=COALESCE(?,item_text), control_type=COALESCE(?,control_type), is_required=COALESCE(?,is_required), sort_order=COALESCE(?,sort_order) WHERE id=?',
@@ -513,7 +514,7 @@ router.put('/form-items/:id', authenticateToken, authorizeRoles('admin'), async 
   } catch (e) { res.status(500).json({ error: 'Güncelleme hatası' }); }
 });
 
-router.delete('/form-items/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/form-items/:id', authenticateToken, requireModuleAccess('prosedur-otpa', 'prosedur_manage'), async (req, res) => {
   try {
     await pool.query('DELETE FROM po_form_items WHERE id=?', [req.params.id]);
     res.json({ success: true });

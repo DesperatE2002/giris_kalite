@@ -96,23 +96,19 @@ router.post('/login', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 saat
     });
 
-    // Kullanıcı izinlerini çek
+    // Kullanıcı izinlerini çek (yeni basit yapı: module → { access, prosedur_view, ... })
     let permissions = {};
     try {
       const { rows: perms } = await pool.query(`
-        SELECT rp.module, rp.can_view, rp.can_create, rp.can_edit, rp.can_delete
+        SELECT rp.module, rp.permission_key, rp.granted
         FROM role_permissions rp
         JOIN roles r ON r.id = rp.role_id
         WHERE r.name = ?
       `, [user.role]);
-      perms.forEach(p => {
-        permissions[p.module] = {
-          can_view: p.can_view,
-          can_create: p.can_create,
-          can_edit: p.can_edit,
-          can_delete: p.can_delete
-        };
-      });
+      for (const p of perms) {
+        if (!permissions[p.module]) permissions[p.module] = {};
+        permissions[p.module][p.permission_key] = !!p.granted;
+      }
     } catch (e) {
       console.warn('İzinler yüklenemedi (roles tablosu henüz hazır olmayabilir):', e.message);
     }
@@ -154,23 +150,19 @@ router.get('/me', authenticateToken, async (req, res) => {
 
     const user = result.rows[0];
 
-    // Kullanıcı izinlerini çek
+    // Kullanıcı izinlerini çek (yeni basit yapı)
     let permissions = {};
     try {
       const { rows: perms } = await pool.query(`
-        SELECT rp.module, rp.can_view, rp.can_create, rp.can_edit, rp.can_delete
+        SELECT rp.module, rp.permission_key, rp.granted
         FROM role_permissions rp
         JOIN roles r ON r.id = rp.role_id
         WHERE r.name = ?
       `, [user.role]);
-      perms.forEach(p => {
-        permissions[p.module] = {
-          can_view: p.can_view,
-          can_create: p.can_create,
-          can_edit: p.can_edit,
-          can_delete: p.can_delete
-        };
-      });
+      for (const p of perms) {
+        if (!permissions[p.module]) permissions[p.module] = {};
+        permissions[p.module][p.permission_key] = !!p.granted;
+      }
     } catch (e) {
       console.warn('İzinler yüklenemedi:', e.message);
     }

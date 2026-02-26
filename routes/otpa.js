@@ -1,5 +1,6 @@
 import express from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
 
 const router = express.Router();
@@ -113,7 +114,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Yeni OTPA oluştur
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { otpa_number, project_name, customer_info, battery_pack_count, status } = req.body;
 
@@ -139,7 +140,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // OTPA güncelle
-router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { project_name, customer_info, battery_pack_count, status } = req.body;
@@ -199,7 +200,7 @@ router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // OTPA sil
-router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     const { id } = req.params;
 
