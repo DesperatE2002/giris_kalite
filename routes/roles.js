@@ -92,6 +92,18 @@ export async function migrateRoles() {
       await seedDefaultRoles();
     }
 
+    // Patch: tekniker rolüne quality erişimi ekle (eksikse)
+    try {
+      const { rows: tekRole } = await pool.query("SELECT id FROM roles WHERE name = 'tekniker'");
+      if (tekRole.length > 0) {
+        await pool.query(
+          `INSERT INTO role_permissions (role_id, module, permission_key, granted) VALUES (?, 'quality', 'access', true)
+           ON CONFLICT (role_id, module, permission_key) DO NOTHING`,
+          [tekRole[0].id]
+        );
+      }
+    } catch (e) { /* ignore */ }
+
     // users.role constraint kaldır
     try {
       await pool.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check');
@@ -143,7 +155,7 @@ async function seedDefaultRoles() {
   await grantPermission(kalite.id, 'prosedur-otpa', 'prosedur_manage');
 
   // Tekniker
-  const teknikerModules = ['dashboard', 'goods-receipt', 'returns', 'taskboard'];
+  const teknikerModules = ['dashboard', 'goods-receipt', 'returns', 'quality', 'taskboard'];
   const { rows: [tekniker] } = await pool.query(
     `INSERT INTO roles (name, display_name, description, is_system) VALUES (?, ?, ?, ?) RETURNING id`,
     ['tekniker', 'Tekniker', 'Teknik personel', true]
