@@ -1106,9 +1106,8 @@ const ProjectsPage = {
       showLoading(true);
       document.querySelector('.fixed')?.remove();
       const project = await api.request('/projects', { method: 'POST', body: JSON.stringify({ name, start_date, linked_otpa_id: linked_otpa_id ? parseInt(linked_otpa_id) : null }) });
-      this.currentProject = project;
+      this.currentProject = { id: project.id };
       await this.render();
-      await this.selectProject(project.id);
     } catch (e) { alert('Hata: ' + e.message); } finally { showLoading(false); }
   },
 
