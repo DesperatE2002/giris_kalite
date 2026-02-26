@@ -1,133 +1,236 @@
-// Dashboard Page
+// Dashboard — Command Center Homepage
 const dashboardPage = {
   async render() {
     const content = document.getElementById('content');
-    
+
     try {
       showLoading(true);
-      
-      // Get summary stats
-      const summary = await api.reports.summary();
-      const otpaList = await api.otpa.list();
+      const user = authManager.currentUser;
+      const role = user?.role || 'viewer';
+
+      // Fetch summary stats
+      let summary = { open_otpa: 0, in_production_otpa: 0, pending_quality: 0, rejections_last_month: 0 };
+      try { summary = await api.reports.summary(); } catch(e) { /* skip */ }
+
+      // Greeting
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi Günler' : 'İyi Akşamlar';
+      const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Module definitions (role-aware)
+      const modules = [
+        {
+          id: 'goods-receipt', icon: 'fa-box', color: 'blue',
+          title: 'Malzeme Girişi', desc: 'Gelen malzemelerin kaydı, BOM takibi ve OTPA yönetimi',
+          stat: `${summary.open_otpa || 0} açık OTPA`, statColor: 'blue',
+          roles: ['tekniker', 'kalite', 'admin']
+        },
+        {
+          id: 'returns', icon: 'fa-undo', color: 'amber',
+          title: 'İade Yönetimi', desc: 'Malzeme iade işlemleri, tedarikçi iade takibi',
+          stat: null, statColor: 'amber',
+          roles: ['tekniker', 'kalite', 'admin']
+        },
+        {
+          id: 'quality', icon: 'fa-check-circle', color: 'emerald',
+          title: 'Kalite Kontrol', desc: 'Muayene, kabul/ret kararları ve kalite raporları',
+          stat: summary.pending_quality > 0 ? `${summary.pending_quality} bekleyen` : null,
+          statColor: summary.pending_quality > 0 ? 'yellow' : 'emerald',
+          roles: ['kalite', 'admin']
+        },
+        {
+          id: 'projects', icon: 'fa-project-diagram', color: 'purple',
+          title: 'Proje Takip', desc: 'Proje planlama, Gantt şeması, öngörü tarihleri ve raporlar',
+          stat: null, statColor: 'purple',
+          roles: ['admin', 'proje_yonetici']
+        },
+        {
+          id: 'technicians', icon: 'fa-hard-hat', color: 'orange',
+          title: 'İş Takip', desc: 'Tekniker görev atamaları, kanban panosu ve performans takibi',
+          stat: null, statColor: 'orange',
+          roles: ['tekniker', 'kalite', 'admin']
+        },
+        {
+          id: 'taskboard', icon: 'fa-tv', color: 'cyan',
+          title: 'Görev Ekranı', desc: 'Kişisel görev panosu ve günlük iş takibi',
+          stat: null, statColor: 'cyan',
+          roles: ['tekniker', 'kalite', 'admin']
+        },
+        {
+          id: 'prosedur-otpa', icon: 'fa-file-alt', color: 'indigo',
+          title: 'Prosedür & OTPA', desc: 'Form şablonları, batarya raporları ve doküman yönetimi',
+          stat: null, statColor: 'indigo',
+          roles: ['admin', 'kalite']
+        },
+        {
+          id: 'field-changelog', icon: 'fa-history', color: 'teal',
+          title: 'Saha Değişiklik', desc: 'Saha değişiklik kayıtları, OTPA timeline ve Excel import',
+          stat: null, statColor: 'teal',
+          roles: ['admin', 'kalite']
+        },
+        {
+          id: 'paket-analiz', icon: 'fa-cubes', color: 'rose',
+          title: 'Paket Analiz', desc: 'Paket maliyet analizleri, BOM yönetimi ve raporlama',
+          stat: null, statColor: 'rose',
+          roles: ['admin']
+        },
+        {
+          id: 'admin', icon: 'fa-cog', color: 'gray',
+          title: 'Yönetim Paneli', desc: 'Kullanıcı yönetimi, OTPA oluşturma, sistem ayarları',
+          stat: null, statColor: 'gray',
+          roles: ['admin']
+        }
+      ];
+
+      const visibleModules = modules.filter(m => m.roles.includes(role));
+
+      // Color map for Tailwind class generation
+      const colorMap = {
+        blue:    { bg: 'from-blue-500 to-blue-600',    light: 'bg-blue-500/10',    text: 'text-blue-400',    ring: 'hover:ring-blue-500/30' },
+        amber:   { bg: 'from-amber-500 to-amber-600',  light: 'bg-amber-500/10',   text: 'text-amber-400',   ring: 'hover:ring-amber-500/30' },
+        emerald: { bg: 'from-emerald-500 to-emerald-600', light: 'bg-emerald-500/10', text: 'text-emerald-400', ring: 'hover:ring-emerald-500/30' },
+        purple:  { bg: 'from-purple-500 to-purple-600', light: 'bg-purple-500/10',  text: 'text-purple-400',  ring: 'hover:ring-purple-500/30' },
+        orange:  { bg: 'from-orange-500 to-orange-600', light: 'bg-orange-500/10',  text: 'text-orange-400',  ring: 'hover:ring-orange-500/30' },
+        cyan:    { bg: 'from-cyan-500 to-cyan-600',    light: 'bg-cyan-500/10',    text: 'text-cyan-400',    ring: 'hover:ring-cyan-500/30' },
+        indigo:  { bg: 'from-indigo-500 to-indigo-600', light: 'bg-indigo-500/10',  text: 'text-indigo-400',  ring: 'hover:ring-indigo-500/30' },
+        teal:    { bg: 'from-teal-500 to-teal-600',    light: 'bg-teal-500/10',    text: 'text-teal-400',    ring: 'hover:ring-teal-500/30' },
+        rose:    { bg: 'from-rose-500 to-rose-600',    light: 'bg-rose-500/10',    text: 'text-rose-400',    ring: 'hover:ring-rose-500/30' },
+        gray:    { bg: 'from-gray-500 to-gray-600',    light: 'bg-gray-500/10',    text: 'text-gray-400',    ring: 'hover:ring-gray-500/30' },
+        red:     { bg: 'from-red-500 to-red-600',      light: 'bg-red-500/10',     text: 'text-red-400',     ring: 'hover:ring-red-500/30' },
+        yellow:  { bg: 'from-yellow-500 to-yellow-600', light: 'bg-yellow-500/10',  text: 'text-yellow-400',  ring: 'hover:ring-yellow-500/30' },
+      };
+
+      // Role display
+      const roleMap = {
+        'viewer': { text: 'Yeni Kullanıcı', cls: 'bg-gray-500/15 text-gray-400' },
+        'tekniker': { text: 'Tekniker', cls: 'bg-blue-500/15 text-blue-400' },
+        'kalite': { text: 'Kalite', cls: 'bg-emerald-500/15 text-emerald-400' },
+        'proje_yonetici': { text: 'Proje Yöneticisi', cls: 'bg-purple-500/15 text-purple-400' },
+        'admin': { text: 'Admin', cls: 'bg-indigo-500/15 text-indigo-400' }
+      };
+      const roleInfo = roleMap[role] || roleMap['viewer'];
 
       content.innerHTML = `
-        <div class="space-y-6 fade-in">
-          <!-- Page Header -->
-          <div class="flex justify-between items-center">
-            <h1 class="text-4xl font-bold gradient-text">
-              <i class="fas fa-home mr-3"></i> Ana Sayfa
-            </h1>
-          </div>
+        <div class="space-y-8 fade-in">
 
-          <!-- Summary Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="glass-card rounded-2xl p-6 hover-lift">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 shadow-lg">
-                  <i class="fas fa-folder-open text-white text-3xl"></i>
+          <!-- HERO SECTION -->
+          <div class="glass-card rounded-2xl p-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <div class="w-14 h-14 gradient-btn rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-clipboard-check text-white text-2xl"></i>
+                  </div>
+                  <div>
+                    <h1 class="text-3xl font-bold text-white">${greeting}, <span class="gradient-text">${user?.full_name || 'Kullanıcı'}</span></h1>
+                    <p class="text-gray-400 text-sm mt-0.5">${today}</p>
+                  </div>
                 </div>
-                <div class="ml-5">
-                  <p class="text-gray-400 text-sm font-medium">Açık OTPA</p>
-                  <p class="text-3xl font-bold text-white">${summary.open_otpa || 0}</p>
-                </div>
+                <p class="text-gray-500 text-sm mt-3 max-w-xl">E-LAB Süreç Kontrol sisteminize hoş geldiniz. Aşağıdaki modüller üzerinden işlemlerinizi yönetebilirsiniz.</p>
               </div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6 hover-lift">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 shadow-lg">
-                  <i class="fas fa-industry text-white text-3xl"></i>
-                </div>
-                <div class="ml-5">
-                  <p class="text-gray-400 text-sm font-medium">Üretimde</p>
-                  <p class="text-3xl font-bold text-white">${summary.in_production_otpa || 0}</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6 hover-lift">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 shadow-lg">
-                  <i class="fas fa-clock text-white text-3xl"></i>
-                </div>
-                <div class="ml-5">
-                  <p class="text-gray-400 text-sm font-medium">Kalite Bekleyen</p>
-                  <p class="text-3xl font-bold text-white">${summary.pending_quality || 0}</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="glass-card rounded-2xl p-6 hover-lift">
-              <div class="flex items-center">
-                <div class="flex-shrink-0 bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 shadow-lg">
-                  <i class="fas fa-times-circle text-white text-3xl"></i>
-                </div>
-                <div class="ml-5">
-                  <p class="text-gray-400 text-sm font-medium">Red (30 gün)</p>
-                  <p class="text-3xl font-bold text-white">${summary.rejections_last_month || 0}</p>
-                </div>
+              <div class="flex items-center gap-3 flex-shrink-0">
+                <span class="px-3 py-1.5 rounded-full text-sm font-semibold ${roleInfo.cls}"><i class="fas fa-shield-alt mr-1.5"></i>${roleInfo.text}</span>
               </div>
             </div>
           </div>
 
-          <!-- OTPA List -->
-          <div class="glass-card rounded-2xl shadow-xl">
-            <div class="px-6 py-4 border-b border-white/5">
-              <h2 class="text-2xl font-bold gradient-text">
-                <i class="fas fa-list mr-2"></i> OTPA Listesi
-              </h2>
+          <!-- KPI CARDS -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div onclick="app.navigate('goods-receipt')" class="glass-card rounded-xl p-5 cursor-pointer hover-lift group">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <i class="fas fa-folder-open text-white text-lg"></i>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Açık OTPA</p>
+                  <p class="text-2xl font-bold text-white">${summary.open_otpa || 0}</p>
+                </div>
+              </div>
             </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-white/5">
-                <thead>
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">OTPA</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Proje</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Durum</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">İlerleme</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">İşlem</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                  ${otpaList.map(otpa => {
-                    const totalItems = parseInt(otpa.total_items) || 0;
-                    const completedItems = parseInt(otpa.completed_items) || 0;
-                    const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-                    
-                    return `
-                      <tr class="hover:bg-white/[0.03] transition-all duration-200">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="font-semibold text-white">${otpa.otpa_number}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                          <div class="text-sm font-medium text-white">${otpa.project_name}</div>
-                          ${otpa.customer_info ? `<div class="text-xs text-gray-400">${otpa.customer_info}</div>` : ''}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                          ${this.getStatusBadge(otpa.status)}
-                        </td>
-                        <td class="px-6 py-4">
-                          <div class="flex items-center">
-                            <div class="w-full bg-gray-700/50 rounded-full h-2.5 mr-2 shadow-inner">
-                              <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full shadow-lg transition-all duration-300" style="width: ${percentage}%"></div>
-                            </div>
-                            <span class="text-sm font-semibold text-gray-300">${percentage}%</span>
-                          </div>
-                          <div class="text-xs text-gray-400 mt-1 font-medium">${completedItems}/${totalItems} tamamlandı</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onclick="this.innerHTML='<i class=\\'fas fa-spinner fa-spin\\'></i> Yükleniyor...'; this.disabled=true; dashboardPage.viewOtpaDetail(${otpa.id})" 
-                            class="gradient-btn px-4 py-2 rounded-lg disabled:opacity-50">
-                            <i class="fas fa-eye"></i> Detay
-                          </button>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
+            <div onclick="app.navigate('goods-receipt')" class="glass-card rounded-xl p-5 cursor-pointer hover-lift group">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <i class="fas fa-industry text-white text-lg"></i>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Üretimde</p>
+                  <p class="text-2xl font-bold text-white">${summary.in_production_otpa || 0}</p>
+                </div>
+              </div>
+            </div>
+            <div onclick="${role === 'kalite' || role === 'admin' ? "app.navigate('quality')" : ''}" class="glass-card rounded-xl p-5 ${role === 'kalite' || role === 'admin' ? 'cursor-pointer hover-lift' : ''} group">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <i class="fas fa-clock text-white text-lg"></i>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Kalite Bekleyen</p>
+                  <p class="text-2xl font-bold ${summary.pending_quality > 0 ? 'text-yellow-400' : 'text-white'}">${summary.pending_quality || 0}</p>
+                </div>
+              </div>
+            </div>
+            <div onclick="${role === 'kalite' || role === 'admin' ? "app.navigate('quality')" : ''}" class="glass-card rounded-xl p-5 ${role === 'kalite' || role === 'admin' ? 'cursor-pointer hover-lift' : ''} group">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <i class="fas fa-times-circle text-white text-lg"></i>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-400">Red (30 gün)</p>
+                  <p class="text-2xl font-bold ${summary.rejections_last_month > 0 ? 'text-red-400' : 'text-white'}">${summary.rejections_last_month || 0}</p>
+                </div>
+              </div>
             </div>
           </div>
+
+          <!-- MODULE GRID -->
+          <div>
+            <h2 class="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2">
+              <i class="fas fa-th-large text-indigo-400"></i> Modüller
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${visibleModules.map(m => {
+                const c = colorMap[m.color];
+                return `
+                <div onclick="app.navigate('${m.id}')" 
+                  class="glass-card rounded-xl p-6 cursor-pointer hover-lift group transition-all hover:ring-2 ${c.ring} relative overflow-hidden">
+                  <div class="absolute top-0 right-0 w-24 h-24 ${c.light} rounded-full blur-2xl -mr-8 -mt-8 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                  
+                  <div class="relative z-10">
+                    <div class="flex items-start justify-between mb-3">
+                      <div class="w-12 h-12 bg-gradient-to-br ${c.bg} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas ${m.icon} text-white text-lg"></i>
+                      </div>
+                      ${m.stat ? `<span class="text-xs px-2 py-1 rounded-full font-semibold ${colorMap[m.statColor]?.light || c.light} ${colorMap[m.statColor]?.text || c.text}">${m.stat}</span>` : ''}
+                    </div>
+                    <h3 class="font-bold text-white text-lg mb-1">${m.title}</h3>
+                    <p class="text-sm text-gray-500 leading-relaxed">${m.desc}</p>
+                    <div class="mt-4 flex items-center gap-1.5 text-xs ${c.text} font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                      Sayfaya git <i class="fas fa-arrow-right text-xs"></i>
+                    </div>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- SYSTEM INFO -->
+          <div class="glass-card rounded-xl p-5">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="flex items-center gap-3 text-gray-500 text-sm">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span>Sistem aktif</span>
+                <span class="text-gray-700">|</span>
+                <span><i class="fas fa-code-branch mr-1"></i>E-LAB Süreç Kontrol v2.0</span>
+              </div>
+              <div class="text-xs text-gray-600">
+                ${visibleModules.length} modül erişiminiz var
+              </div>
+            </div>
+          </div>
+
         </div>
       `;
     } catch (error) {
@@ -139,202 +242,6 @@ const dashboardPage = {
     } finally {
       showLoading(false);
     }
-  },
-
-  getStatusBadge(status) {
-    const statusMap = {
-      'acik': { class: 'bg-emerald-500/15 text-emerald-400', text: 'Açık', icon: 'fa-folder-open' },
-      'uretimde': { class: 'bg-blue-500/15 text-blue-400', text: 'Üretimde', icon: 'fa-industry' },
-      'kapali': { class: 'bg-gray-500/15 text-gray-400', text: 'Kapalı', icon: 'fa-folder' }
-    };
-    const s = statusMap[status] || statusMap['acik'];
-    return `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${s.class}">
-      <i class="fas ${s.icon} mr-1"></i> ${s.text}
-    </span>`;
-  },
-
-  async viewOtpaDetail(otpaId) {
-    const content = document.getElementById('content');
-    
-    try {
-      // Show loading immediately
-      showLoading(true);
-      content.innerHTML = `
-        <div class="flex items-center justify-center h-64">
-          <div class="text-center">
-            <i class="fas fa-spinner fa-spin text-4xl text-indigo-500 mb-4"></i>
-            <p class="text-gray-400">OTPA detayları yükleniyor...</p>
-          </div>
-        </div>
-      `;
-      
-      const data = await api.otpa.get(otpaId);
-      const receipts = await api.goodsReceipt.getByOtpa(otpaId);
-
-      content.innerHTML = `
-        <div class="space-y-6">
-          <!-- Back Button -->
-          <button onclick="app.navigate('dashboard')" class="text-indigo-400 hover:text-indigo-300">
-            <i class="fas fa-arrow-left mr-2"></i> Geri Dön
-          </button>
-
-          <!-- OTPA Header -->
-          <div class="glass-card rounded-2xl p-6">
-            <h1 class="text-2xl font-bold text-white mb-4">${data.otpa.otpa_number}</h1>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p class="text-sm text-gray-400">Proje Adı</p>
-                <p class="font-medium text-white">${data.otpa.project_name}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-400">Müşteri</p>
-                <p class="font-medium text-white">${data.otpa.customer_info || '-'}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-400">Durum</p>
-                ${this.getStatusBadge(data.otpa.status)}
-              </div>
-            </div>
-          </div>
-
-          <!-- BOM Table -->
-          <div class="glass-card rounded-2xl">
-            <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center">
-              <h2 class="text-xl font-semibold text-white">
-                <i class="fas fa-clipboard-list mr-2"></i> Malzeme Listesi (BOM)
-              </h2>
-              <div class="space-x-2">
-                <button onclick="dashboardPage.filterBom('missing')" 
-                  class="px-3 py-1 text-sm bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded">
-                  <i class="fas fa-exclamation-triangle mr-1"></i> Eksikleri Göster
-                </button>
-                <button onclick="dashboardPage.filterBom('issues')" 
-                  class="px-3 py-1 text-sm bg-red-500/10 text-red-400 border border-red-500/20 rounded">
-                  <i class="fas fa-times-circle mr-1"></i> Problemleri Göster
-                </button>
-                <button onclick="dashboardPage.filterBom('all')" 
-                  class="px-3 py-1 text-sm bg-gray-500/10 text-gray-400 border border-gray-500/20 rounded">
-                  <i class="fas fa-list mr-1"></i> Tümünü Göster
-                </button>
-              </div>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-white/5" id="bomTable">
-                <thead>
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme Kodu</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme Adı</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Gereken</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Kabul</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Red</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Eksik</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Tamamlanma</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                  ${data.bom.map(item => `
-                    <tr class="hover:bg-white/[0.03]" 
-                        data-missing="${item.missing_quantity > 0 ? 'true' : 'false'}"
-                        data-issues="${item.quality_issues > 0 ? 'true' : 'false'}">
-                      <td class="px-6 py-4 whitespace-nowrap font-medium text-white">${item.material_code}</td>
-                      <td class="px-6 py-4 text-gray-200">${item.material_name}</td>
-                      <td class="px-6 py-4 text-right whitespace-nowrap text-gray-200">${item.required_quantity} ${item.unit}</td>
-                      <td class="px-6 py-4 text-right whitespace-nowrap text-emerald-400 font-medium">${item.total_accepted} ${item.unit}</td>
-                      <td class="px-6 py-4 text-right whitespace-nowrap text-red-400">${item.total_rejected} ${item.unit}</td>
-                      <td class="px-6 py-4 text-right whitespace-nowrap">
-                        <span class="${item.missing_quantity > 0 ? 'text-red-400 font-bold' : 'text-white'}">
-                          ${item.missing_quantity} ${item.unit}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 text-right whitespace-nowrap">
-                        <div class="flex items-center justify-end">
-                          <div class="w-20 bg-gray-700/50 rounded-full h-2 mr-2">
-                            <div class="h-2 rounded-full ${item.completion_percentage >= 100 ? 'bg-emerald-500' : 'bg-indigo-500'}" 
-                              style="width: ${Math.min(item.completion_percentage, 100)}%"></div>
-                          </div>
-                          <span class="text-sm ${item.completion_percentage >= 100 ? 'text-emerald-400 font-bold' : 'text-gray-400'}">
-                            ${item.completion_percentage}%
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Recent Receipts -->
-          <div class="glass-card rounded-2xl">
-            <div class="px-6 py-4 border-b border-white/5">
-              <h2 class="text-xl font-semibold text-white">
-                <i class="fas fa-history mr-2"></i> Son Girişler
-              </h2>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-white/5">
-                <thead>
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Tarih</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Malzeme</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase">Miktar</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Kalite</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Kaydeden</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                  ${receipts.slice(0, 10).map(receipt => `
-                    <tr class="hover:bg-white/[0.03]">
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">${new Date(receipt.receipt_date).toLocaleString('tr-TR')}</td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm font-medium text-white">${receipt.material_code}</div>
-                        <div class="text-xs text-gray-400">${receipt.material_name}</div>
-                      </td>
-                      <td class="px-6 py-4 text-right whitespace-nowrap font-medium text-gray-200">${receipt.received_quantity} ${receipt.unit}</td>
-                      <td class="px-6 py-4 whitespace-nowrap">${this.getQualityBadge(receipt.quality_status)}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${receipt.created_by_name}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      `;
-    } catch (error) {
-      content.innerHTML = `
-        <div class="glass-card border-red-500/30 text-red-400 px-4 py-3 rounded">
-          <i class="fas fa-exclamation-circle mr-2"></i> ${error.message}
-        </div>
-      `;
-    } finally {
-      showLoading(false);
-    }
-  },
-
-  getQualityBadge(status) {
-    const statusMap = {
-      'kabul': { class: 'bg-emerald-500/15 text-emerald-400', text: 'Kabul', icon: 'fa-check' },
-      'iade': { class: 'bg-red-500/15 text-red-400', text: 'İade', icon: 'fa-undo' },
-      'bekliyor': { class: 'bg-gray-500/15 text-gray-400', text: 'Bekliyor', icon: 'fa-clock' }
-    };
-    const s = statusMap[status] || statusMap['bekliyor'];
-    return `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${s.class}">
-      <i class="fas ${s.icon} mr-1"></i> ${s.text}
-    </span>`;
-  },
-
-  filterBom(filter) {
-    const rows = document.querySelectorAll('#bomTable tbody tr');
-    rows.forEach(row => {
-      if (filter === 'all') {
-        row.style.display = '';
-      } else if (filter === 'missing') {
-        row.style.display = row.dataset.missing === 'true' ? '' : 'none';
-      } else if (filter === 'issues') {
-        row.style.display = row.dataset.issues === 'true' ? '' : 'none';
-      }
-    });
   }
 };
 

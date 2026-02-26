@@ -25,16 +25,32 @@ const goodsReceiptPage = {
               <i class="fas fa-folder-open mr-2"></i> OTPA Seç
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${otpaList.filter(o => o.status !== 'kapali').map(otpa => `
+              ${otpaList.filter(o => o.status !== 'kapali').map(otpa => {
+                const totalItems = parseInt(otpa.total_items) || 0;
+                const completedItems = parseInt(otpa.completed_items) || 0;
+                const pct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+                const statusMap = { 'acik': { cls: 'text-emerald-400 bg-emerald-500/15', txt: 'Açık' }, 'uretimde': { cls: 'text-blue-400 bg-blue-500/15', txt: 'Üretimde' } };
+                const st = statusMap[otpa.status] || statusMap['acik'];
+                return `
                 <button onclick="goodsReceiptPage.selectOtpa(${otpa.id})" 
                   class="p-5 border-2 rounded-2xl hover:shadow-xl transition-all duration-200 text-left hover-lift ${this.selectedOtpaId === otpa.id ? 'border-purple-500 bg-purple-500/10 shadow-lg' : 'border-white/10 hover:border-purple-400'}">
-                  <div class="font-bold text-xl gradient-text">${otpa.otpa_number}</div>
-                  <div class="text-sm text-gray-300 mt-2 font-medium">${otpa.project_name}</div>
-                  <div class="mt-3 text-xs text-gray-400">
-                    <i class="fas fa-clipboard-list mr-1"></i> ${otpa.total_items || 0} malzeme
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="font-bold text-xl gradient-text">${otpa.otpa_number}</div>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold ${st.cls}">${st.txt}</span>
                   </div>
-                </button>
-              `).join('')}
+                  <div class="text-sm text-gray-300 font-medium">${otpa.project_name}</div>
+                  ${otpa.customer_info ? `<div class="text-xs text-gray-500 mt-1">${otpa.customer_info}</div>` : ''}
+                  <div class="mt-3">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                      <span>${completedItems}/${totalItems} malzeme</span>
+                      <span class="font-bold ${pct >= 100 ? 'text-green-400' : 'text-gray-300'}">%${pct}</span>
+                    </div>
+                    <div class="w-full bg-gray-700/50 rounded-full h-2">
+                      <div class="h-2 rounded-full transition-all ${pct >= 100 ? 'bg-green-500' : 'bg-indigo-500'}" style="width:${Math.min(pct,100)}%"></div>
+                    </div>
+                  </div>
+                </button>`;
+              }).join('')}
             </div>
           </div>
 
