@@ -1064,12 +1064,12 @@ const ProjectsPage = {
     try { otpaList = await api.otpa.list(); } catch(e) {}
     
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.className = 'project-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
       <div class="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-white"><i class="fas fa-folder-plus mr-2 text-purple-400"></i>Yeni Proje</h2>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-times"></i></button>
+          <button onclick="this.closest('.project-modal').remove()" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-times"></i></button>
         </div>
         <div class="space-y-4">
           <div>
@@ -1105,7 +1105,7 @@ const ProjectsPage = {
     if (!name || !start_date) { alert('Proje adı ve başlangıç tarihi gerekli'); return; }
     
     // Modalı hemen kapat
-    document.querySelector('.fixed')?.remove();
+    document.querySelector('.project-modal')?.remove();
     
     try {
       showLoading(true);
@@ -1129,12 +1129,12 @@ const ProjectsPage = {
     try { otpaList = await api.otpa.list(); } catch(e) {}
     
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.className = 'project-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.innerHTML = `
       <div class="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-white"><i class="fas fa-edit mr-2 text-blue-400"></i>Proje Düzenle</h2>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-times"></i></button>
+          <button onclick="this.closest('.project-modal').remove()" class="text-gray-400 hover:text-red-400 p-2"><i class="fas fa-times"></i></button>
         </div>
         <div class="space-y-4">
           <div>
@@ -1168,7 +1168,7 @@ const ProjectsPage = {
     const linked_otpa_id = document.getElementById('ep_otpa')?.value || null;
     if (!name || !start_date) { alert('Proje adı ve başlangıç tarihi gerekli'); return; }
     
-    document.querySelector('.fixed')?.remove();
+    document.querySelector('.project-modal')?.remove();
     
     try {
       showLoading(true);
