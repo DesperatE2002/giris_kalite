@@ -536,7 +536,7 @@ const ProjectsPage = {
             <span><span class="inline-block w-3 h-3 rounded bg-orange-500 mr-1"></span>Bloke</span>
             <span><span class="inline-block w-3 h-3 rounded bg-gray-400 mr-1"></span>Bekliyor</span>
             <span><span class="inline-block w-3 h-3 rounded border border-dashed border-yellow-500 bg-yellow-500/30 mr-1"></span>Öngörü Uzantısı</span>
-            <button onclick="projectTracker.toggleGanttFullscreen()" class="ml-3 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium gantt-fullscreen-btn" title="Tam ekran">
+            <button onclick="ProjectsPage.toggleGanttFullscreen()" class="ml-3 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium gantt-fullscreen-btn" title="Tam ekran">
               <i class="fas fa-expand"></i> Büyüt
             </button>
           </div>
@@ -627,9 +627,9 @@ const ProjectsPage = {
     topBar.innerHTML = `
       <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fas fa-chart-gantt text-purple-400"></i>Gantt Şeması — Tam Ekran</h2>
       <div class="flex items-center gap-3">
-        <button onclick="projectTracker.ganttZoom(-1)" class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition text-sm" title="Küçült"><i class="fas fa-search-minus"></i></button>
-        <button onclick="projectTracker.ganttZoom(1)" class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition text-sm" title="Büyült"><i class="fas fa-search-plus"></i></button>
-        <button onclick="projectTracker.toggleGanttFullscreen()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium" title="Kapat">
+        <button onclick="ProjectsPage.ganttZoom(-1)" class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition text-sm" title="Küçült"><i class="fas fa-search-minus"></i></button>
+        <button onclick="ProjectsPage.ganttZoom(1)" class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition text-sm" title="Büyült"><i class="fas fa-search-plus"></i></button>
+        <button onclick="ProjectsPage.toggleGanttFullscreen()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium" title="Kapat">
           <i class="fas fa-compress"></i> Küçült
         </button>
       </div>
