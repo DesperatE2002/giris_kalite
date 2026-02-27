@@ -43,6 +43,8 @@ const authManager = {
     try {
       const currentUser = await api.auth.me();
       this.currentUser = currentUser;
+      // localStorage'daki user bilgisini güncelle (permissions dahil)
+      localStorage.setItem('user', JSON.stringify(currentUser));
       return true;
     } catch (error) {
       localStorage.removeItem('token');

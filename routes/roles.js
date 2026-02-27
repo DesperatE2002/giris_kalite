@@ -202,15 +202,20 @@ export function requireModuleAccess(moduleName, permKey = 'access') {
     if (!req.user) {
       return res.status(401).json({ error: 'Giriş yapmanız gerekiyor' });
     }
-    if (req.user.role === 'admin') return next();
 
     try {
+      // Her zaman DB'den güncel role'ü al (JWT eski olabilir)
+      const { rows: userRows } = await pool.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
+      const currentRole = userRows.length > 0 ? userRows[0].role : req.user.role;
+
+      if (currentRole === 'admin') return next();
+
       const { rows } = await pool.query(`
         SELECT rp.granted
         FROM role_permissions rp
         JOIN roles r ON r.id = rp.role_id
         WHERE r.name = ? AND rp.module = ? AND rp.permission_key = ?
-      `, [req.user.role, moduleName, permKey]);
+      `, [currentRole, moduleName, permKey]);
 
       if (rows.length > 0 && rows[0].granted) {
         return next();
