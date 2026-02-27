@@ -1099,17 +1099,27 @@ const ProjectsPage = {
   },
 
   async _saveNewProject() {
-    const name = document.getElementById('cp_name').value.trim();
-    const start_date = document.getElementById('cp_start').value;
-    const linked_otpa_id = document.getElementById('cp_otpa').value || null;
+    const name = document.getElementById('cp_name')?.value?.trim();
+    const start_date = document.getElementById('cp_start')?.value;
+    const linked_otpa_id = document.getElementById('cp_otpa')?.value || null;
     if (!name || !start_date) { alert('Proje adı ve başlangıç tarihi gerekli'); return; }
+    
+    // Modalı hemen kapat
+    document.querySelector('.fixed')?.remove();
+    
     try {
       showLoading(true);
-      document.querySelector('.fixed')?.remove();
-      const project = await api.request('/projects', { method: 'POST', body: JSON.stringify({ name, start_date, linked_otpa_id: linked_otpa_id ? parseInt(linked_otpa_id) : null }) });
+      const project = await api.request('/projects', { 
+        method: 'POST', 
+        body: JSON.stringify({ name, start_date, linked_otpa_id: linked_otpa_id ? parseInt(linked_otpa_id) : null }) 
+      });
       this.currentProject = { id: project.id };
+      showLoading(false);
       await this.render();
-    } catch (e) { alert('Hata: ' + e.message); } finally { showLoading(false); }
+    } catch (e) { 
+      showLoading(false);
+      alert('Hata: ' + e.message); 
+    }
   },
 
   async showEditProject(id) {
@@ -1153,16 +1163,22 @@ const ProjectsPage = {
   },
 
   async _saveEditProject(id) {
-    const name = document.getElementById('ep_name').value.trim();
-    const start_date = document.getElementById('ep_start').value;
-    const linked_otpa_id = document.getElementById('ep_otpa').value || null;
+    const name = document.getElementById('ep_name')?.value?.trim();
+    const start_date = document.getElementById('ep_start')?.value;
+    const linked_otpa_id = document.getElementById('ep_otpa')?.value || null;
     if (!name || !start_date) { alert('Proje adı ve başlangıç tarihi gerekli'); return; }
+    
+    document.querySelector('.fixed')?.remove();
+    
     try {
       showLoading(true);
-      document.querySelector('.fixed')?.remove();
       await api.request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify({ name, start_date, linked_otpa_id: linked_otpa_id ? parseInt(linked_otpa_id) : null }) });
+      showLoading(false);
       await this.render();
-    } catch (e) { alert('Hata: ' + e.message); } finally { showLoading(false); }
+    } catch (e) { 
+      showLoading(false);
+      alert('Hata: ' + e.message); 
+    }
   },
 
   async deleteProject(id) {
