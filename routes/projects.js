@@ -252,7 +252,7 @@ router.get('/', authenticateToken, requireModuleAccess('projects'), async (req, 
         o.otpa_number as linked_otpa_number
       FROM projects p
       LEFT JOIN otpa o ON p.linked_otpa_id = o.id
-      ORDER BY p.created_at DESC
+      ORDER BY COALESCE(p.is_archived, 0) ASC, p.created_at DESC
     `);
     
     // Her proje için ilerleme hesapla
@@ -367,6 +367,25 @@ router.put('/:id', authenticateToken, requireModuleAccess('projects'), async (re
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Proje güncelleme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  }
+});
+
+// Proje arşivle / arşivden çıkar
+router.patch('/:id/archive', authenticateToken, requireModuleAccess('projects'), async (req, res) => {
+  try {
+    const { is_archived } = req.body;
+    const val = is_archived ? 1 : 0;
+    const result = await pool.query(
+      'UPDATE projects SET is_archived = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *',
+      [val, req.params.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Proje bulunamadı' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Arşiv hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
   }
 });

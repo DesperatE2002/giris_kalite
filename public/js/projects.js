@@ -3,6 +3,7 @@ const ProjectsPage = {
   projects: [],
   currentProject: null,
   currentTab: 'dashboard',
+  showArchive: false,
 
   async render() {
     showLoading(true);
@@ -32,43 +33,7 @@ const ProjectsPage = {
 
         <!-- Proje Seçimi -->
         <div id="projectSelector" class="mb-6">
-          ${this.projects.length === 0 ? `
-            <div class="glass-card rounded-2xl p-12 text-center">
-              <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
-              <h3 class="text-xl font-semibold text-gray-400">Henüz proje yok</h3>
-              <p class="text-gray-400 mt-2">Yeni bir proje oluşturarak başlayın</p>
-            </div>
-          ` : `
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              ${this.projects.map(p => `
-                <div onclick="ProjectsPage.selectProject(${p.id})" 
-                  class="glass-card rounded-xl p-5 cursor-pointer hover-lift transition-all border-2 ${this.currentProject?.id === p.id ? 'border-purple-500 shadow-lg' : 'border-transparent'}">
-                  <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-bold text-white truncate">${p.name}</h3>
-                    <div class="flex gap-1">
-                      <button onclick="event.stopPropagation();ProjectsPage.showEditProject(${p.id})" class="text-gray-400 hover:text-blue-500 p-1"><i class="fas fa-edit text-sm"></i></button>
-                      <button onclick="event.stopPropagation();ProjectsPage.deleteProject(${p.id})" class="text-gray-400 hover:text-red-500 p-1"><i class="fas fa-trash text-sm"></i></button>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-3 text-sm text-gray-400 mb-3">
-                    <span><i class="fas fa-calendar mr-1"></i>${p.start_date}</span>
-                    <span><i class="fas fa-tasks mr-1"></i>${p.task_count || 0} görev</span>
-                    ${p.linked_otpa_number ? `<span class="text-blue-400"><i class="fas fa-link mr-1"></i>${p.linked_otpa_number}</span>` : ''}
-                  </div>
-                  <div class="w-full bg-gray-700 rounded-full h-2.5 mb-1">
-                    <div class="h-2.5 rounded-full transition-all ${(p.progress_percent || 0) === 100 ? 'bg-green-500' : 'bg-purple-500'}" 
-                      style="width: ${p.progress_percent || 0}%"></div>
-                  </div>
-                  <div class="flex justify-between text-xs text-gray-400">
-                    <span>%${p.progress_percent || 0}</span>
-                    <span>${p.overdue_count > 0 
-                      ? `<span class="text-red-500 font-bold">${p.overdue_count} gecikme!</span>${p.delay_workdays > 0 ? ` <span class="text-yellow-400">(+${p.delay_workdays} gün)</span>` : ''}` 
-                      : (p.estimated_end_date || '—')}</span>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `}
+          ${this._renderProjectList()}
         </div>
 
         <!-- Proje Detayı -->
@@ -81,6 +46,130 @@ const ProjectsPage = {
     }
 
     showLoading(false);
+  },
+
+  // ─── PROJE LİSTESİ RENDER ─────────────────────────────────────────────
+
+  _renderProjectList() {
+    const active = this.projects.filter(p => !p.is_archived);
+    const archived = this.projects.filter(p => p.is_archived);
+
+    if (active.length === 0 && archived.length === 0) {
+      return `
+        <div class="glass-card rounded-2xl p-12 text-center">
+          <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-400">Henüz proje yok</h3>
+          <p class="text-gray-400 mt-2">Yeni bir proje oluşturarak başlayın</p>
+        </div>
+      `;
+    }
+
+    let html = '';
+
+    // Aktif projeler
+    if (active.length > 0) {
+      html += `
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${active.map(p => this._renderProjectCard(p, false)).join('')}
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="glass-card rounded-xl p-6 text-center text-gray-400">
+          <i class="fas fa-check-circle text-3xl mb-2 text-green-400"></i>
+          <p>Tüm projeler arşivde. Yeni proje oluşturun veya arşivden geri alın.</p>
+        </div>
+      `;
+    }
+
+    // Arşiv bölümü
+    if (archived.length > 0) {
+      html += `
+        <div class="mt-6">
+          <button onclick="ProjectsPage.toggleArchiveView()" class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-3 group">
+            <i class="fas fa-archive text-yellow-500"></i>
+            <span class="font-semibold">Arşiv</span>
+            <span class="bg-yellow-500/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-full">${archived.length}</span>
+            <i class="fas fa-chevron-${this.showArchive ? 'up' : 'down'} text-xs ml-1 transition-transform"></i>
+          </button>
+          ${this.showArchive ? `
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-80">
+              ${archived.map(p => this._renderProjectCard(p, true)).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    return html;
+  },
+
+  _renderProjectCard(p, isArchived) {
+    return `
+      <div onclick="ProjectsPage.selectProject(${p.id})" 
+        class="glass-card rounded-xl p-5 cursor-pointer hover-lift transition-all border-2 ${this.currentProject?.id === p.id ? 'border-purple-500 shadow-lg' : 'border-transparent'} ${isArchived ? 'opacity-70' : ''}">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-white truncate flex items-center gap-2">
+            ${isArchived ? '<i class="fas fa-archive text-yellow-500 text-xs"></i>' : ''}
+            ${p.name}
+          </h3>
+          <div class="flex gap-1">
+            ${isArchived ? `
+              <button onclick="event.stopPropagation();ProjectsPage.unarchiveProject(${p.id})" class="text-yellow-400 hover:text-green-500 p-1" title="Arşivden Çıkar"><i class="fas fa-box-open text-sm"></i></button>
+            ` : `
+              <button onclick="event.stopPropagation();ProjectsPage.archiveProject(${p.id})" class="text-gray-400 hover:text-yellow-500 p-1" title="Arşivle"><i class="fas fa-archive text-sm"></i></button>
+            `}
+            <button onclick="event.stopPropagation();ProjectsPage.showEditProject(${p.id})" class="text-gray-400 hover:text-blue-500 p-1"><i class="fas fa-edit text-sm"></i></button>
+            <button onclick="event.stopPropagation();ProjectsPage.deleteProject(${p.id})" class="text-gray-400 hover:text-red-500 p-1"><i class="fas fa-trash text-sm"></i></button>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-gray-400 mb-3">
+          <span><i class="fas fa-calendar mr-1"></i>${p.start_date}</span>
+          <span><i class="fas fa-tasks mr-1"></i>${p.task_count || 0} görev</span>
+          ${p.linked_otpa_number ? `<span class="text-blue-400"><i class="fas fa-link mr-1"></i>${p.linked_otpa_number}</span>` : ''}
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2.5 mb-1">
+          <div class="h-2.5 rounded-full transition-all ${(p.progress_percent || 0) === 100 ? 'bg-green-500' : 'bg-purple-500'}" 
+            style="width: ${p.progress_percent || 0}%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400">
+          <span>%${p.progress_percent || 0}</span>
+          <span>${p.overdue_count > 0 
+            ? `<span class="text-red-500 font-bold">${p.overdue_count} gecikme!</span>${p.delay_workdays > 0 ? ` <span class="text-yellow-400">(+${p.delay_workdays} gün)</span>` : ''}` 
+            : (p.estimated_end_date || '—')}</span>
+        </div>
+      </div>
+    `;
+  },
+
+  toggleArchiveView() {
+    this.showArchive = !this.showArchive;
+    const selector = document.getElementById('projectSelector');
+    if (selector) selector.innerHTML = this._renderProjectList();
+  },
+
+  async archiveProject(id) {
+    const p = this.projects.find(x => x.id === id);
+    if (!confirm(`"${p?.name || 'Proje'}" arşive taşınsın mı?`)) return;
+    try {
+      await api.request(`/projects/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ is_archived: true }) });
+      // Eğer şu an seçili projeyse, detayı kapat
+      if (this.currentProject?.id === id) {
+        this.currentProject = null;
+      }
+      await this.render();
+    } catch (e) {
+      alert('Arşivleme hatası: ' + e.message);
+    }
+  },
+
+  async unarchiveProject(id) {
+    try {
+      await api.request(`/projects/${id}/archive`, { method: 'PATCH', body: JSON.stringify({ is_archived: false }) });
+      await this.render();
+    } catch (e) {
+      alert('Arşivden çıkarma hatası: ' + e.message);
+    }
   },
 
   // ─── PROJE SEÇ & DETAY YÜKLE ──────────────────────────────────────────

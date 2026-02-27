@@ -117,6 +117,9 @@ import pool from '../db/database.js';
     try {
       await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS linked_otpa_id INTEGER');
     } catch (e) { /* column already exists */ }
+    try {
+      await pool.query('ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_archived INTEGER DEFAULT 0');
+    } catch (e) { /* column already exists */ }
 
     console.log('✅ Auto-migration: projects ve project_tasks tabloları hazır');
   } catch (e) {
