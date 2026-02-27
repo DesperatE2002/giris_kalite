@@ -528,7 +528,7 @@ const ProjectsPage = {
 
     container.innerHTML = `
       <div class="glass-card rounded-xl overflow-hidden">
-        <div class="p-4 border-b flex items-center justify-between">
+        <div class="p-4 border-b flex items-center justify-between gantt-header">
           <h3 class="font-bold text-white"><i class="fas fa-chart-gantt mr-2"></i>Gantt Şeması</h3>
           <div class="flex items-center gap-3 text-xs text-gray-400">
             <span><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span>Tamamlandı</span>
@@ -536,6 +536,9 @@ const ProjectsPage = {
             <span><span class="inline-block w-3 h-3 rounded bg-orange-500 mr-1"></span>Bloke</span>
             <span><span class="inline-block w-3 h-3 rounded bg-gray-400 mr-1"></span>Bekliyor</span>
             <span><span class="inline-block w-3 h-3 rounded border border-dashed border-yellow-500 bg-yellow-500/30 mr-1"></span>Öngörü Uzantısı</span>
+            <button onclick="projectTracker.toggleGanttFullscreen()" class="ml-3 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium gantt-fullscreen-btn" title="Tam ekran">
+              <i class="fas fa-expand"></i> Büyüt
+            </button>
           </div>
         </div>
 
@@ -592,6 +595,88 @@ const ProjectsPage = {
         </div>
       </div>
     `;
+  },
+
+  // ─── GANTT TAM EKRAN ──────────────────────────────────────────────────
+
+  toggleGanttFullscreen() {
+    const existing = document.getElementById('gantt-fullscreen-overlay');
+    if (existing) {
+      // Fullscreen'den çık
+      existing.classList.add('opacity-0');
+      setTimeout(() => existing.remove(), 200);
+      document.body.style.overflow = '';
+      return;
+    }
+
+    // Gantt kartını bul ve klonla
+    const ganttCard = document.querySelector('.glass-card .gantt-header')?.closest('.glass-card');
+    if (!ganttCard) return;
+
+    const clone = ganttCard.cloneNode(true);
+
+    // Overlay oluştur
+    const overlay = document.createElement('div');
+    overlay.id = 'gantt-fullscreen-overlay';
+    overlay.className = 'fixed inset-0 z-50 bg-gray-900/98 flex flex-col transition-opacity duration-200';
+    overlay.style.cssText = 'backdrop-filter:blur(8px);';
+    
+    // Üst bar
+    const topBar = document.createElement('div');
+    topBar.className = 'flex items-center justify-between px-6 py-3 border-b border-white/10 flex-shrink-0';
+    topBar.innerHTML = `
+      <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fas fa-chart-gantt text-purple-400"></i>Gantt Şeması — Tam Ekran</h2>
+      <div class="flex items-center gap-3">
+        <button onclick="projectTracker.ganttZoom(-1)" class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition text-sm" title="Küçült"><i class="fas fa-search-minus"></i></button>
+        <button onclick="projectTracker.ganttZoom(1)" class="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded transition text-sm" title="Büyült"><i class="fas fa-search-plus"></i></button>
+        <button onclick="projectTracker.toggleGanttFullscreen()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium" title="Kapat">
+          <i class="fas fa-compress"></i> Küçült
+        </button>
+      </div>
+    `;
+
+    // Scrollable gantt alanı
+    const scrollArea = document.createElement('div');
+    scrollArea.className = 'flex-1 overflow-auto p-4';
+    scrollArea.id = 'gantt-fullscreen-content';
+
+    // Klonu yerleştir, header'ı gizle (üst barda zaten var)
+    const cloneHeader = clone.querySelector('.gantt-header');
+    if (cloneHeader) cloneHeader.style.display = 'none';
+    
+    // Klondaki glass-card'ı tam genişliğe ayarla
+    clone.style.minWidth = 'max-content';
+    
+    scrollArea.appendChild(clone);
+    overlay.appendChild(topBar);
+    overlay.appendChild(scrollArea);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    // ESC ile çıkış
+    overlay._escHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.toggleGanttFullscreen();
+        document.removeEventListener('keydown', overlay._escHandler);
+      }
+    };
+    document.addEventListener('keydown', overlay._escHandler);
+
+    // Animate in
+    requestAnimationFrame(() => overlay.classList.add('opacity-100'));
+  },
+
+  _ganttZoomLevel: 1,
+
+  ganttZoom(dir) {
+    const content = document.getElementById('gantt-fullscreen-content');
+    if (!content) return;
+    const card = content.querySelector('.glass-card');
+    if (!card) return;
+
+    this._ganttZoomLevel = Math.max(0.5, Math.min(2.5, this._ganttZoomLevel + dir * 0.2));
+    card.style.transform = `scale(${this._ganttZoomLevel})`;
+    card.style.transformOrigin = 'top left';
   },
 
   // ─── MALZEME DURUMU TAB ────────────────────────────────────────────────
