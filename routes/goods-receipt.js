@@ -23,7 +23,7 @@ router.get('/all', authenticateToken, requireModuleAccess('goods-receipt'), asyn
       FROM goods_receipt gr
       LEFT JOIN users u ON gr.created_by = u.id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.component_type = b.component_type AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
       ORDER BY gr.created_at DESC
     `);
@@ -99,7 +99,7 @@ router.get('/otpa/:otpaId', authenticateToken, requireModuleAccess('goods-receip
         qr.reason
       FROM goods_receipt gr
       LEFT JOIN users u ON gr.created_by = u.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.component_type = b.component_type AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
       WHERE gr.otpa_id = $1
       ORDER BY gr.created_at DESC
@@ -310,7 +310,7 @@ router.get('/:id', authenticateToken, requireModuleAccess('goods-receipt'), asyn
       FROM goods_receipt gr
       LEFT JOIN otpa o ON gr.otpa_id = o.id
       LEFT JOIN users u ON gr.created_by = u.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.component_type = b.component_type AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
       LEFT JOIN users qu ON qr.decision_by = qu.id
       WHERE gr.id = $1

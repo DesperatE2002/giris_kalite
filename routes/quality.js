@@ -264,7 +264,7 @@ router.get('/:receiptId', authenticateToken, async (req, res) => {
       LEFT JOIN users u ON qr.decision_by = u.id
       LEFT JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.component_type = b.component_type AND gr.material_code = b.material_code
       WHERE qr.receipt_id = $1
     `, [receiptId]);
 
@@ -297,7 +297,7 @@ router.get('/', authenticateToken, requireModuleAccess('quality'), async (req, r
       FROM quality_results qr
       JOIN goods_receipt gr ON qr.receipt_id = gr.id
       LEFT JOIN otpa o ON gr.otpa_id = o.id
-      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.material_code = b.material_code
+      LEFT JOIN bom_items b ON gr.otpa_id = b.otpa_id AND gr.component_type = b.component_type AND gr.material_code = b.material_code
       LEFT JOIN users u ON qr.decision_by = u.id
       WHERE 1=1
     `;

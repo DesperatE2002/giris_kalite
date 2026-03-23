@@ -28,6 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
             FROM goods_receipt gr
             LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
             WHERE gr.otpa_id = o.id 
+              AND gr.component_type = b.component_type
               AND gr.material_code = b.material_code
           )
           THEN b.id 
@@ -77,7 +78,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
           COALESCE(SUM(qr.rejected_quantity), 0) as total_rejected,
           COUNT(CASE WHEN qr.status IN ('red', 'sartli_kabul') THEN 1 END) as quality_issues
         FROM bom_items b
-        LEFT JOIN goods_receipt gr ON b.otpa_id = gr.otpa_id AND b.material_code = gr.material_code
+        LEFT JOIN goods_receipt gr ON b.otpa_id = gr.otpa_id AND b.component_type = gr.component_type AND b.material_code = gr.material_code
         LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
         WHERE b.otpa_id = ?
         GROUP BY b.id, b.material_code, b.material_name, b.required_quantity, b.unit, b.component_type

@@ -70,6 +70,7 @@ router.get('/otpa-completion', authenticateToken, async (req, res) => {
             FROM goods_receipt gr
             LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
             WHERE gr.otpa_id = b.otpa_id 
+              AND gr.component_type = b.component_type
               AND gr.material_code = b.material_code
           ) >= b.required_quantity 
           THEN b.id 
@@ -123,6 +124,7 @@ router.get('/missing-materials', authenticateToken, async (req, res) => {
       FROM bom_items b
       JOIN otpa o ON b.otpa_id = o.id
       LEFT JOIN goods_receipt gr ON gr.otpa_id = b.otpa_id 
+        AND gr.component_type = b.component_type
         AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON qr.receipt_id = gr.id
       GROUP BY b.id, o.otpa_number, o.project_name, b.component_type, 
@@ -352,7 +354,7 @@ router.get('/otpa-excel/:otpaId', authenticateToken, async (req, res) => {
         COALESCE(SUM(qr.accepted_quantity), 0) as total_accepted,
         COALESCE(SUM(qr.rejected_quantity), 0) as total_rejected
       FROM bom_items b
-      LEFT JOIN goods_receipt gr ON b.otpa_id = gr.otpa_id AND b.material_code = gr.material_code
+      LEFT JOIN goods_receipt gr ON b.otpa_id = gr.otpa_id AND b.component_type = gr.component_type AND b.material_code = gr.material_code
       LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
       WHERE b.otpa_id = ?
       GROUP BY b.id, b.material_code, b.material_name, b.required_quantity, b.unit, b.component_type
