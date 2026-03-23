@@ -23,6 +23,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 console.log('🐘 API: Using PostgreSQL database');
+console.log('🔧 Build version: 2026-03-23-v2 - component_type JOIN fix active');
 
 // Import routes
 import authRoutes from '../routes/auth.js';
