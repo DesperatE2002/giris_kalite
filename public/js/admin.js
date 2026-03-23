@@ -742,6 +742,7 @@ MAT-003	Nikel Şerit	500	gr"
 
   async renderReportsTab() {
     const container = document.getElementById('tabContent');
+    let otpaListData = [];
     
     try {
       showLoading(true);
@@ -753,6 +754,8 @@ MAT-003	Nikel Şerit	500	gr"
         api.request('/goods-receipt/all'),
         api.otpa.list()
       ]);
+
+      otpaListData = otpaList || [];
 
       container.innerHTML = `
         <div class="space-y-6">
@@ -1138,7 +1141,6 @@ MAT-003	Nikel Şerit	500	gr"
       const searchInput = document.getElementById('excelOtpaSearch');
       const dropdown = document.getElementById('excelOtpaDropdown');
       if (searchInput && dropdown) {
-        const otpaListData = otpaList || [];
         
         searchInput.addEventListener('input', () => {
           const val = searchInput.value.toLowerCase().trim();
