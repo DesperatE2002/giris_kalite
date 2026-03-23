@@ -110,6 +110,13 @@ router.get('/missing-materials', authenticateToken, async (req, res) => {
     const { otpa_id } = req.query;
 
     // TEK QUERY - KABUL EDİLEN MİKTARI DA GETİR!
+    let whereClause = '';
+    const params = [];
+    if (otpa_id) {
+      whereClause = ' WHERE o.id = ?';
+      params.push(otpa_id);
+    }
+
     let query = `
       SELECT 
         o.otpa_number,
@@ -127,17 +134,11 @@ router.get('/missing-materials', authenticateToken, async (req, res) => {
         AND gr.component_type = b.component_type
         AND gr.material_code = b.material_code
       LEFT JOIN quality_results qr ON qr.receipt_id = gr.id
+      ${whereClause}
       GROUP BY b.id, o.otpa_number, o.project_name, b.component_type, 
                b.material_code, b.material_name, b.required_quantity, b.unit, b.otpa_id
+      ORDER BY o.otpa_number, b.material_code
     `;
-
-    const params = [];
-    if (otpa_id) {
-      query += ' WHERE o.id = ?';
-      params.push(otpa_id);
-    }
-
-    query += ' ORDER BY o.otpa_number, b.material_code';
 
     const result = await pool.query(query, params);
     
