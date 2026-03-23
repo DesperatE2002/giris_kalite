@@ -156,6 +156,10 @@ const adminPage = {
                       <span class="text-sm text-gray-400">${otpa.total_items || 0} malzeme</span>
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">
+                      <button onclick="adminPage.showBomViewModal(${otpa.id}, '${otpa.otpa_number}')" 
+                        class="text-cyan-400 hover:text-cyan-300">
+                        <i class="fas fa-eye mr-1"></i> BOM Görüntüle
+                      </button>
                       <button onclick="adminPage.showBomUploadModal(${otpa.id}, '${otpa.otpa_number}')" 
                         class="text-blue-400 hover:text-blue-300">
                         <i class="fas fa-upload mr-1"></i> BOM Yükle
@@ -2481,6 +2485,238 @@ MAT-003	Nikel Şerit	500	gr"
       alert('Hata: ' + error.message);
     } finally {
       showLoading(false);
+    }
+  },
+
+  // ─── BOM Görüntüleme & Silme Modalı ──────────────────────────────
+  async showBomViewModal(otpaId, otpaNumber) {
+    try {
+      showLoading(true);
+      const bomItems = await api.bom.get(otpaId);
+      showLoading(false);
+
+      const componentLabels = {
+        'batarya': '🔋 Batarya',
+        'vccu': '⚡ VCCU',
+        'junction_box': '📦 Junction Box',
+        'pdu': '🔌 PDU'
+      };
+      const componentColors = {
+        'batarya': 'emerald',
+        'vccu': 'amber',
+        'junction_box': 'blue',
+        'pdu': 'purple'
+      };
+
+      // Group by component_type
+      const grouped = {};
+      for (const item of bomItems) {
+        const ct = item.component_type || 'diger';
+        if (!grouped[ct]) grouped[ct] = [];
+        grouped[ct].push(item);
+      }
+
+      const componentTypes = ['batarya', 'vccu', 'junction_box', 'pdu'];
+
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+      modal.id = 'bomViewModal';
+      modal.innerHTML = `
+        <div class="glass-card rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-2xl font-bold gradient-text">
+                <i class="fas fa-list-alt mr-2"></i> BOM Görüntüle - ${otpaNumber}
+              </h2>
+              <button onclick="this.closest('.fixed').remove()" 
+                class="text-gray-400 hover:text-red-400 transition-colors duration-200 p-2 hover:bg-red-500/10 rounded-xl">
+                <i class="fas fa-times text-3xl"></i>
+              </button>
+            </div>
+
+            ${bomItems.length === 0 ? `
+              <div class="text-center py-12 text-gray-400">
+                <i class="fas fa-inbox text-5xl mb-4"></i>
+                <p class="text-lg">Bu OTPA'ya henüz BOM yüklenmemiş.</p>
+              </div>
+            ` : `
+              <!-- Komponent Sekmeleri -->
+              <div class="glass-card rounded-xl p-2 mb-4">
+                <nav class="flex space-x-2 flex-wrap">
+                  ${componentTypes.map(ct => {
+                    const items = grouped[ct] || [];
+                    const color = componentColors[ct];
+                    return items.length > 0 ? `
+                      <button onclick="adminPage.switchBomViewTab('${ct}')" data-viewtab="${ct}"
+                        class="bom-view-tab py-3 px-5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2">
+                        ${componentLabels[ct]}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-${color}-500/20 text-${color}-400 text-xs font-bold">${items.length}</span>
+                      </button>
+                    ` : '';
+                  }).join('')}
+                </nav>
+              </div>
+
+              <!-- BOM Tabloları -->
+              <div id="bomViewContent">
+                ${componentTypes.map(ct => {
+                  const items = grouped[ct] || [];
+                  if (items.length === 0) return '';
+                  const color = componentColors[ct];
+                  return `
+                    <div class="bom-view-panel hidden" data-viewpanel="${ct}">
+                      <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-bold text-white">
+                          ${componentLabels[ct]} <span class="text-sm font-normal text-gray-400">(${items.length} malzeme)</span>
+                        </h3>
+                        <button onclick="adminPage.deleteBomByComponent(${otpaId}, '${ct}', '${otpaNumber}')"
+                          class="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-lg">
+                          <i class="fas fa-trash-alt mr-2"></i> Tüm ${componentLabels[ct]} BOM'unu Sil
+                        </button>
+                      </div>
+                      <div class="glass-card rounded-xl overflow-hidden">
+                        <table class="min-w-full divide-y divide-white/5 text-sm">
+                          <thead class="bg-gradient-to-r from-${color}-900/30 to-${color}-800/20">
+                            <tr>
+                              <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase w-8">
+                                <input type="checkbox" onchange="adminPage.toggleAllBomCheckboxes('${ct}', this.checked)" 
+                                  class="rounded border-gray-600 bg-gray-800 text-${color}-500 focus:ring-${color}-500">
+                              </th>
+                              <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Kodu</th>
+                              <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Malzeme Adı</th>
+                              <th class="px-4 py-3 text-right text-xs font-bold text-gray-300 uppercase">Miktar</th>
+                              <th class="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase">Birim</th>
+                              <th class="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase">İşlem</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-white/5">
+                            ${items.map(item => `
+                              <tr class="hover:bg-white/[0.03]" id="bom-row-${item.id}">
+                                <td class="px-4 py-3">
+                                  <input type="checkbox" value="${item.id}" class="bom-checkbox-${ct} rounded border-gray-600 bg-gray-800 text-${color}-500 focus:ring-${color}-500">
+                                </td>
+                                <td class="px-4 py-3 font-mono text-${color}-400">${item.material_code}</td>
+                                <td class="px-4 py-3 text-white">${item.material_name}</td>
+                                <td class="px-4 py-3 text-right font-semibold">${item.required_quantity}</td>
+                                <td class="px-4 py-3 text-gray-400">${item.unit}</td>
+                                <td class="px-4 py-3 text-center">
+                                  <button onclick="adminPage.deleteSingleBomItem(${item.id}, '${item.material_code}', ${otpaId}, '${otpaNumber}')"
+                                    class="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded-lg transition-all" title="Bu malzemeyi sil">
+                                    <i class="fas fa-trash-alt"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                            `).join('')}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="mt-3 flex gap-3">
+                        <button onclick="adminPage.deleteSelectedBomItems(${otpaId}, '${ct}', '${otpaNumber}')"
+                          class="px-4 py-2 bg-red-600/60 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition-all duration-200">
+                          <i class="fas fa-check-square mr-2"></i> Seçilenleri Sil
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Activate first non-empty tab
+      const firstTab = modal.querySelector('.bom-view-tab');
+      if (firstTab) {
+        firstTab.click();
+      }
+    } catch (error) {
+      showLoading(false);
+      alert('BOM verileri yüklenirken hata: ' + error.message);
+    }
+  },
+
+  switchBomViewTab(type) {
+    // Update tab styles
+    document.querySelectorAll('.bom-view-tab').forEach(tab => {
+      if (tab.dataset.viewtab === type) {
+        tab.classList.add('gradient-btn', 'shadow-lg', 'text-white');
+      } else {
+        tab.classList.remove('gradient-btn', 'shadow-lg', 'text-white');
+      }
+    });
+    // Show matching panel
+    document.querySelectorAll('.bom-view-panel').forEach(panel => {
+      if (panel.dataset.viewpanel === type) {
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+    });
+  },
+
+  toggleAllBomCheckboxes(componentType, checked) {
+    document.querySelectorAll(`.bom-checkbox-${componentType}`).forEach(cb => {
+      cb.checked = checked;
+    });
+  },
+
+  async deleteSingleBomItem(itemId, materialCode, otpaId, otpaNumber) {
+    if (!confirm(`"${materialCode}" malzemesini silmek istediğinize emin misiniz?`)) return;
+    try {
+      showLoading(true);
+      await api.bom.delete(itemId);
+      showLoading(false);
+      // Refresh modal
+      document.getElementById('bomViewModal')?.remove();
+      this.showBomViewModal(otpaId, otpaNumber);
+      this.renderOtpaTab();
+    } catch (error) {
+      showLoading(false);
+      alert('Silme hatası: ' + error.message);
+    }
+  },
+
+  async deleteSelectedBomItems(otpaId, componentType, otpaNumber) {
+    const checkboxes = document.querySelectorAll(`.bom-checkbox-${componentType}:checked`);
+    if (checkboxes.length === 0) {
+      alert('Lütfen silmek istediğiniz malzemeleri seçin.');
+      return;
+    }
+    if (!confirm(`Seçili ${checkboxes.length} malzemeyi silmek istediğinize emin misiniz?`)) return;
+    try {
+      showLoading(true);
+      for (const cb of checkboxes) {
+        await api.bom.delete(cb.value);
+      }
+      showLoading(false);
+      alert(`✅ ${checkboxes.length} malzeme silindi.`);
+      document.getElementById('bomViewModal')?.remove();
+      this.showBomViewModal(otpaId, otpaNumber);
+      this.renderOtpaTab();
+    } catch (error) {
+      showLoading(false);
+      alert('Silme hatası: ' + error.message);
+    }
+  },
+
+  async deleteBomByComponent(otpaId, componentType, otpaNumber) {
+    const labels = { 'batarya': 'Batarya', 'vccu': 'VCCU', 'junction_box': 'Junction Box', 'pdu': 'PDU' };
+    const label = labels[componentType] || componentType;
+    if (!confirm(`"${otpaNumber}" OTPA'sındaki tüm ${label} BOM kalemlerini silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!`)) return;
+    try {
+      showLoading(true);
+      await api.bom.bulkDeleteByComponent(otpaId, componentType);
+      showLoading(false);
+      alert(`✅ ${label} BOM kalemleri silindi.`);
+      document.getElementById('bomViewModal')?.remove();
+      this.showBomViewModal(otpaId, otpaNumber);
+      this.renderOtpaTab();
+    } catch (error) {
+      showLoading(false);
+      alert('Silme hatası: ' + error.message);
     }
   }
 };

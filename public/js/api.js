@@ -122,7 +122,10 @@ const api = {
       }),
     
     delete: (id) => 
-      api.request(`/bom/${id}`, { method: 'DELETE' })
+      api.request(`/bom/${id}`, { method: 'DELETE' }),
+    
+    bulkDeleteByComponent: (otpaId, componentType) =>
+      api.request(`/bom/bulk-delete/${otpaId}/${componentType}`, { method: 'DELETE' })
   },
 
   // BOM Templates endpoints

@@ -69,6 +69,28 @@ router.delete('/bulk-delete/:otpaId', authenticateToken, requireModuleAccess('ad
   }
 });
 
+// OTPA'nın belirli komponent tipindeki BOM'unu sil
+router.delete('/bulk-delete/:otpaId/:componentType', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
+  try {
+    const { otpaId, componentType } = req.params;
+
+    const validTypes = ['batarya', 'vccu', 'junction_box', 'pdu'];
+    if (!validTypes.includes(componentType)) {
+      return res.status(400).json({ error: 'Geçersiz komponent tipi' });
+    }
+
+    const result = await pool.query(
+      'DELETE FROM bom_items WHERE otpa_id = ? AND component_type = ?',
+      [otpaId, componentType]
+    );
+
+    res.json({ message: `${componentType.toUpperCase()} BOM kalemleri silindi`, deletedCount: result.rowCount || 0 });
+  } catch (error) {
+    console.error('BOM komponent silme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 // Excel'den BOM yükle
 router.post('/upload', authenticateToken, requireModuleAccess('admin'), upload.single('file'), async (req, res) => {
   try {
