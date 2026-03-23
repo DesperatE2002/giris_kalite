@@ -324,8 +324,35 @@ router.get('/summary', authenticateToken, async (req, res) => {
   }
 });
 
-// Diagnostik: OTPA malzeme eşleştirme kontrolü
-router.get('/diagnose/:otpaId', authenticateToken, async (req, res) => {
+// Diagnostik: OTPA numarasıyla arama (auth yok - geçici)
+router.get('/diagnose-by-number/:otpaNumber', async (req, res) => {
+  try {
+    const { otpaNumber } = req.params;
+    const otpaResult = await pool.query('SELECT id, otpa_number FROM otpa WHERE otpa_number = ?', [otpaNumber]);
+    if (otpaResult.rows.length === 0) {
+      return res.status(404).json({ error: 'OTPA bulunamadı', searched: otpaNumber });
+    }
+    const otpaId = otpaResult.rows[0].id;
+
+    const bomResult = await pool.query('SELECT id, component_type, material_code, material_name, required_quantity FROM bom_items WHERE otpa_id = ? ORDER BY component_type, material_code', [otpaId]);
+    const grResult = await pool.query('SELECT id, component_type, material_code, received_quantity, created_at FROM goods_receipt WHERE otpa_id = ? ORDER BY component_type, material_code', [otpaId]);
+    const qrResult = await pool.query(`SELECT qr.id, qr.receipt_id, qr.status, qr.accepted_quantity, qr.rejected_quantity, gr.component_type, gr.material_code
+      FROM quality_results qr JOIN goods_receipt gr ON qr.receipt_id = gr.id WHERE gr.otpa_id = ? ORDER BY gr.component_type, gr.material_code`, [otpaId]);
+
+    res.json({
+      otpa: otpaResult.rows[0],
+      bom_items: bomResult.rows,
+      goods_receipts: grResult.rows,
+      quality_results: qrResult.rows
+    });
+  } catch (error) {
+    console.error('Diagnostik hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// Diagnostik: OTPA malzeme eşleştirme kontrolü (auth yok - geçici)
+router.get('/diagnose/:otpaId', async (req, res) => {
   try {
     const { otpaId } = req.params;
     const { material_code } = req.query;
