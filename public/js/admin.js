@@ -746,15 +746,51 @@ MAT-003	Nikel Şerit	500	gr"
     try {
       showLoading(true);
       
-      const [completion, missing, rejections, allReceipts] = await Promise.all([
+      const [completion, missing, rejections, allReceipts, otpaList] = await Promise.all([
         api.reports.otpaCompletion(),
         api.reports.missingMaterials(),
         api.reports.rejections({}),
-        api.request('/goods-receipt/all')
+        api.request('/goods-receipt/all'),
+        api.otpa.list()
       ]);
 
       container.innerHTML = `
         <div class="space-y-6">
+
+          <!-- OTPA Malzeme Durumu Excel Çıktısı -->
+          <div class="glass-card rounded-2xl">
+            <div class="px-6 py-4 border-b border-white/5 bg-gradient-to-r from-green-900/20 to-emerald-900/20">
+              <h3 class="text-lg font-semibold text-green-400">
+                <i class="fas fa-file-excel mr-2"></i>OTPA Malzeme Durumu - Excel Çıktısı
+              </h3>
+              <p class="text-sm text-green-400/70 mt-1">OTPA seçin, malzeme durumunu Excel olarak indirin</p>
+            </div>
+            <div class="px-6 py-5">
+              <div class="flex flex-col sm:flex-row gap-4 items-end">
+                <div class="flex-1">
+                  <label class="block text-sm font-semibold text-gray-300 mb-2">OTPA Seçin veya Arayın</label>
+                  <div class="relative">
+                    <input type="text" id="excelOtpaSearch" placeholder="OTPA numarası yazın..." 
+                      autocomplete="off"
+                      class="w-full px-4 py-3 border-2 border-white/10 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 font-medium bg-gray-800/50 text-white pr-10">
+                    <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                    <div id="excelOtpaDropdown" class="hidden absolute z-50 w-full mt-1 max-h-60 overflow-y-auto glass-card rounded-xl shadow-2xl border border-white/10">
+                    </div>
+                  </div>
+                  <input type="hidden" id="excelOtpaId" value="">
+                </div>
+                <div>
+                  <button onclick="adminPage.downloadOtpaExcel()" id="downloadExcelBtn"
+                    class="px-8 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap"
+                    disabled>
+                    <i class="fas fa-download"></i> Excel İndir
+                  </button>
+                </div>
+              </div>
+              <div id="excelOtpaInfo" class="hidden mt-4 p-4 glass-card rounded-xl border border-green-500/20">
+              </div>
+            </div>
+          </div>
           
           <!-- Eksik Malzemeler (Öncelikli) -->
           <div class="glass-card rounded-2xl">
@@ -1097,7 +1133,119 @@ MAT-003	Nikel Şerit	500	gr"
         filterComponent.addEventListener('change', filterTable);
         filterMaterial.addEventListener('input', filterTable);
       }
+
+      // Excel OTPA arama setup
+      const searchInput = document.getElementById('excelOtpaSearch');
+      const dropdown = document.getElementById('excelOtpaDropdown');
+      if (searchInput && dropdown) {
+        const otpaListData = otpaList || [];
+        
+        searchInput.addEventListener('input', () => {
+          const val = searchInput.value.toLowerCase().trim();
+          if (!val) {
+            dropdown.classList.add('hidden');
+            document.getElementById('excelOtpaId').value = '';
+            document.getElementById('downloadExcelBtn').disabled = true;
+            document.getElementById('excelOtpaInfo').classList.add('hidden');
+            return;
+          }
+          const filtered = otpaListData.filter(o => 
+            o.otpa_number.toLowerCase().includes(val) || 
+            (o.project_name || '').toLowerCase().includes(val)
+          ).slice(0, 10);
+          
+          if (filtered.length === 0) {
+            dropdown.innerHTML = '<div class="px-4 py-3 text-gray-400 text-sm">Sonuç bulunamadı</div>';
+          } else {
+            dropdown.innerHTML = filtered.map(o => `
+              <div class="px-4 py-3 hover:bg-white/10 cursor-pointer transition-colors border-b border-white/5 last:border-0"
+                data-id="${o.id}" data-number="${o.otpa_number}" data-project="${o.project_name || ''}" data-items="${o.total_items || 0}">
+                <div class="font-semibold text-white">${o.otpa_number}</div>
+                <div class="text-xs text-gray-400">${o.project_name || ''} ${o.customer_info ? '• ' + o.customer_info : ''} • ${o.total_items || 0} malzeme</div>
+              </div>
+            `).join('');
+          }
+          dropdown.classList.remove('hidden');
+          
+          dropdown.querySelectorAll('[data-id]').forEach(item => {
+            item.addEventListener('click', () => {
+              const id = item.dataset.id;
+              const number = item.dataset.number;
+              const project = item.dataset.project;
+              const items = item.dataset.items;
+              
+              searchInput.value = number;
+              document.getElementById('excelOtpaId').value = id;
+              document.getElementById('downloadExcelBtn').disabled = false;
+              dropdown.classList.add('hidden');
+              
+              const infoDiv = document.getElementById('excelOtpaInfo');
+              infoDiv.innerHTML = `
+                <div class="flex items-center gap-4">
+                  <div class="flex-1">
+                    <span class="text-green-400 font-bold text-lg">${number}</span>
+                    <span class="text-gray-400 ml-2">${project}</span>
+                  </div>
+                  <span class="px-3 py-1 bg-green-500/15 text-green-400 rounded-full text-sm font-semibold">${items} malzeme</span>
+                </div>
+              `;
+              infoDiv.classList.remove('hidden');
+            });
+          });
+        });
+        
+        // Dropdown dışına tıklayınca kapat
+        document.addEventListener('click', (e) => {
+          if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+          }
+        });
+      }
     }, 100);
+  },
+
+  async downloadOtpaExcel() {
+    const otpaId = document.getElementById('excelOtpaId').value;
+    if (!otpaId) {
+      alert('Lütfen bir OTPA seçin');
+      return;
+    }
+    try {
+      const btn = document.getElementById('downloadExcelBtn');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Hazırlanıyor...';
+      btn.disabled = true;
+
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/reports/otpa-excel/${otpaId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'İndirme hatası');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Content-Disposition'dan filename al
+      const disposition = response.headers.get('Content-Disposition');
+      const filenameMatch = disposition && disposition.match(/filename="(.+)"/);
+      a.download = filenameMatch ? filenameMatch[1] : 'OTPA_Malzeme_Durumu.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      btn.innerHTML = '<i class="fas fa-download"></i> Excel İndir';
+      btn.disabled = false;
+    } catch (error) {
+      alert('Excel indirme hatası: ' + error.message);
+      const btn = document.getElementById('downloadExcelBtn');
+      btn.innerHTML = '<i class="fas fa-download"></i> Excel İndir';
+      btn.disabled = false;
+    }
   },
 
   toggleSelectAll() {

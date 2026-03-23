@@ -1,4 +1,5 @@
 import express from 'express';
+import xlsx from 'xlsx';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireModuleAccess } from './roles.js';
 import pool from '../db/database.js';
@@ -317,6 +318,111 @@ router.get('/summary', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Özet istatistik hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// OTPA Malzeme Durumu Excel Çıktısı
+router.get('/otpa-excel/:otpaId', authenticateToken, async (req, res) => {
+  try {
+    const { otpaId } = req.params;
+
+    // OTPA bilgisi
+    const otpaResult = await pool.query(
+      `SELECT o.otpa_number, o.project_name, o.customer_info, o.battery_pack_count
+       FROM otpa o WHERE o.id = ?`,
+      [otpaId]
+    );
+
+    if (otpaResult.rows.length === 0) {
+      return res.status(404).json({ error: 'OTPA bulunamadı' });
+    }
+
+    const otpa = otpaResult.rows[0];
+
+    // BOM + giriş + kalite verileri
+    const bomResult = await pool.query(`
+      SELECT 
+        b.material_code,
+        b.material_name,
+        b.required_quantity,
+        b.unit,
+        b.component_type,
+        COALESCE(SUM(gr.received_quantity), 0) as total_received,
+        COALESCE(SUM(qr.accepted_quantity), 0) as total_accepted,
+        COALESCE(SUM(qr.rejected_quantity), 0) as total_rejected
+      FROM bom_items b
+      LEFT JOIN goods_receipt gr ON b.otpa_id = gr.otpa_id AND b.material_code = gr.material_code
+      LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE b.otpa_id = ?
+      GROUP BY b.id, b.material_code, b.material_name, b.required_quantity, b.unit, b.component_type
+      ORDER BY b.component_type, b.material_code
+    `, [otpaId]);
+
+    const componentLabels = {
+      'batarya': 'Batarya',
+      'vccu': 'VCCU',
+      'junction_box': 'Junction Box',
+      'pdu': 'PDU'
+    };
+
+    // Excel verisi oluştur
+    const excelData = bomResult.rows.map(item => {
+      const missing = Math.max(0, item.required_quantity - item.total_accepted);
+      const completion = item.required_quantity > 0
+        ? Math.min(100, Math.round(item.total_accepted / item.required_quantity * 10000) / 100)
+        : 0;
+      let durum = 'Eksik';
+      if (completion >= 100) durum = 'Tamamlandı';
+      else if (item.total_accepted > 0) durum = 'Kısmi';
+      else if (item.total_received > 0) durum = 'Kalite Bekliyor';
+      else durum = 'Hiç Gelmedi';
+
+      return {
+        'Komponent': componentLabels[item.component_type] || item.component_type,
+        'Malzeme Kodu': item.material_code,
+        'Malzeme Adı': item.material_name,
+        'Gereken Miktar': item.required_quantity,
+        'Birim': item.unit,
+        'Gelen Miktar': item.total_received,
+        'Kabul Edilen': item.total_accepted,
+        'Reddedilen': item.total_rejected,
+        'Eksik Miktar': missing,
+        'Tamamlanma %': completion,
+        'Durum': durum
+      };
+    });
+
+    // Excel workbook oluştur
+    const wb = xlsx.utils.book_new();
+    const ws = xlsx.utils.json_to_sheet(excelData);
+
+    // Sütun genişlikleri
+    ws['!cols'] = [
+      { wch: 14 }, // Komponent
+      { wch: 16 }, // Malzeme Kodu
+      { wch: 35 }, // Malzeme Adı
+      { wch: 14 }, // Gereken
+      { wch: 8 },  // Birim
+      { wch: 14 }, // Gelen
+      { wch: 14 }, // Kabul
+      { wch: 12 }, // Red
+      { wch: 14 }, // Eksik
+      { wch: 14 }, // %
+      { wch: 16 }  // Durum
+    ];
+
+    xlsx.utils.book_append_sheet(wb, ws, 'Malzeme Durumu');
+
+    // Buffer olarak oluştur
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    const filename = `${otpa.otpa_number}_Malzeme_Durumu.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Excel export hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
