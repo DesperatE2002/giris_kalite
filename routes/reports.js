@@ -324,6 +324,56 @@ router.get('/summary', authenticateToken, async (req, res) => {
   }
 });
 
+// Diagnostik: OTPA malzeme eşleştirme kontrolü
+router.get('/diagnose/:otpaId', authenticateToken, async (req, res) => {
+  try {
+    const { otpaId } = req.params;
+    const { material_code } = req.query;
+
+    // BOM kayıtları
+    let bomQuery = 'SELECT id, component_type, material_code, material_name, required_quantity, unit FROM bom_items WHERE otpa_id = ?';
+    const bomParams = [otpaId];
+    if (material_code) {
+      bomQuery += ' AND material_code = ?';
+      bomParams.push(material_code);
+    }
+    bomQuery += ' ORDER BY component_type, material_code';
+    const bomResult = await pool.query(bomQuery, bomParams);
+
+    // Goods receipt kayıtları
+    let grQuery = 'SELECT id, component_type, material_code, received_quantity, created_at FROM goods_receipt WHERE otpa_id = ?';
+    const grParams = [otpaId];
+    if (material_code) {
+      grQuery += ' AND material_code = ?';
+      grParams.push(material_code);
+    }
+    grQuery += ' ORDER BY component_type, material_code';
+    const grResult = await pool.query(grQuery, grParams);
+
+    // Quality kayıtları
+    let qrQuery = `SELECT qr.id, qr.receipt_id, qr.status, qr.accepted_quantity, qr.rejected_quantity, gr.component_type, gr.material_code
+      FROM quality_results qr
+      JOIN goods_receipt gr ON qr.receipt_id = gr.id
+      WHERE gr.otpa_id = ?`;
+    const qrParams = [otpaId];
+    if (material_code) {
+      qrQuery += ' AND gr.material_code = ?';
+      qrParams.push(material_code);
+    }
+    qrQuery += ' ORDER BY gr.component_type, gr.material_code';
+    const qrResult = await pool.query(qrQuery, qrParams);
+
+    res.json({
+      bom_items: bomResult.rows,
+      goods_receipts: grResult.rows,
+      quality_results: qrResult.rows
+    });
+  } catch (error) {
+    console.error('Diagnostik hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 // OTPA Malzeme Durumu Excel Çıktısı
 router.get('/otpa-excel/:otpaId', authenticateToken, async (req, res) => {
   try {
