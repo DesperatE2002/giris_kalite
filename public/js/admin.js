@@ -1284,18 +1284,30 @@ MAT-003	Nikel Şerit	500	gr"
     }
 
     const items = [];
+    const componentCounts = {};
+    const componentLabels = { 'batarya': '🔋 Batarya', 'vccu': '⚡ VCCU', 'junction_box': '📦 Junction Box', 'pdu': '🔌 PDU' };
+    
     checkboxes.forEach(cb => {
       const row = cb.closest('tr');
+      const ct = row.dataset.componentType;
+      componentCounts[ct] = (componentCounts[ct] || 0) + 1;
       items.push({
         otpa_id: parseInt(row.dataset.otpaId),
-        component_type: row.dataset.componentType,
+        component_type: ct,
         material_code: row.dataset.materialCode,
         required_quantity: parseFloat(row.dataset.requiredQuantity)
       });
     });
 
+    // Komponent dağılımını göster
+    const componentSummary = Object.entries(componentCounts)
+      .map(([ct, count]) => `  ${componentLabels[ct] || ct}: ${count} malzeme`)
+      .join('\n');
+
     const confirmed = confirm(
-      `${items.length} malzeme için tam miktarda (gereken miktar kadar) giriş yapılacak.\n\n` +
+      `${items.length} malzeme için tam miktarda giriş yapılacak.\n\n` +
+      `Komponent dağılımı:\n${componentSummary}\n\n` +
+      `⚠️ Sadece gelen malzemelerin komponentlerini seçtiğinizden emin olun!\n\n` +
       `Devam etmek istiyor musunuz?`
     );
 

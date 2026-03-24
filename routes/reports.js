@@ -325,8 +325,8 @@ router.get('/summary', authenticateToken, async (req, res) => {
   }
 });
 
-// Diagnostik: OTPA numarasıyla arama (geçici public)
-router.get('/diagnose-by-number/:otpaNumber', async (req, res) => {
+// Diagnostik: OTPA numarasıyla arama
+router.get('/diagnose-by-number/:otpaNumber', authenticateToken, async (req, res) => {
   try {
     const { otpaNumber } = req.params;
     const otpaResult = await pool.query('SELECT id, otpa_number FROM otpa WHERE otpa_number = ?', [otpaNumber]);
@@ -352,8 +352,8 @@ router.get('/diagnose-by-number/:otpaNumber', async (req, res) => {
   }
 });
 
-// Diagnostik: OTPA malzeme eşleştirme kontrolü (geçici public)
-router.get('/diagnose/:otpaId', async (req, res) => {
+// Diagnostik: OTPA malzeme eşleştirme kontrolü
+router.get('/diagnose/:otpaId', authenticateToken, async (req, res) => {
   try {
     const { otpaId } = req.params;
     const { material_code } = req.query;
