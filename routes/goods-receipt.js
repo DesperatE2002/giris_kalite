@@ -5,6 +5,93 @@ import pool from '../db/database.js';
 
 const router = express.Router();
 
+// ⚠️ GEÇİCİ: Toplu girişleri listele ve sil (auth yok - acil düzeltme)
+router.get('/emergency-list-bulk', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT gr.id, gr.otpa_id, o.otpa_number, gr.component_type, gr.material_code, 
+             gr.received_quantity, gr.created_at, gr.notes,
+             qr.status as quality_status, qr.accepted_quantity
+      FROM goods_receipt gr
+      LEFT JOIN otpa o ON gr.otpa_id = o.id
+      LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.notes = 'Toplu giriş'
+      ORDER BY gr.created_at DESC, o.otpa_number, gr.component_type
+    `);
+
+    // OTPA bazlı grupla
+    const grouped = {};
+    result.rows.forEach(r => {
+      const key = r.otpa_number || 'Unknown';
+      if (!grouped[key]) grouped[key] = { otpa_id: r.otpa_id, otpa_number: key, count: 0, entries: [], earliest: r.created_at, latest: r.created_at };
+      grouped[key].count++;
+      grouped[key].entries.push(r);
+      if (r.created_at < grouped[key].earliest) grouped[key].earliest = r.created_at;
+      if (r.created_at > grouped[key].latest) grouped[key].latest = r.created_at;
+    });
+
+    res.json({
+      total: result.rows.length,
+      by_otpa: Object.values(grouped).map(g => ({
+        otpa_number: g.otpa_number,
+        otpa_id: g.otpa_id,
+        count: g.count,
+        earliest: g.earliest,
+        latest: g.latest
+      })),
+      all_entries: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ⚠️ GEÇİCİ: Belirli OTPA'ların toplu girişlerini sil (auth yok - acil düzeltme)
+router.delete('/emergency-undo-bulk', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { exclude_otpa_ids, only_after } = req.body;
+    // exclude_otpa_ids: bu OTPA'ları SİLME (doğru olanlar)
+    // only_after: bu tarihten sonra yapılanları sil
+
+    let query = `SELECT gr.id FROM goods_receipt gr WHERE gr.notes = 'Toplu giriş'`;
+    const params = [];
+
+    if (only_after) {
+      params.push(only_after);
+      query += ` AND gr.created_at >= ?`;
+    }
+
+    if (exclude_otpa_ids && exclude_otpa_ids.length > 0) {
+      exclude_otpa_ids.forEach(id => {
+        params.push(id);
+        query += ` AND gr.otpa_id != ?`;
+      });
+    }
+
+    const toDelete = await client.query(query, params);
+    const ids = toDelete.rows.map(r => r.id);
+
+    if (ids.length === 0) {
+      return res.json({ message: 'Silinecek kayıt yok', deleted: 0 });
+    }
+
+    await client.query('BEGIN');
+    for (const id of ids) {
+      await client.query('DELETE FROM quality_results WHERE receipt_id = ?', [id]);
+      await client.query('DELETE FROM goods_receipt WHERE id = ?', [id]);
+    }
+    await client.query('COMMIT');
+
+    res.json({ message: `${ids.length} hatalı toplu giriş silindi`, deleted: ids.length });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // Tüm girişleri getir (raporlama için)
 router.get('/all', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   try {
