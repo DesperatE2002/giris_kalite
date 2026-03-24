@@ -56,16 +56,19 @@ router.delete('/emergency-undo-bulk', async (req, res) => {
 
     let query = `SELECT gr.id FROM goods_receipt gr WHERE gr.notes = 'Toplu giriş'`;
     const params = [];
+    let paramIndex = 0;
 
     if (only_after) {
+      paramIndex++;
       params.push(only_after);
-      query += ` AND gr.created_at >= ?`;
+      query += ` AND gr.created_at >= $${paramIndex}`;
     }
 
     if (exclude_otpa_ids && exclude_otpa_ids.length > 0) {
       exclude_otpa_ids.forEach(id => {
+        paramIndex++;
         params.push(id);
-        query += ` AND gr.otpa_id != ?`;
+        query += ` AND gr.otpa_id != $${paramIndex}`;
       });
     }
 
@@ -78,8 +81,8 @@ router.delete('/emergency-undo-bulk', async (req, res) => {
 
     await client.query('BEGIN');
     for (const id of ids) {
-      await client.query('DELETE FROM quality_results WHERE receipt_id = ?', [id]);
-      await client.query('DELETE FROM goods_receipt WHERE id = ?', [id]);
+      await client.query('DELETE FROM quality_results WHERE receipt_id = $1', [id]);
+      await client.query('DELETE FROM goods_receipt WHERE id = $1', [id]);
     }
     await client.query('COMMIT');
 
