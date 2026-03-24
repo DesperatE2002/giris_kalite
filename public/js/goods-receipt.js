@@ -203,57 +203,112 @@ const goodsReceiptPage = {
     // Store full bom list for filtering
     this.fullBomList = bom;
     
-    const renderItems = (items) => {
+    const componentLabels = { 'batarya': '🔋 Batarya', 'vccu': '⚡ VCCU', 'junction_box': '📦 Junction Box', 'pdu': '🔌 PDU' };
+    const componentColors = { 
+      'batarya': 'border-emerald-500/30 bg-emerald-500/10', 
+      'vccu': 'border-amber-500/30 bg-amber-500/10', 
+      'junction_box': 'border-blue-500/30 bg-blue-500/10', 
+      'pdu': 'border-purple-500/30 bg-purple-500/10' 
+    };
+    const badgeColors = { 
+      'batarya': 'bg-emerald-500/15 text-emerald-400', 
+      'vccu': 'bg-amber-500/15 text-amber-400', 
+      'junction_box': 'bg-blue-500/15 text-blue-400', 
+      'pdu': 'bg-purple-500/15 text-purple-400' 
+    };
+
+    // Group by component type
+    const grouped = {};
+    bom.forEach(item => {
+      const ct = item.component_type || 'diger';
+      if (!grouped[ct]) grouped[ct] = [];
+      grouped[ct].push(item);
+    });
+
+    const componentOrder = ['batarya', 'vccu', 'junction_box', 'pdu'];
+    const sortedKeys = componentOrder.filter(k => grouped[k]);
+
+    const renderItemCard = (item) => {
+      const percentage = parseFloat(item.completion_percentage);
+      const isComplete = percentage >= 100;
+      const hasMissing = parseFloat(item.missing_quantity) > 0;
+      
       return `
-        <div class="mb-4">
-          <div class="relative">
-            <input type="text" id="bomSearchInput" placeholder="Malzeme kodu veya adı ile ara..." 
-              class="w-full px-4 py-2 pl-10 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-800/50 text-white">
-            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+        <div class="bom-item border rounded-lg p-4 ${isComplete ? 'bg-green-500/10 border-green-500/30' : hasMissing ? 'bg-yellow-500/10 border-yellow-500/30' : 'border-white/10'}" data-code="${item.material_code}" data-name="${item.material_name}" data-component="${item.component_type}">
+          <div class="flex justify-between items-start mb-2">
+            <div class="font-bold text-white">${item.material_code}</div>
+            ${isComplete ? '<i class="fas fa-check-circle text-green-400"></i>' : hasMissing ? '<i class="fas fa-exclamation-triangle text-yellow-400"></i>' : ''}
           </div>
-        </div>
-        <div id="bomItemsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${items.map(item => {
-            const percentage = parseFloat(item.completion_percentage);
-            const isComplete = percentage >= 100;
-            const hasMissing = parseFloat(item.missing_quantity) > 0;
-            
-            return `
-              <div class="bom-item border rounded-lg p-4 ${isComplete ? 'bg-green-500/10 border-green-500/30' : hasMissing ? 'bg-yellow-500/10 border-yellow-500/30' : 'border-white/10'}" data-code="${item.material_code}" data-name="${item.material_name}">
-                <div class="flex justify-between items-start mb-2">
-                  <div class="font-bold text-white">${item.material_code}</div>
-                  ${isComplete ? '<i class="fas fa-check-circle text-green-400"></i>' : hasMissing ? '<i class="fas fa-exclamation-triangle text-yellow-400"></i>' : ''}
-                </div>
-                <div class="text-sm text-gray-300 mb-3">${item.material_name}</div>
-                <div class="space-y-1 text-sm">
-                  <div class="flex justify-between">
-                    <span>Gereken:</span>
-                    <span class="font-medium">${item.required_quantity} ${item.unit}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>Kabul:</span>
-                    <span class="font-medium text-green-400">${item.total_accepted || 0} ${item.unit}</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>Eksik:</span>
-                    <span class="font-medium ${hasMissing ? 'text-red-400' : 'text-white'}">${item.missing_quantity || item.required_quantity} ${item.unit}</span>
-                  </div>
-                </div>
-                <div class="mt-3">
-                  <div class="w-full bg-gray-700/50 rounded-full h-2">
-                    <div class="h-2 rounded-full ${isComplete ? 'bg-green-600' : 'bg-blue-600'}" 
-                      style="width: ${Math.min(percentage, 100)}%"></div>
-                  </div>
-                  <div class="text-xs text-center mt-1 ${isComplete ? 'text-green-400 font-bold' : 'text-gray-400'}">${percentage}%</div>
-                </div>
-              </div>
-            `;
-          }).join('')}
+          <div class="text-sm text-gray-300 mb-3">${item.material_name}</div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span>Gereken:</span>
+              <span class="font-medium">${item.required_quantity} ${item.unit}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Kabul:</span>
+              <span class="font-medium text-green-400">${item.total_accepted || 0} ${item.unit}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Eksik:</span>
+              <span class="font-medium ${hasMissing ? 'text-red-400' : 'text-white'}">${item.missing_quantity || item.required_quantity} ${item.unit}</span>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="w-full bg-gray-700/50 rounded-full h-2">
+              <div class="h-2 rounded-full ${isComplete ? 'bg-green-600' : 'bg-blue-600'}" 
+                style="width: ${Math.min(percentage, 100)}%"></div>
+            </div>
+            <div class="text-xs text-center mt-1 ${isComplete ? 'text-green-400 font-bold' : 'text-gray-400'}">${percentage}%</div>
+          </div>
         </div>
       `;
     };
-    
-    container.innerHTML = renderItems(bom);
+
+    const renderGrouped = (items) => {
+      // Re-group for filtered items
+      const grp = {};
+      items.forEach(item => {
+        const ct = item.component_type || 'diger';
+        if (!grp[ct]) grp[ct] = [];
+        grp[ct].push(item);
+      });
+      const keys = componentOrder.filter(k => grp[k]);
+
+      return keys.map(ct => {
+        const ctItems = grp[ct];
+        const totalItems = ctItems.length;
+        const completedItems = ctItems.filter(i => parseFloat(i.completion_percentage) >= 100).length;
+        const ctPct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        return `
+          <div class="mb-6 border-2 rounded-2xl p-4 ${componentColors[ct] || 'border-white/10'}">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-white">${componentLabels[ct] || ct}</h3>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-300">${completedItems}/${totalItems} tamamlandı</span>
+                <span class="text-sm font-bold px-2 py-1 rounded-full ${badgeColors[ct] || 'bg-gray-500/15 text-gray-400'}">${ctPct}%</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              ${ctItems.map(item => renderItemCard(item)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    container.innerHTML = `
+      <div class="mb-4">
+        <div class="relative">
+          <input type="text" id="bomSearchInput" placeholder="Malzeme kodu veya adı ile ara..." 
+            class="w-full px-4 py-2 pl-10 border border-white/10 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-800/50 text-white">
+          <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+        </div>
+      </div>
+      <div id="bomItemsContainer">
+        ${renderGrouped(bom)}
+      </div>
+    `;
     
     // Setup search functionality
     const searchInput = document.getElementById('bomSearchInput');
@@ -262,7 +317,7 @@ const goodsReceiptPage = {
         const searchTerm = e.target.value.toLowerCase().trim();
         
         if (searchTerm === '') {
-          document.getElementById('bomItemsContainer').innerHTML = renderItems(this.fullBomList).match(/<div id="bomItemsContainer"[^>]*>([\s\S]*)<\/div>/)[1];
+          document.getElementById('bomItemsContainer').innerHTML = renderGrouped(this.fullBomList);
         } else {
           const filtered = this.fullBomList.filter(item => 
             item.material_code.toLowerCase().includes(searchTerm) || 
@@ -271,13 +326,13 @@ const goodsReceiptPage = {
           
           if (filtered.length === 0) {
             document.getElementById('bomItemsContainer').innerHTML = `
-              <div class="col-span-full text-center py-8 text-gray-500">
+              <div class="text-center py-8 text-gray-500">
                 <i class="fas fa-search text-4xl mb-2"></i>
                 <p>Arama kriterine uygun malzeme bulunamadı</p>
               </div>
             `;
           } else {
-            document.getElementById('bomItemsContainer').innerHTML = renderItems(filtered).match(/<div id="bomItemsContainer"[^>]*>([\s\S]*)<\/div>/)[1];
+            document.getElementById('bomItemsContainer').innerHTML = renderGrouped(filtered);
           }
         }
       });
