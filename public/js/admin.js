@@ -1127,8 +1127,18 @@ MAT-003	Nikel Şerit	500	gr"
               visibleCount++;
             } else {
               row.style.display = 'none';
+              // Gizlenen satırların checkbox'ını kaldır
+              const cb = row.querySelector('.material-checkbox');
+              if (cb) cb.checked = false;
             }
           });
+          
+          // Header checkbox'ı sıfırla
+          const selectAllCb = document.getElementById('selectAllCheckbox');
+          if (selectAllCb) selectAllCb.checked = false;
+          
+          // Seçim sayısını güncelle
+          adminPage.updateSelectedCount();
         };
         
         filterOtpa.addEventListener('input', filterTable);
@@ -1251,46 +1261,80 @@ MAT-003	Nikel Şerit	500	gr"
   },
 
   toggleSelectAll() {
-    const checkboxes = document.querySelectorAll('.material-checkbox');
+    const allCheckboxes = document.querySelectorAll('.material-checkbox');
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const isChecked = selectAllCheckbox.checked;
     
-    checkboxes.forEach(cb => {
-      // Sadece görünür satırları seç
+    // Sadece görünür (filtrelenmiş) satırların checkbox'larını al
+    const visibleCheckboxes = [];
+    allCheckboxes.forEach(cb => {
       const row = cb.closest('tr');
-      if (row.style.display !== 'none') {
-        cb.checked = isChecked;
+      if (row && row.style.display !== 'none') {
+        visibleCheckboxes.push(cb);
       }
     });
+
+    // Eğer tüm görünürler zaten seçiliyse → hepsini kaldır, değilse → hepsini seç
+    const allVisibleChecked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => cb.checked);
+    const newState = !allVisibleChecked;
+    
+    visibleCheckboxes.forEach(cb => {
+      cb.checked = newState;
+    });
+    
+    // Header checkbox'ı da güncelle
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = newState;
+    }
     
     this.updateSelectedCount();
   },
 
   updateSelectedCount() {
-    const checked = document.querySelectorAll('.material-checkbox:checked').length;
+    // Sadece görünür ve seçili olanları say
+    let checkedCount = 0;
+    let visibleCount = 0;
+    document.querySelectorAll('.material-checkbox').forEach(cb => {
+      const row = cb.closest('tr');
+      if (row && row.style.display !== 'none') {
+        visibleCount++;
+        if (cb.checked) checkedCount++;
+      }
+    });
+    
     const countSpan = document.getElementById('selectedCount');
     const bulkBtn = document.getElementById('bulkReceiveBtn');
     
-    if (countSpan) countSpan.textContent = checked;
-    if (bulkBtn) bulkBtn.disabled = checked === 0;
+    if (countSpan) countSpan.textContent = checkedCount;
+    if (bulkBtn) bulkBtn.disabled = checkedCount === 0;
   },
 
   async bulkReceiveSelected() {
-    const checkboxes = document.querySelectorAll('.material-checkbox:checked');
+    // Sadece GÖRÜNÜR ve seçili olanları al
+    const allChecked = document.querySelectorAll('.material-checkbox:checked');
+    const visibleChecked = [];
+    allChecked.forEach(cb => {
+      const row = cb.closest('tr');
+      if (row && row.style.display !== 'none') {
+        visibleChecked.push(cb);
+      }
+    });
     
-    if (checkboxes.length === 0) {
+    if (visibleChecked.length === 0) {
       alert('Lütfen en az bir malzeme seçin');
       return;
     }
 
     const items = [];
     const componentCounts = {};
+    const otpaCounts = {};
     const componentLabels = { 'batarya': '🔋 Batarya', 'vccu': '⚡ VCCU', 'junction_box': '📦 Junction Box', 'pdu': '🔌 PDU' };
     
-    checkboxes.forEach(cb => {
+    visibleChecked.forEach(cb => {
       const row = cb.closest('tr');
       const ct = row.dataset.componentType;
+      const otpaNum = row.dataset.otpa;
       componentCounts[ct] = (componentCounts[ct] || 0) + 1;
+      otpaCounts[otpaNum] = (otpaCounts[otpaNum] || 0) + 1;
       items.push({
         otpa_id: parseInt(row.dataset.otpaId),
         component_type: ct,
@@ -1299,15 +1343,20 @@ MAT-003	Nikel Şerit	500	gr"
       });
     });
 
-    // Komponent dağılımını göster
+    // Komponent ve OTPA dağılımını göster
     const componentSummary = Object.entries(componentCounts)
       .map(([ct, count]) => `  ${componentLabels[ct] || ct}: ${count} malzeme`)
+      .join('\n');
+    const otpaSummary = Object.entries(otpaCounts)
+      .map(([otpa, count]) => `  ${otpa}: ${count} malzeme`)
       .join('\n');
 
     const confirmed = confirm(
       `${items.length} malzeme için tam miktarda giriş yapılacak.\n\n` +
+      `OTPA dağılımı:\n${otpaSummary}\n\n` +
       `Komponent dağılımı:\n${componentSummary}\n\n` +
-      `⚠️ Sadece gelen malzemelerin komponentlerini seçtiğinizden emin olun!\n\n` +
+      `⚠️ Sadece gelen malzemelerin OTPA ve komponentlerini seçtiğinizden emin olun!\n` +
+      `⚠️ Filtrelemediğiniz OTPA'lar da dahil olabilir!\n\n` +
       `Devam etmek istiyor musunuz?`
     );
 

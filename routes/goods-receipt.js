@@ -327,4 +327,98 @@ router.get('/:id', authenticateToken, requireModuleAccess('goods-receipt'), asyn
   }
 });
 
+// Toplu giriş geri alma - belirli zaman aralığında yapılan "Toplu giriş" kayıtlarını sil
+router.delete('/bulk-undo', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { otpa_id, created_after, created_before } = req.body;
+
+    if (!created_after || !created_before) {
+      return res.status(400).json({ error: 'Zaman aralığı gereklidir' });
+    }
+
+    await client.query('BEGIN');
+
+    // Silinecek kayıtları bul
+    let findQuery = `SELECT gr.id FROM goods_receipt gr WHERE gr.notes = 'Toplu giriş' AND gr.created_at >= ? AND gr.created_at <= ?`;
+    const findParams = [created_after, created_before];
+    if (otpa_id) {
+      findQuery += ' AND gr.otpa_id = ?';
+      findParams.push(otpa_id);
+    }
+    const toDelete = await client.query(findQuery, findParams);
+    const ids = toDelete.rows.map(r => r.id);
+
+    if (ids.length === 0) {
+      await client.query('ROLLBACK');
+      return res.json({ message: 'Silinecek kayıt bulunamadı', deleted: 0 });
+    }
+
+    // Quality results sil
+    for (const id of ids) {
+      await client.query('DELETE FROM quality_results WHERE receipt_id = ?', [id]);
+    }
+    // Goods receipt sil
+    for (const id of ids) {
+      await client.query('DELETE FROM goods_receipt WHERE id = ?', [id]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ message: `${ids.length} kayıt başarıyla silindi`, deleted: ids.length });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Toplu geri alma hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Tek veya çoklu giriş kaydı silme (ID listesi ile)
+router.delete('/bulk-delete-by-ids', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Silinecek kayıt ID listesi gereklidir' });
+    }
+
+    await client.query('BEGIN');
+
+    for (const id of ids) {
+      await client.query('DELETE FROM quality_results WHERE receipt_id = ?', [id]);
+      await client.query('DELETE FROM goods_receipt WHERE id = ?', [id]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ message: `${ids.length} kayıt başarıyla silindi`, deleted: ids.length });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Toplu silme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Belirli OTPA'nın tüm "Toplu giriş" kayıtlarını listele (silme öncesi kontrol)
+router.get('/bulk-entries/:otpaId', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
+  try {
+    const { otpaId } = req.params;
+    const result = await pool.query(`
+      SELECT gr.id, gr.component_type, gr.material_code, gr.received_quantity, gr.created_at, gr.notes,
+        qr.status as quality_status, qr.accepted_quantity, qr.rejected_quantity
+      FROM goods_receipt gr 
+      LEFT JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.otpa_id = ? AND gr.notes = 'Toplu giriş'
+      ORDER BY gr.created_at DESC, gr.component_type, gr.material_code
+    `, [otpaId]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Toplu giriş listesi hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
 export default router;
