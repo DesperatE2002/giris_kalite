@@ -8,6 +8,10 @@ const router = express.Router();
 // Geçici: Eksiltme log kayıtlarının bozuk accepted_quantity değerlerini düzelt
 router.post('/fix-deduction-logs', async (req, res) => {
   try {
+    // Önce constraint'i güncelle - eksiltme status'ünü ekle
+    await pool.query(`ALTER TABLE quality_results DROP CONSTRAINT IF EXISTS quality_results_status_check`);
+    await pool.query(`ALTER TABLE quality_results ADD CONSTRAINT quality_results_status_check CHECK (status IN ('kabul', 'iade', 'bekliyor', 'eksiltme'))`);
+    
     const result = await pool.query(`
       UPDATE quality_results 
       SET accepted_quantity = 0, status = 'eksiltme'
@@ -15,7 +19,7 @@ router.post('/fix-deduction-logs', async (req, res) => {
         SELECT id FROM goods_receipt WHERE received_quantity < 0 AND notes LIKE 'Malzeme eksiltme%'
       ) AND accepted_quantity < 0
     `);
-    res.json({ message: `${result.rowCount} bozuk eksiltme kaydı düzeltildi` });
+    res.json({ message: `Constraint güncellendi. ${result.rowCount} bozuk eksiltme kaydı düzeltildi` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
