@@ -658,6 +658,7 @@ const goodsReceiptPage = {
     const statusMap = {
       'kabul': { class: 'bg-emerald-500/15 text-emerald-400', text: 'Kabul', icon: 'fa-check' },
       'iade': { class: 'bg-amber-500/15 text-amber-400', text: 'İade', icon: 'fa-undo' },
+      'eksiltme': { class: 'bg-red-500/15 text-red-400', text: 'Eksiltme', icon: 'fa-minus-circle' },
       'bekliyor': { class: 'bg-gray-500/15 text-gray-400', text: 'Bekliyor', icon: 'fa-clock' }
     };
     const s = statusMap[status] || statusMap['bekliyor'];

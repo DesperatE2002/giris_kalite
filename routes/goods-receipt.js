@@ -5,6 +5,22 @@ import pool from '../db/database.js';
 
 const router = express.Router();
 
+// Geçici: Eksiltme log kayıtlarının bozuk accepted_quantity değerlerini düzelt
+router.post('/fix-deduction-logs', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE quality_results 
+      SET accepted_quantity = 0, status = 'eksiltme'
+      WHERE receipt_id IN (
+        SELECT id FROM goods_receipt WHERE received_quantity < 0 AND notes LIKE 'Malzeme eksiltme%'
+      ) AND accepted_quantity < 0
+    `);
+    res.json({ message: `${result.rowCount} bozuk eksiltme kaydı düzeltildi` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Tüm girişleri getir (raporlama için)
 router.get('/all', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   try {
@@ -299,11 +315,11 @@ router.post('/deduct', authenticateToken, requireModuleAccess('goods-receipt'), 
 
     const logEntry = logResult.rows[0];
 
-    // Log kaydı için kalite sonucu (kabul olarak, negatif miktar)
+    // Log kaydı için kalite sonucu (sadece kayıt amaçlı, accepted=0 çünkü düşürme zaten yapıldı)
     await client.query(
       `INSERT INTO quality_results (receipt_id, status, accepted_quantity, rejected_quantity, reason, decision_by, decision_date)
-       VALUES ($1, 'kabul', $2, 0, $3, $4, CURRENT_TIMESTAMP)`,
-      [logEntry.id, -deduct_quantity, `Malzeme eksiltme${notes ? ' - ' + notes : ''}`, req.user.id]
+       VALUES ($1, 'eksiltme', 0, 0, $2, $3, CURRENT_TIMESTAMP)`,
+      [logEntry.id, `Malzeme eksiltme${notes ? ' - ' + notes : ''}`, req.user.id]
     );
 
     await client.query('COMMIT');
