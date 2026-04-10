@@ -142,6 +142,75 @@ const goodsReceiptPage = {
               </form>
             </div>
 
+            <!-- Deduction Form - Malzeme Eksiltme -->
+            <div class="glass-card rounded-2xl shadow-xl p-6 border-2 border-red-500/20">
+              <h2 class="text-2xl font-bold text-red-400 mb-4">
+                <i class="fas fa-minus-circle mr-2"></i> Malzeme Eksilt
+              </h2>
+              <p class="text-sm text-gray-400 mb-4">
+                <i class="fas fa-info-circle text-amber-400 mr-1"></i> 
+                Yanlış girilen fazla miktarı düşürmek için kullanın. Bu işlem iade değildir, sadece miktar düzeltmesidir.
+              </p>
+              <form id="deductForm" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-300 mb-2">Komponent *</label>
+                  <select id="deductComponentType" required 
+                    class="w-full px-4 py-3 border-2 border-red-500/20 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 text-lg bg-gray-800/50 text-white font-medium">
+                    <option value="">Komponent seçin...</option>
+                    <option value="batarya">🔋 Batarya</option>
+                    <option value="vccu">⚡ VCCU</option>
+                    <option value="junction_box">📦 Junction Box</option>
+                    <option value="pdu">🔌 PDU</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-300 mb-2">Malzeme Kodu</label>
+                  <select id="deductMaterialCode" required size="1"
+                    class="w-full px-4 py-3 border-2 border-red-500/20 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 text-lg font-medium bg-gray-800/50 text-white">
+                    <option value="">Önce komponent seçin...</option>
+                  </select>
+                </div>
+
+                <div id="deductMaterialInfo" class="hidden glass-card rounded-xl p-4 border-2 border-red-500/30">
+                  <h3 class="font-bold text-white mb-2 text-lg">Malzeme Bilgisi</h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span class="text-gray-400">Malzeme Adı:</span>
+                      <div id="deductInfoName" class="font-medium"></div>
+                    </div>
+                    <div>
+                      <span class="text-gray-400">Gereken:</span>
+                      <div id="deductInfoRequired" class="font-medium"></div>
+                    </div>
+                    <div>
+                      <span class="text-gray-400">Mevcut Kabul:</span>
+                      <div id="deductInfoAccepted" class="font-medium text-green-400"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Eksiltme Miktarı *</label>
+                  <input type="number" id="deductQuantity" step="0.01" min="0.01" required 
+                    class="w-full px-4 py-3 border border-red-500/20 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg bg-gray-800/50 text-white"
+                    placeholder="Örn: 5">
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Sebep / Not *</label>
+                  <textarea id="deductNotes" rows="2" required
+                    class="w-full px-4 py-3 border border-red-500/20 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-800/50 text-white"
+                    placeholder="Yanlış sayım, fazla girildi vb."></textarea>
+                </div>
+
+                <button type="submit" 
+                  class="w-full sm:w-auto px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition text-lg">
+                  <i class="fas fa-minus-circle mr-2"></i> Miktarı Eksilt
+                </button>
+              </form>
+            </div>
+
             <!-- Recent Entries -->
             <div class="glass-card rounded-2xl">
               <div class="px-6 py-4 border-b border-white/5">
@@ -184,11 +253,17 @@ const goodsReceiptPage = {
       // Populate material dropdown
       this.populateMaterialDropdown(data.bom);
 
+      // Populate deduction dropdown
+      this.populateDeductionDropdown(data.bom);
+
       // Load recent entries
       this.loadRecentEntries(otpaId);
 
       // Setup form handler
       this.setupFormHandler();
+
+      // Setup deduction form handler
+      this.setupDeductionHandler();
 
     } catch (error) {
       alert('Hata: ' + error.message);
@@ -438,6 +513,103 @@ const goodsReceiptPage = {
     };
   },
 
+  populateDeductionDropdown(bom) {
+    const componentSelect = document.getElementById('deductComponentType');
+    const materialSelect = document.getElementById('deductMaterialCode');
+    
+    componentSelect.addEventListener('change', (e) => {
+      const componentType = e.target.value;
+      materialSelect.innerHTML = '<option value="">Malzeme seçin...</option>';
+      document.getElementById('deductMaterialInfo').classList.add('hidden');
+      
+      if (!componentType) {
+        materialSelect.innerHTML = '<option value="">Önce komponent seçin...</option>';
+        return;
+      }
+      
+      const filteredBom = bom.filter(item => item.component_type === componentType);
+      
+      if (filteredBom.length === 0) {
+        materialSelect.innerHTML = '<option value="">Bu komponent için BOM yüklenmemiş</option>';
+        return;
+      }
+      
+      // Sadece kabul edilmiş miktarı olan malzemeleri göster
+      const withAccepted = filteredBom.filter(item => parseFloat(item.total_accepted || 0) > 0);
+      
+      if (withAccepted.length === 0) {
+        materialSelect.innerHTML = '<option value="">Bu komponentte eksiltilecek malzeme yok</option>';
+        return;
+      }
+      
+      withAccepted.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.material_code;
+        option.textContent = `${item.material_code} - ${item.material_name} (Kabul: ${item.total_accepted || 0})`;
+        option.dataset.item = JSON.stringify(item);
+        materialSelect.appendChild(option);
+      });
+    });
+
+    materialSelect.addEventListener('change', (e) => {
+      const selected = e.target.selectedOptions[0];
+      if (selected && selected.dataset.item) {
+        const item = JSON.parse(selected.dataset.item);
+        document.getElementById('deductMaterialInfo').classList.remove('hidden');
+        document.getElementById('deductInfoName').textContent = item.material_name;
+        document.getElementById('deductInfoRequired').textContent = `${item.required_quantity} ${item.unit}`;
+        document.getElementById('deductInfoAccepted').textContent = `${item.total_accepted || 0} ${item.unit}`;
+      } else {
+        document.getElementById('deductMaterialInfo').classList.add('hidden');
+      }
+    });
+  },
+
+  setupDeductionHandler() {
+    const form = document.getElementById('deductForm');
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const componentType = document.getElementById('deductComponentType').value;
+      const materialCode = document.getElementById('deductMaterialCode').value;
+      const quantity = parseFloat(document.getElementById('deductQuantity').value);
+      const notes = document.getElementById('deductNotes').value;
+
+      if (!componentType || !materialCode || !quantity || !notes) {
+        alert('Lütfen tüm alanları doldurun');
+        return;
+      }
+
+      if (!confirm(`⚠️ ${materialCode} malzemesinden ${quantity} adet eksiltilecek.\n\nSebep: ${notes}\n\nDevam etmek istiyor musunuz?`)) {
+        return;
+      }
+
+      try {
+        showLoading(true);
+        
+        const result = await api.goodsReceipt.deduct({
+          otpa_id: this.selectedOtpaId,
+          component_type: componentType,
+          material_code: materialCode,
+          deduct_quantity: quantity,
+          notes: notes
+        });
+
+        alert(`✅ ${result.message}\nYeni kabul edilen miktar: ${result.new_total_accepted}`);
+        
+        form.reset();
+        document.getElementById('deductMaterialInfo').classList.add('hidden');
+
+        await this.selectOtpa(this.selectedOtpaId);
+        
+      } catch (error) {
+        alert('Hata: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    };
+  },
+
   async loadRecentEntries(otpaId) {
     try {
       const receipts = await api.goodsReceipt.getByOtpa(otpaId);
@@ -460,18 +632,20 @@ const goodsReceiptPage = {
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
-            ${receipts.map(r => `
-              <tr class="hover:bg-white/[0.03]">
+            ${receipts.map(r => {
+              const isDeduction = parseFloat(r.received_quantity) < 0;
+              return `
+              <tr class="hover:bg-white/[0.03] ${isDeduction ? 'bg-red-500/5' : ''}">
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${new Date(r.receipt_date).toLocaleString('tr-TR')}</td>
                 <td class="px-6 py-4">
-                  <div class="text-sm font-medium">${r.material_code}</div>
+                  <div class="text-sm font-medium">${isDeduction ? '<i class="fas fa-minus-circle text-red-400 mr-1"></i>' : ''}${r.material_code}</div>
                   <div class="text-xs text-gray-500">${r.material_name}</div>
                 </td>
-                <td class="px-6 py-4 text-right font-medium">${r.received_quantity} ${r.unit}</td>
-                <td class="px-6 py-4">${this.getQualityBadge(r.quality_status)}</td>
+                <td class="px-6 py-4 text-right font-medium ${isDeduction ? 'text-red-400' : ''}">${r.received_quantity} ${r.unit}</td>
+                <td class="px-6 py-4">${isDeduction ? '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-500/15 text-red-400"><i class="fas fa-minus mr-1"></i> Eksiltme</span>' : this.getQualityBadge(r.quality_status)}</td>
                 <td class="px-6 py-4 text-sm text-gray-500">${r.created_by_name}</td>
-              </tr>
-            `).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       `;

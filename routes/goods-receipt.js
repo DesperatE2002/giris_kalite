@@ -216,6 +216,112 @@ router.post('/', authenticateToken, requireModuleAccess('goods-receipt'), async 
   }
 });
 
+// Malzeme eksiltme - yanlış girilen fazla miktarı düşür
+router.post('/deduct', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { otpa_id, component_type, material_code, deduct_quantity, notes } = req.body;
+
+    if (!otpa_id || !component_type || !material_code || !deduct_quantity || deduct_quantity <= 0) {
+      return res.status(400).json({ error: 'OTPA, komponent, malzeme kodu ve geçerli bir miktar gereklidir' });
+    }
+
+    await client.query('BEGIN');
+
+    // BOM'da bu malzeme var mı kontrol et
+    const bomCheck = await client.query(
+      'SELECT * FROM bom_items WHERE otpa_id = $1 AND component_type = $2 AND material_code = $3',
+      [otpa_id, component_type, material_code]
+    );
+
+    if (bomCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Bu malzeme kodu bu OTPA\'nın bu komponent BOM\'unda yok' });
+    }
+
+    // Kabul edilmiş toplam miktarı hesapla
+    const acceptedResult = await client.query(`
+      SELECT COALESCE(SUM(qr.accepted_quantity), 0) as total_accepted
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.otpa_id = $1 
+        AND gr.component_type = $2
+        AND gr.material_code = $3
+        AND qr.accepted_quantity > 0
+    `, [otpa_id, component_type, material_code]);
+
+    const totalAccepted = parseFloat(acceptedResult.rows[0].total_accepted);
+
+    if (totalAccepted < deduct_quantity) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ 
+        error: `Eksiltme miktarı kabul edilmiş miktardan fazla olamaz. Mevcut kabul: ${totalAccepted}, Talep: ${deduct_quantity}` 
+      });
+    }
+
+    // LIFO - en yeni kayıtlardan başlayarak eksilt
+    let remaining = deduct_quantity;
+    
+    const entriesResult = await client.query(`
+      SELECT qr.id, qr.accepted_quantity, gr.id as receipt_id
+      FROM goods_receipt gr
+      JOIN quality_results qr ON gr.id = qr.receipt_id
+      WHERE gr.otpa_id = $1 
+        AND gr.component_type = $2
+        AND gr.material_code = $3
+        AND qr.accepted_quantity > 0
+      ORDER BY gr.created_at DESC
+    `, [otpa_id, component_type, material_code]);
+
+    for (const entry of entriesResult.rows) {
+      if (remaining <= 0) break;
+
+      const deductAmount = Math.min(remaining, parseFloat(entry.accepted_quantity));
+      
+      await client.query(`
+        UPDATE quality_results
+        SET accepted_quantity = accepted_quantity - $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+      `, [deductAmount, entry.id]);
+
+      remaining -= deductAmount;
+    }
+
+    // Eksiltme log kaydı oluştur (negatif giriş olarak kaydet)
+    const logResult = await client.query(
+      `INSERT INTO goods_receipt (otpa_id, component_type, material_code, received_quantity, notes, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [otpa_id, component_type, material_code, -deduct_quantity, 
+       `Malzeme eksiltme${notes ? ' - ' + notes : ''}`, req.user.id]
+    );
+
+    const logEntry = logResult.rows[0];
+
+    // Log kaydı için kalite sonucu (kabul olarak, negatif miktar)
+    await client.query(
+      `INSERT INTO quality_results (receipt_id, status, accepted_quantity, rejected_quantity, reason, decision_by, decision_date)
+       VALUES ($1, 'kabul', $2, 0, $3, $4, CURRENT_TIMESTAMP)`,
+      [logEntry.id, -deduct_quantity, `Malzeme eksiltme${notes ? ' - ' + notes : ''}`, req.user.id]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({ 
+      message: `${deduct_quantity} adet başarıyla eksiltildi`,
+      deducted: deduct_quantity,
+      new_total_accepted: totalAccepted - deduct_quantity
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Malzeme eksiltme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası: ' + error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // Toplu malzeme girişi - seçilen malzemelerin tamamını tam miktarda giriş yap
 router.post('/bulk', authenticateToken, requireModuleAccess('goods-receipt'), async (req, res) => {
   const client = await pool.connect();

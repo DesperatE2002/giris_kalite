@@ -175,6 +175,12 @@ const api = {
       api.request('/goods-receipt', {
         method: 'POST',
         body: JSON.stringify(data)
+      }),
+
+    deduct: (data) =>
+      api.request('/goods-receipt/deduct', {
+        method: 'POST',
+        body: JSON.stringify(data)
       })
   },
 
