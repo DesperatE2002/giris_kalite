@@ -6,7 +6,7 @@ import pool from '../db/database.js';
 const router = express.Router();
 
 // Geçici: Eksiltme log kayıtlarının bozuk accepted_quantity değerlerini düzelt
-router.post('/fix-deduction-logs', async (req, res) => {
+router.post('/fix-deduction-logs', authenticateToken, requireModuleAccess('admin'), async (req, res) => {
   try {
     // Önce constraint'i güncelle - eksiltme status'ünü ekle
     await pool.query(`ALTER TABLE quality_results DROP CONSTRAINT IF EXISTS quality_results_status_check`);

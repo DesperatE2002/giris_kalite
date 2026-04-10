@@ -1,3 +1,0 @@
-Connecting to database...
-DB URL exists: true
-ERROR: 
